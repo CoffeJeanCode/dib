@@ -1,0 +1,82 @@
+.tn {
+  min-width: 180px;
+  max-width: 260px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-sans);
+  overflow: hidden;
+}
+
+.tn-header {
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+}
+
+.tn-name {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: #fff;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tn-body {
+  padding: 4px 0;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-dark) transparent;
+}
+
+.tn-col {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 10px;
+  gap: 8px;
+}
+
+.tn-col:hover {
+  background: var(--color-bg-hover);
+}
+
+.tn-col-name {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tn-col-pk {
+  font-weight: var(--font-weight-medium);
+}
+
+.tn-pk-icon {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.tn-col-type {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tn-handle {
+  width: 6px;
+  height: 6px;
+  background: var(--color-border-dark);
+  border: none;
+}

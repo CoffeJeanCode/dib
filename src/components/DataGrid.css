@@ -1,0 +1,384 @@
+.dg-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.dg-scroll {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-dark) transparent;
+}
+
+.dg-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.dg-scroll::-webkit-scrollbar-track { background: transparent; }
+.dg-scroll::-webkit-scrollbar-thumb { background: var(--color-border-dark); border-radius: 3px; }
+
+/* ── Header ─────────────────────────────────────────────── */
+.dg-header {
+  display: flex;
+  flex-wrap: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+/* ── Row ────────────────────────────────────────────────── */
+.dg-row {
+  display: flex;
+  flex-wrap: nowrap;
+  border-bottom: 1px solid var(--color-border);
+  height: 38px;
+}
+
+.dg-row:hover {
+  background: var(--color-bg-hover);
+}
+
+/* ── Cell (shared) ──────────────────────────────────────── */
+.dg-cell {
+  height: 38px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-right: 1px solid var(--color-border);
+  flex-shrink: 0;
+  position: relative;
+  cursor: cell;
+}
+
+.dg-cell:last-child {
+  border-right: none;
+}
+
+/* ── Active cell — keyboard focus ───────────────────────── */
+.dg-cell--active {
+  outline: 2px solid var(--color-blue);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* ── Index column (sticky left) ─────────────────────────── */
+.dg-cell--index {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  border-right: 1px solid var(--color-border-dark);
+  cursor: default;
+}
+
+.dg-header .dg-cell--index {
+  z-index: 5;
+  background: var(--color-bg-secondary);
+}
+
+.dg-row:hover .dg-cell--index {
+  background: var(--color-bg-active);
+}
+
+/* ── Header cell ────────────────────────────────────────── */
+.dg-th {
+  background: var(--color-bg-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  user-select: none;
+  cursor: default;
+}
+
+.dg-th-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+}
+
+.dg-th-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.dg-th-type {
+  font-size: 10px;
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* ── Resizer handle ─────────────────────────────────────── */
+.dg-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.dg-resizer:hover,
+.dg-resizer:active {
+  background: var(--color-blue);
+  opacity: 0.4;
+}
+
+/* ── Body — virtualized ─────────────────────────────────── */
+.dg-body {
+  position: relative;
+}
+
+.dg-body-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+/* ── Data cell ──────────────────────────────────────────── */
+.dg-cell:empty::after {
+  content: "null";
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+/* ── Selected cell (multi-select) ──────────────────────── */
+.dg-cell--selected {
+  background: rgba(47, 128, 237, 0.10);
+}
+
+.dg-cell--selected.dg-cell--active {
+  background: rgba(47, 128, 237, 0.16);
+}
+
+/* ── Dirty cell — pending change indicator ──────────────── */
+.dg-cell--changed {
+  background: rgba(253, 224, 71, 0.08);
+}
+
+.dg-cell--changed::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 6px 6px 0;
+  border-color: transparent var(--color-orange) transparent transparent;
+  pointer-events: none;
+}
+
+/* ── Edit input ─────────────────────────────────────────── */
+.dg-cell-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.dg-footer {
+  padding: 0 var(--space-3);
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  flex-shrink: 0;
+  outline: none;
+}
+
+.dg-footer:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--color-blue);
+}
+
+.dg-footer-note {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.dg-footer-changes {
+  color: var(--color-orange);
+  font-weight: var(--font-weight-medium);
+}
+
+.dg-footer-saved {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-green);
+  font-weight: var(--font-weight-medium);
+  animation: dg-fade-in 200ms ease;
+}
+
+@keyframes dg-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dg-footer-selection {
+  color: var(--color-blue);
+  font-weight: var(--font-weight-medium);
+}
+
+.dg-footer-pos {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--color-text-tertiary);
+}
+
+/* ── Filter button ──────────────────────────────────────── */
+.dg-filter-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fastest), background var(--transition-fastest);
+}
+
+.dg-th:hover .dg-filter-btn,
+.dg-filter-btn--active {
+  display: flex;
+}
+
+.dg-filter-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.dg-filter-btn--active {
+  color: var(--color-blue, #4f9cf9);
+}
+
+/* ── Filter popover ─────────────────────────────────────── */
+.dg-filter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 990;
+}
+
+.dg-filter-popover {
+  position: fixed;
+  z-index: 991;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-lg);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.dg-filter-select,
+.dg-filter-input {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  outline: none;
+  width: 100%;
+}
+
+.dg-filter-select:focus,
+.dg-filter-input:focus {
+  border-color: var(--color-blue, #4f9cf9);
+}
+
+.dg-filter-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dg-filter-apply,
+.dg-filter-clear {
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background var(--transition-fastest);
+}
+
+.dg-filter-apply {
+  background: var(--color-blue, #4f9cf9);
+  color: #fff;
+  border-color: var(--color-blue, #4f9cf9);
+}
+
+.dg-filter-apply:hover { opacity: 0.88; }
+
+.dg-filter-clear {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.dg-filter-clear:hover { background: var(--color-bg-hover); }
+
+/* ── Empty / Loading states ─────────────────────────────── */
+.dg-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 120px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.dg-loading {
+  color: var(--color-text-secondary);
+}

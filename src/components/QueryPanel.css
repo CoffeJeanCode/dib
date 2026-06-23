@@ -1,0 +1,290 @@
+.qp {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Table list sidebar ───────────────────────────────── */
+.qp-tables {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.qp-tables-header {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.qp-disconnect-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fastest), color var(--transition-fastest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qp-disconnect-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.qp-db-name {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.qp-table-list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  padding: var(--space-2) 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-dark) transparent;
+}
+
+.qp-table-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  height: 30px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  border-radius: 0;
+  transition: background var(--transition-fast);
+  overflow: hidden;
+}
+
+.qp-table-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.qp-table-item--active {
+  background: var(--color-bg-active);
+  font-weight: var(--font-weight-medium);
+}
+
+.qp-table-icon {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.qp-table-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+/* ── Tree view ────────────────────────────────────────── */
+.qp-tree-node {
+  list-style: none;
+}
+
+.qp-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fastest), transform var(--transition-fast);
+}
+
+.qp-chevron:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
+.qp-chevron--open svg {
+  transform: rotate(90deg);
+}
+
+.qp-col-list {
+  list-style: none;
+  padding: 0;
+}
+
+.qp-col-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px var(--space-4) 3px 40px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  transition: background var(--transition-fastest);
+}
+
+.qp-col-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.qp-col-item--muted {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.qp-col-name {
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.qp-col-type {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.qp-col-icon { flex-shrink: 0; }
+.qp-col-icon--pk   { color: #d4a017; }
+.qp-col-icon--num  { color: var(--color-blue, #4f9cf9); }
+.qp-col-icon--date { color: #48b578; }
+.qp-col-icon--text { color: var(--color-text-tertiary); }
+
+.qp-placeholder {
+  padding: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.qp-error {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-red);
+  background: var(--color-red-light);
+  margin: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Data area ────────────────────────────────────────── */
+.qp-data {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.qp-data-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.qp-data-error {
+  margin: var(--space-3);
+  padding: var(--space-3);
+  color: var(--color-red);
+  background: var(--color-red-light);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.qp-grid-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  height: 36px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.qp-breadcrumb {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+}
+
+.qp-sql {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.qp-grid-wrap {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Pagination ─────────────────────────────────────── */
+.qp-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.qp-page-btn {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.qp-page-btn:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.qp-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qp-page-info {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  min-width: 60px;
+  text-align: center;
+}
+
+/* ── CommitFooter positioning ────────────────────────── */
+.qp-data {
+  position: relative;
+}

@@ -1,0 +1,367 @@
+use async_trait::async_trait;
+use serde_json::{json, Value};
+use sqlx::{Column, PgPool, Row, TypeInfo};
+
+use super::driver::{
+    ChangeRow, ColumnInfo, DatabaseDriver, DbConfig, GridFilter, PagedResult, QueryError,
+    QueryResult, TableInfo, TableRelation,
+};
+
+/// Builds ` WHERE ...` clause with $N placeholders for PostgreSQL.
+/// Returns (sql_fragment, bound_values). Column names are sanitized.
+fn build_where_pg(filters: &[GridFilter]) -> (String, Vec<String>) {
+    let mut clauses = Vec::new();
+    let mut values: Vec<String> = Vec::new();
+    let mut idx = 1usize;
+
+    for f in filters {
+        let col = f.column.replace('"', "");
+        match f.operator.as_str() {
+            "IS NULL" => clauses.push(format!("\"{}\" IS NULL", col)),
+            "IS NOT NULL" => clauses.push(format!("\"{}\" IS NOT NULL", col)),
+            op => {
+                let v = match &f.value {
+                    Some(s) if !s.is_empty() => s,
+                    _ => continue,
+                };
+                let (sql_op, bound) = match op {
+                    "ILIKE" => ("ILIKE", format!("%{}%", v)),
+                    "NOT ILIKE" => ("NOT ILIKE", format!("%{}%", v)),
+                    _ => (op, v.clone()),
+                };
+                clauses.push(format!("\"{}\" {} ${}", col, sql_op, idx));
+                values.push(bound);
+                idx += 1;
+            }
+        }
+    }
+
+    let sql = if clauses.is_empty() {
+        String::new()
+    } else {
+        format!(" WHERE {}", clauses.join(" AND "))
+    };
+    (sql, values)
+}
+
+pub struct PostgresDriver {
+    pool: PgPool,
+}
+
+fn pg_bind_json(args: &mut sqlx::postgres::PgArguments, val: &Value) {
+    use sqlx::Arguments;
+    match val {
+        Value::Null => { let _ = args.add(None::<String>); }
+        Value::Bool(b) => { let _ = args.add(*b); }
+        Value::Number(n) => {
+            if let Some(i) = n.as_i64() { let _ = args.add(i); }
+            else { let _ = args.add(n.as_f64().unwrap_or(0.0)); }
+        }
+        Value::String(s) => { let _ = args.add(s.clone()); }
+        other => { let _ = args.add(other.to_string()); }
+    }
+}
+
+impl PostgresDriver {
+    // Uses PgConnectOptions — passwords with special chars won't corrupt the URL.
+    pub async fn from_config(config: &DbConfig) -> Result<Self, QueryError> {
+        use sqlx::postgres::PgConnectOptions;
+
+        let mut opts = PgConnectOptions::new()
+            .host(config.host.as_deref().unwrap_or("localhost"))
+            .port(config.port.unwrap_or(5432))
+            .username(config.username.as_deref().unwrap_or("postgres"))
+            .database(config.database.as_deref().unwrap_or("postgres"));
+
+        if let Some(pw) = config.password.as_deref().filter(|s| !s.is_empty()) {
+            opts = opts.password(pw);
+        }
+
+        PgPool::connect_with(opts)
+            .await
+            .map(|pool| Self { pool })
+            .map_err(|e| QueryError::from(e.to_string()))
+    }
+}
+
+fn is_select(sql: &str) -> bool {
+    matches!(
+        sql.trim().split_whitespace().next().unwrap_or("").to_uppercase().as_str(),
+        "SELECT" | "WITH" | "EXPLAIN" | "SHOW" | "TABLE"
+    )
+}
+
+fn pg_value_to_json(row: &sqlx::postgres::PgRow, i: usize) -> Value {
+    match row.columns()[i].type_info().name() {
+        "INT2" | "INT4" | "INT8" | "OID" => {
+            row.try_get::<i64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null)
+        }
+        "FLOAT4" | "FLOAT8" | "NUMERIC" => {
+            row.try_get::<f64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null)
+        }
+        "BOOL" => row.try_get::<bool, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        _ => row.try_get::<String, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+    }
+}
+
+fn qualified(table_name: &str, schema: Option<&str>) -> String {
+    let t = table_name.replace('"', "");
+    match schema.map(|s| s.replace('"', "")) {
+        Some(s) if !s.is_empty() => format!("\"{s}\".\"{t}\""),
+        _ => format!("\"{t}\""),
+    }
+}
+
+#[async_trait]
+impl DatabaseDriver for PostgresDriver {
+    async fn get_tables(&self) -> Result<Vec<TableInfo>, QueryError> {
+        sqlx::query(
+            "SELECT schemaname, tablename \
+             FROM pg_catalog.pg_tables \
+             WHERE schemaname != 'information_schema' \
+               AND schemaname != 'pg_catalog' \
+             ORDER BY schemaname, tablename",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))
+        .map(|rows| {
+            rows.iter()
+                .map(|r| TableInfo {
+                    schema: r.try_get("schemaname").ok(),
+                    name: r.try_get("tablename").unwrap_or_default(),
+                })
+                .collect()
+        })
+    }
+
+    async fn get_table_schema(
+        &self,
+        table_name: &str,
+        schema: Option<&str>,
+    ) -> Result<Vec<ColumnInfo>, QueryError> {
+        let schema = schema.unwrap_or("public");
+        let rows = sqlx::query(
+            "SELECT column_name, data_type, is_nullable, \
+             column_name IN ( \
+                 SELECT kcu.column_name \
+                 FROM information_schema.table_constraints tc \
+                 JOIN information_schema.key_column_usage kcu \
+                     ON tc.constraint_name = kcu.constraint_name \
+                     AND tc.table_schema = kcu.table_schema \
+                     AND tc.table_name = kcu.table_name \
+                 WHERE tc.constraint_type = 'PRIMARY KEY' \
+                     AND tc.table_name = $1 AND tc.table_schema = $2 \
+             ) AS is_primary_key \
+             FROM information_schema.columns \
+             WHERE table_name = $1 AND table_schema = $2 \
+             ORDER BY ordinal_position",
+        )
+        .bind(table_name)
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        Ok(rows
+            .iter()
+            .map(|r| {
+                let nullable: String = r.try_get("is_nullable").unwrap_or_default();
+                ColumnInfo {
+                    name: r.try_get("column_name").unwrap_or_default(),
+                    data_type: r.try_get("data_type").unwrap_or_default(),
+                    is_primary_key: r.try_get("is_primary_key").unwrap_or(false),
+                    is_nullable: nullable == "YES",
+                }
+            })
+            .collect())
+    }
+
+    async fn execute_query(&self, sql: &str) -> Result<QueryResult, QueryError> {
+        if is_select(sql) {
+            let rows = sqlx::query(sql)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+
+            let columns = rows
+                .first()
+                .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
+                .unwrap_or_default();
+
+            Ok(QueryResult {
+                rows: rows
+                    .iter()
+                    .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
+                    .collect(),
+                columns,
+                rows_affected: 0,
+            })
+        } else {
+            let result = sqlx::query(sql)
+                .execute(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+
+            Ok(QueryResult {
+                columns: vec![],
+                rows: vec![],
+                rows_affected: result.rows_affected(),
+            })
+        }
+    }
+
+    async fn fetch_page(
+        &self,
+        table_name: &str,
+        schema: Option<&str>,
+        offset: u64,
+        limit: u64,
+        filters: &[GridFilter],
+    ) -> Result<PagedResult, QueryError> {
+        let q = qualified(table_name, schema);
+        let (where_sql, filter_values) = build_where_pg(filters);
+        let n = filter_values.len();
+
+        let count_sql = format!("SELECT COUNT(*) FROM {q}{where_sql}");
+        let mut count_q = sqlx::query_scalar::<_, i64>(&count_sql);
+        for v in &filter_values { count_q = count_q.bind(v.clone()); }
+        let total: i64 = count_q
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let data_sql = format!("SELECT * FROM {q}{where_sql} LIMIT ${} OFFSET ${}", n + 1, n + 2);
+        let mut data_q = sqlx::query(&data_sql);
+        for v in &filter_values { data_q = data_q.bind(v.clone()); }
+        let rows = data_q
+            .bind(limit as i64)
+            .bind(offset as i64)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let columns = rows
+            .first()
+            .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
+            .unwrap_or_default();
+
+        Ok(PagedResult {
+            rows: rows
+                .iter()
+                .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
+                .collect(),
+            columns,
+            total: total.max(0) as u64,
+            offset,
+            limit,
+        })
+    }
+
+    async fn apply_changes(
+        &self,
+        table_name: &str,
+        primary_key_column: &str,
+        changes: &[ChangeRow],
+    ) -> Result<u64, QueryError> {
+        use std::collections::HashMap;
+        use sqlx::postgres::PgArguments;
+
+        if changes.is_empty() {
+            return Ok(0);
+        }
+
+        let safe_table = table_name.replace('"', "");
+        let safe_pk = primary_key_column.replace('"', "");
+
+        let mut row_map: HashMap<usize, Vec<&ChangeRow>> = HashMap::new();
+        for c in changes {
+            row_map.entry(c.row_index).or_default().push(c);
+        }
+
+        let mut tx = self.pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
+        let mut total: u64 = 0;
+
+        for (_idx, row_changes) in &row_map {
+            let pk_val = row_changes[0].row_pk_value.as_ref().ok_or_else(|| QueryError {
+                message: "row_pk_value is required for UPDATE".into(),
+                code: None,
+                severity: Some("ERROR".into()),
+            })?;
+
+            let set_parts: Vec<String> = row_changes
+                .iter()
+                .enumerate()
+                .map(|(i, c)| format!("\"{}\" = ${}", c.column.replace('"', ""), i + 1))
+                .collect();
+
+            let sql = format!(
+                "UPDATE \"{}\" SET {} WHERE \"{}\" = ${}",
+                safe_table,
+                set_parts.join(", "),
+                safe_pk,
+                row_changes.len() + 1,
+            );
+
+            let mut args = PgArguments::default();
+            for change in row_changes {
+                pg_bind_json(&mut args, &change.new_value);
+            }
+            pg_bind_json(&mut args, pk_val);
+
+            let result = sqlx::query_with(&sql, args)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+
+            total += result.rows_affected();
+        }
+
+        tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(total)
+    }
+
+    async fn get_table_relations(
+        &self,
+        table_name: &str,
+        schema: Option<&str>,
+    ) -> Result<Vec<TableRelation>, QueryError> {
+        let schema = schema.unwrap_or("public");
+        let rows = sqlx::query(
+            "SELECT
+                kcu.column_name        AS source_column,
+                ccu.table_name         AS target_table,
+                ccu.column_name        AS target_column
+             FROM information_schema.table_constraints tc
+             JOIN information_schema.key_column_usage kcu
+                 ON tc.constraint_name = kcu.constraint_name
+                 AND tc.table_schema   = kcu.table_schema
+             JOIN information_schema.constraint_column_usage ccu
+                 ON tc.constraint_name = ccu.constraint_name
+                 AND tc.table_schema   = ccu.table_schema
+             WHERE tc.constraint_type = 'FOREIGN KEY'
+               AND tc.table_name      = $1
+               AND tc.table_schema    = $2
+             ORDER BY kcu.column_name",
+        )
+        .bind(table_name)
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        Ok(rows
+            .iter()
+            .map(|r| TableRelation {
+                source_table: table_name.to_string(),
+                source_column: r.try_get("source_column").unwrap_or_default(),
+                target_table: r.try_get("target_table").unwrap_or_default(),
+                target_column: r.try_get("target_column").unwrap_or_default(),
+            })
+            .collect())
+    }
+
+    fn driver_name(&self) -> &'static str {
+        "postgresql"
+    }
+}
