@@ -4,11 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 interface UiState {
   is_sidebar_open: boolean;
   save_password: boolean;
+  sidebar_width: number;
 }
 
 const DEFAULT_STATE: UiState = {
   is_sidebar_open: true,
   save_password: true,
+  sidebar_width: 260,
 };
 
 export function useUiState() {
@@ -18,7 +20,7 @@ export function useUiState() {
   useEffect(() => {
     invoke<UiState>("load_ui_state")
       .then((saved) => {
-        setState(saved);
+        setState({ ...DEFAULT_STATE, ...saved });
         setLoaded(true);
       })
       .catch(() => {

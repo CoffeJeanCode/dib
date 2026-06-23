@@ -39,7 +39,9 @@ import "./Sidebar.css";
 
 interface SidebarProps {
   collapsed: boolean;
+  width?: number;
   onToggle: () => void;
+  onResizeStart?: (e: React.MouseEvent) => void;
   onConnectionSelect?: (savedId: string) => void;
   onScriptOpen?: (script: ScriptInfo) => void;
   onEditConnection?: (conn: SavedConnection) => void;
@@ -54,7 +56,9 @@ const ENGINE_COLORS: Record<string, string> = {
 
 export function Sidebar({
   collapsed,
+  width,
   onToggle,
+  onResizeStart,
   onConnectionSelect,
   onScriptOpen,
   onEditConnection,
@@ -209,7 +213,13 @@ export function Sidebar({
   }
 
   return (
-    <aside className="sidebar">
+    <aside
+      className="sidebar"
+      style={width ? { width, minWidth: width } : undefined}
+    >
+      {onResizeStart && (
+        <div className="sidebar-resize-handle" onMouseDown={onResizeStart} />
+      )}
       <div className="sidebar-header">
         <span className="sidebar-logo">DIB</span>
         <div className="sidebar-header-actions">

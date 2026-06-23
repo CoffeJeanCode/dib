@@ -11,6 +11,8 @@ interface SqlEditorProps {
   connectionName?: string;
   initialSql?: string;
   onImportScript?: (sql: string, name: string) => void;
+  onDirty?: () => void;
+  onSaveScript?: (sql: string) => void;
 }
 
 const DEFAULT_SQL = "SELECT * FROM ";
@@ -120,11 +122,17 @@ const SQL_FUNCTIONS = [
   "TO_CHAR", "TO_NUMBER",
 ];
 
-export function SqlEditor({ connectionId, connectionName, initialSql, onImportScript }: SqlEditorProps) {
+export function SqlEditor({ connectionId, connectionName, initialSql, onImportScript, onDirty, onSaveScript }: SqlEditorProps) {
   const [sql, setSql] = useState(initialSql ?? DEFAULT_SQL);
+  const initialSqlRef = useRef(initialSql ?? DEFAULT_SQL);
+  const wasDirtyRef = useRef(false);
 
   useEffect(() => {
-    if (initialSql !== undefined) setSql(initialSql);
+    if (initialSql !== undefined) {
+      setSql(initialSql);
+      initialSqlRef.current = initialSql;
+      wasDirtyRef.current = false;
+    }
   }, [initialSql]);
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
@@ -142,6 +150,8 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
   const schemaRef = useRef<Record<string, ColumnInfo[]>>({});
   const completionDisposable = useRef<{ dispose(): void } | null>(null);
   const runQueryRef = useRef<((sqlText: string) => void) | null>(null);
+  const onSaveScriptRef = useRef(onSaveScript);
+  onSaveScriptRef.current = onSaveScript;
   const sqlRef = useRef(sql);
   sqlRef.current = sql;
 
@@ -237,6 +247,11 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
       () => { runQueryRef.current?.(editor.getValue()); },
     );
 
+    editor.addCommand(
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
+      () => { onSaveScriptRef.current?.(editor.getValue()); },
+    );
+
     const disposable = monacoInstance.languages.registerCompletionItemProvider("sql", {
       triggerCharacters: [".", " "],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -306,8 +321,13 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
   }, []); // stable — reads from refs only
 
   const handleChange = useCallback((value: string | undefined) => {
-    if (value !== undefined) setSql(value);
-  }, []);
+    if (value === undefined) return;
+    setSql(value);
+    if (!wasDirtyRef.current && value !== initialSqlRef.current) {
+      wasDirtyRef.current = true;
+      onDirty?.();
+    }
+  }, [onDirty]);
 
   return (
     <div className="sqleditor">

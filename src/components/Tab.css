@@ -69,3 +69,21 @@
   background: var(--color-bg-active);
   color: var(--color-text-primary);
 }
+
+.tab-close--dirty {
+  color: var(--color-blue);
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-close--dirty:hover {
+  background: var(--color-bg-active);
+  color: var(--color-blue-dark);
+}
+
+.tab--dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}

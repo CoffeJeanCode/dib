@@ -5,15 +5,16 @@ use tauri::Manager;
 
 use crate::storage::SavedConnection;
 
+fn default_true() -> bool { true }
+fn default_sidebar_width() -> u32 { 260 }
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UiState {
     pub is_sidebar_open: bool,
     #[serde(default = "default_true")]
     pub save_password: bool,
-}
-
-fn default_true() -> bool {
-    true
+    #[serde(default = "default_sidebar_width")]
+    pub sidebar_width: u32,
 }
 
 fn get_data_path(app_handle: &tauri::AppHandle, filename: &str) -> Result<PathBuf, String> {
