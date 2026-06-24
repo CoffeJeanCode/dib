@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "DIB - Database Interface Builder",
+        "title": "DIB - Data Illustrative Base",
         "width": 1200,
         "height": 800,
         "resizable": true,

@@ -364,7 +364,7 @@ def write_graph_json(nodes: list[Node], edges: list[Edge]):
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     graph = {
         "metadata": {
-            "project": "DIB - Database Interface Builder",
+            "project": "DIB - Data Illustrative Base",
             "generator": "generate-knowledge-graph.py",
             "node_count": len(nodes),
             "edge_count": len(edges),

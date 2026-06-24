@@ -27,7 +27,7 @@ export function HomeView({ onConnectionSelect, onNewConnection }: HomeViewProps)
     <div className="home">
       <div className="home-hero">
         <h1 className="home-title">DIB</h1>
-        <p className="home-subtitle">Database Interface Builder</p>
+        <p className="home-subtitle">Data Illustrative Base</p>
       </div>
 
       <div className="home-actions">

@@ -1,7 +1,7 @@
 [package]
 name = "dib"
 version = "0.1.0"
-description = "Database Interface Builder"
+description = "Data Illustrative Base"
 authors = ["DIB Team"]
 edition = "2021"
 
