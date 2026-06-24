@@ -1,8 +1,18 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useContext, type RefObject } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { invoke } from "@tauri-apps/api/core";
 import { Play, Upload, Download } from "lucide-react";
 import type { TableInfo, ColumnInfo, QueryResult } from "../types/db";
+import { ToastContext } from "../App";
+
+function fmtErr(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    return String(o.message ?? o.error ?? o.msg ?? JSON.stringify(e));
+  }
+  return "Unknown error";
+}
 import { DataGrid } from "./DataGrid";
 import "./SqlEditor.css";
 
@@ -13,6 +23,8 @@ interface SqlEditorProps {
   onImportScript?: (sql: string, name: string) => void;
   onDirty?: () => void;
   onSaveScript?: (sql: string) => void;
+  tabId?: string;
+  viewStateCache?: RefObject<Record<string, unknown>>;
 }
 
 const DEFAULT_SQL = "SELECT * FROM ";
@@ -60,33 +72,33 @@ function defineDibThemes(monaco: Parameters<OnMount>[1]) {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "5a5a58", fontStyle: "italic" },
-      { token: "keyword", foreground: "8aaed4", fontStyle: "bold" },
-      { token: "string", foreground: "7ac08a" },
-      { token: "number", foreground: "d4a07a" },
+      { token: "comment", foreground: "4a5568", fontStyle: "italic" },
+      { token: "keyword", foreground: "19b1b4", fontStyle: "bold" },
+      { token: "string", foreground: "a83900" },
+      { token: "number", foreground: "48d6d2" },
       { token: "operator", foreground: "9b9a97" },
-      { token: "identifier", foreground: "e8e6e3" },
-      { token: "type", foreground: "b8a8d8" },
-      { token: "predefined", foreground: "7cc5d8" },
+      { token: "identifier", foreground: "e6f4f1" },
+      { token: "type", foreground: "48d6d2" },
+      { token: "predefined", foreground: "19b1b4" },
     ],
     colors: {
-      "editor.background": "#1a1a1a",
-      "editor.foreground": "#e8e6e3",
-      "editor.lineHighlightBackground": "#222222",
-      "editor.selectionBackground": "#1b253088",
-      "editor.inactiveSelectionBackground": "#1b253044",
-      "editorCursor.foreground": "#8aaed4",
-      "editorWhitespace.foreground": "#2a2a2a",
-      "editorIndentGuide.background": "#2a2a2a",
-      "editorIndentGuide.activeBackground": "#3a3a3a",
-      "editorLineNumber.foreground": "#5a5a58",
-      "editorLineNumber.activeForeground": "#9b9a97",
-      "editor.selectionHighlightBackground": "#1b253044",
-      "editorBracketMatch.background": "#1b253066",
-      "editorBracketMatch.border": "#8aaed4",
-      "scrollbarSlider.background": "#3a3a3a80",
-      "scrollbarSlider.hoverBackground": "#3a3a3aaa",
-      "scrollbarSlider.activeBackground": "#5a5a58",
+      "editor.background": "#003439",
+      "editor.foreground": "#e6f4f1",
+      "editor.lineHighlightBackground": "#0a4247",
+      "editor.selectionBackground": "#19b1b433",
+      "editor.inactiveSelectionBackground": "#19b1b41a",
+      "editorCursor.foreground": "#19b1b4",
+      "editorWhitespace.foreground": "#0a4247",
+      "editorIndentGuide.background": "#0a4247",
+      "editorIndentGuide.activeBackground": "#19b1b444",
+      "editorLineNumber.foreground": "#4a5568",
+      "editorLineNumber.activeForeground": "#19b1b4",
+      "editor.selectionHighlightBackground": "#19b1b422",
+      "editorBracketMatch.background": "#19b1b433",
+      "editorBracketMatch.border": "#19b1b4",
+      "scrollbarSlider.background": "#19b1b433",
+      "scrollbarSlider.hoverBackground": "#19b1b455",
+      "scrollbarSlider.activeBackground": "#19b1b477",
     },
   });
 }
@@ -122,18 +134,46 @@ const SQL_FUNCTIONS = [
   "TO_CHAR", "TO_NUMBER",
 ];
 
-export function SqlEditor({ connectionId, connectionName, initialSql, onImportScript, onDirty, onSaveScript }: SqlEditorProps) {
+export function SqlEditor({ connectionId, connectionName, initialSql, onImportScript, onDirty, onSaveScript, tabId, viewStateCache }: SqlEditorProps) {
+  const toast = useContext(ToastContext);
   const [sql, setSql] = useState(initialSql ?? DEFAULT_SQL);
   const initialSqlRef = useRef(initialSql ?? DEFAULT_SQL);
   const wasDirtyRef = useRef(false);
+  // refs for stable access inside callbacks
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const tabIdRef = useRef(tabId);
+  tabIdRef.current = tabId;
+  const viewStateCacheRef = useRef(viewStateCache);
+  viewStateCacheRef.current = viewStateCache;
+  const prevTabIdRef = useRef(tabId);
 
   useEffect(() => {
     if (initialSql !== undefined) {
+      // Save view state for old tab before resetting content
+      const cache = viewStateCacheRef.current?.current;
+      const prevId = prevTabIdRef.current;
+      if (cache && prevId && editorRef.current) {
+        const state = editorRef.current.saveViewState();
+        if (state) cache[prevId] = state;
+      }
       setSql(initialSql);
       initialSqlRef.current = initialSql;
       wasDirtyRef.current = false;
     }
   }, [initialSql]);
+
+  // Restore view state after Monaco has updated value for the new tab
+  useEffect(() => {
+    const cache = viewStateCacheRef.current?.current;
+    if (cache && tabId && cache[tabId] && editorRef.current) {
+      const state = cache[tabId];
+      requestAnimationFrame(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        editorRef.current?.restoreViewState(state as any);
+      });
+    }
+    prevTabIdRef.current = tabId;
+  }, [tabId]);
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -189,9 +229,11 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
       const name = await invoke<string | null>("export_script_dialog", { content: sqlRef.current });
       if (name) showStatus(`Exportado: ${name}`, true);
     } catch (e) {
-      showStatus(`Error al exportar: ${String(e)}`, false);
+      const msg = `Error al exportar: ${fmtErr(e)}`;
+      showStatus(msg, false);
+      toast.error(msg);
     }
-  }, [showStatus]);
+  }, [showStatus, toast]);
 
   const handleImport = useCallback(async () => {
     try {
@@ -205,15 +247,19 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
         showStatus(`Importado: ${result.name}`, true);
       }
     } catch (e) {
-      showStatus(`Error al importar: ${String(e)}`, false);
+      const msg = `Error al importar: ${fmtErr(e)}`;
+      showStatus(msg, false);
+      toast.error(msg);
     }
-  }, [onImportScript, showStatus]);
+  }, [onImportScript, showStatus, toast]);
 
   const runQuery = useCallback(
     async (sqlText: string) => {
       setQueryError(null);
       setQueryResult(null);
       setLoading(true);
+      const t0 = Date.now();
+      let success = true;
       try {
         const result = await invoke<QueryResult>("run_query", {
           connectionId,
@@ -221,17 +267,28 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
         });
         setQueryResult(result);
       } catch (e) {
-        setQueryError(String(e));
+        success = false;
+        const msg = fmtErr(e);
+        setQueryError(msg);
+        toast.error(msg);
       } finally {
         setLoading(false);
+        // fire-and-forget: never block the UI
+        invoke("save_query_history", {
+          connectionId,
+          queryText: sqlText,
+          success,
+          executionTimeMs: Date.now() - t0,
+        }).catch(() => {});
       }
     },
-    [connectionId],
+    [connectionId, toast],
   );
 
   runQueryRef.current = runQuery;
 
   const handleMount: OnMount = useCallback((editor, monacoInstance) => {
+    editorRef.current = editor;
     defineDibThemes(monacoInstance);
 
     const currentTheme = getSystemTheme();
@@ -250,6 +307,12 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
       () => { onSaveScriptRef.current?.(editor.getValue()); },
+    );
+
+    // Escape Monaco's own Ctrl+P interception — open app command palette instead
+    editor.addCommand(
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyP,
+      () => { window.dispatchEvent(new CustomEvent("dib:open-palette")); },
     );
 
     const disposable = monacoInstance.languages.registerCompletionItemProvider("sql", {
@@ -285,14 +348,37 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
 
         const tableNames = Object.keys(schemaRef.current);
 
+        // Parse FROM/JOIN/UPDATE references to scope column suggestions
+        const fullText: string = model.getValue();
+        const contextTables = new Set<string>();
+        for (const m of fullText.matchAll(/(?:FROM|JOIN|UPDATE)\s+(?:[\w]+\.)?(\w+)/gi)) {
+          contextTables.add(m[1].toLowerCase());
+        }
+
+        // Only suggest columns from tables referenced in the query (reduces noise)
+        const contextCols: { name: string; tableName: string; info: ColumnInfo }[] = [];
+        for (const tblName of contextTables) {
+          const cols = schemaRef.current[tblName] ?? [];
+          for (const col of cols) contextCols.push({ name: col.name, tableName: tblName, info: col });
+        }
+
         return {
           suggestions: [
+            ...contextCols.map((c) => ({
+              label: c.name,
+              kind: monacoInstance.languages.CompletionItemKind.Field,
+              insertText: c.name,
+              detail: `${c.tableName}.${c.info.data_type}`,
+              documentation: c.info.is_primary_key ? "primary key" : c.info.is_nullable ? "nullable" : "not null",
+              sortText: "0" + c.name,
+              range,
+            })),
             ...tableNames.map((t) => ({
               label: t,
               kind: monacoInstance.languages.CompletionItemKind.Module,
               insertText: t,
               detail: "table",
-              sortText: "0" + t,
+              sortText: "1" + t,
               range,
             })),
             ...SQL_FUNCTIONS.map((fn) => ({
@@ -300,8 +386,8 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
               kind: monacoInstance.languages.CompletionItemKind.Function,
               insertText: fn + "($0)",
               insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              detail: "función SQL",
-              sortText: "1" + fn,
+              detail: "funcion SQL",
+              sortText: "2" + fn,
               range,
             })),
             ...SQL_KEYWORDS.map((k) => ({
@@ -309,7 +395,7 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
               kind: monacoInstance.languages.CompletionItemKind.Keyword,
               insertText: k,
               detail: "palabra clave",
-              sortText: "2" + k,
+              sortText: "3" + k,
               range,
             })),
           ],
@@ -318,6 +404,13 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
     });
 
     completionDisposable.current = disposable;
+    // Restore view state for this tab if available
+    const cache = viewStateCacheRef.current?.current;
+    if (cache && tabIdRef.current && cache[tabIdRef.current]) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      editor.restoreViewState(cache[tabIdRef.current] as any);
+    }
+    editor.focus();
   }, []); // stable — reads from refs only
 
   const handleChange = useCallback((value: string | undefined) => {

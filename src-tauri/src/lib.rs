@@ -2,12 +2,12 @@ mod commands;
 mod db;
 mod storage;
 
-use commands::db::{apply_changes, connect_saved, connect_to_db, disconnect, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, run_query, test_connection, DbState};
+use commands::db::{apply_changes, apply_schema_changes, connect_saved, connect_to_db, disconnect, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, generate_crud_sql, list_databases, run_query, switch_database, test_connection, DbState};
 use commands::persistence::{
     delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state,
 };
 use commands::system_status::check_system_status;
-use commands::workspace::{export_script_dialog, import_script_dialog, list_scripts, read_script, save_script};
+use commands::workspace::{delete_internal_script, export_script_dialog, get_internal_scripts, get_query_history, import_script_dialog, list_scripts, read_script, save_internal_script, save_query_history, save_script};
 use storage::AppDb;
 use tauri::Manager;
 
@@ -45,7 +45,16 @@ pub fn run() {
             list_scripts,
             read_script,
             export_script_dialog,
-            import_script_dialog
+            import_script_dialog,
+            save_internal_script,
+            get_internal_scripts,
+            delete_internal_script,
+            save_query_history,
+            get_query_history,
+            apply_schema_changes,
+            list_databases,
+            switch_database,
+            generate_crud_sql
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

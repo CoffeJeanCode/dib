@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { ConnectionInfo, DbConfig, SavedConnection } from "../types/db";
 import { useSavedConnections } from "../hooks/useSavedConnections";
+import { ToastContext } from "../App";
 import "./ConnectionManager.css";
 
 interface ConnectionManagerProps {
@@ -12,6 +13,7 @@ interface ConnectionManagerProps {
 
 export function ConnectionManager({ onConnected, editing, onEditSaved }: ConnectionManagerProps) {
   const { save } = useSavedConnections();
+  const toast = useContext(ToastContext);
   const [name, setName] = useState("");
   const [dbType, setDbType] = useState("sqlite");
   const [host, setHost] = useState("localhost");
@@ -92,7 +94,9 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         });
         onEditSaved?.();
       } catch (err) {
-        setError(String(err));
+        const msg = String(err);
+        setError(msg);
+        toast.error(msg);
       } finally {
         setLoading(false);
       }
@@ -123,6 +127,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         ? String((err as { message: unknown }).message)
         : String(err);
       setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

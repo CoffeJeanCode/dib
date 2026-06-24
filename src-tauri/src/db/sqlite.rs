@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, Row, SqlitePool, TypeInfo};
 
-use super::driver::{ChangeRow, ColumnInfo, DatabaseDriver, GridFilter, PagedResult, QueryError, QueryResult, TableInfo, TableRelation};
+use super::driver::{ChangeRow, ColumnInfo, DatabaseDriver, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, TableInfo, TableRelation};
 
 /// Builds ` WHERE ...` clause with ? placeholders for SQLite.
 fn build_where_sqlite(filters: &[GridFilter]) -> (String, Vec<String>) {
@@ -195,46 +195,70 @@ impl DatabaseDriver for SqliteDriver {
 
         let safe_table = table_name.replace('"', "");
         let safe_pk = primary_key_column.replace('"', "");
-
-        let mut row_map: HashMap<usize, Vec<&ChangeRow>> = HashMap::new();
-        for c in changes {
-            row_map.entry(c.row_index).or_default().push(c);
-        }
-
         let mut tx = self.pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
         let mut total: u64 = 0;
 
-        for (_idx, row_changes) in &row_map {
+        // ── UPDATEs ────────────────────────────────────────────────
+        let updates: Vec<&ChangeRow> = changes.iter().filter(|c| c.change_type == "update").collect();
+        let mut row_map: HashMap<String, Vec<&ChangeRow>> = HashMap::new();
+        for c in &updates {
+            let key = c.row_pk_value.as_ref().map(|v| v.to_string())
+                .or_else(|| c.row_index.map(|i| i.to_string()))
+                .unwrap_or_default();
+            row_map.entry(key).or_default().push(c);
+        }
+        for (_key, row_changes) in &row_map {
             let pk_val = row_changes[0].row_pk_value.as_ref().ok_or_else(|| QueryError {
                 message: "row_pk_value is required for UPDATE".into(),
-                code: None,
-                severity: Some("ERROR".into()),
+                code: None, severity: Some("ERROR".into()),
             })?;
-
-            let set_parts: Vec<String> = row_changes
-                .iter()
-                .map(|c| format!("\"{}\" = ?", c.column.replace('"', "")))
+            let set_parts: Vec<String> = row_changes.iter()
+                .filter_map(|c| c.column.as_ref().map(|col| format!("\"{}\" = ?", col.replace('"', ""))))
                 .collect();
-
-            let sql = format!(
-                "UPDATE \"{}\" SET {} WHERE \"{}\" = ?",
-                safe_table,
-                set_parts.join(", "),
-                safe_pk,
-            );
-
+            if set_parts.is_empty() { continue; }
+            let sql = format!("UPDATE \"{}\" SET {} WHERE \"{}\" = ?", safe_table, set_parts.join(", "), safe_pk);
             let mut args = SqliteArguments::default();
             for change in row_changes {
-                sqlite_bind_json(&mut args, &change.new_value);
+                sqlite_bind_json(&mut args, change.new_value.as_ref().unwrap_or(&serde_json::Value::Null));
             }
             sqlite_bind_json(&mut args, pk_val);
+            let r = sqlx::query_with(&sql, args).execute(&mut *tx).await.map_err(|e| QueryError::from(e.to_string()))?;
+            total += r.rows_affected();
+        }
 
-            let result = sqlx::query_with(&sql, args)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| QueryError::from(e.to_string()))?;
+        // ── DELETEs ────────────────────────────────────────────────
+        for c in changes.iter().filter(|c| c.change_type == "delete") {
+            let pk_val = c.row_pk_value.as_ref().ok_or_else(|| QueryError {
+                message: "row_pk_value is required for DELETE".into(),
+                code: None, severity: Some("ERROR".into()),
+            })?;
+            let sql = format!("DELETE FROM \"{}\" WHERE \"{}\" = ?", safe_table, safe_pk);
+            let mut args = SqliteArguments::default();
+            sqlite_bind_json(&mut args, pk_val);
+            let r = sqlx::query_with(&sql, args).execute(&mut *tx).await.map_err(|e| QueryError::from(e.to_string()))?;
+            total += r.rows_affected();
+        }
 
-            total += result.rows_affected();
+        // ── INSERTs ────────────────────────────────────────────────
+        for c in changes.iter().filter(|c| c.change_type == "insert") {
+            let obj = c.new_value.as_ref()
+                .and_then(|v| v.as_object())
+                .ok_or_else(|| QueryError {
+                    message: "INSERT requires new_value to be a JSON object {col: val}".into(),
+                    code: None, severity: Some("ERROR".into()),
+                })?;
+            let pairs: Vec<(&str, &serde_json::Value)> = obj.iter()
+                .filter(|(k, v)| !(k.as_str() == safe_pk.as_str() && v.is_null()))
+                .map(|(k, v)| (k.as_str(), v))
+                .collect();
+            if pairs.is_empty() { continue; }
+            let cols: Vec<String> = pairs.iter().map(|(k, _)| format!("\"{}\"", k.replace('"', ""))).collect();
+            let placeholders = vec!["?"; pairs.len()].join(", ");
+            let sql = format!("INSERT INTO \"{}\" ({}) VALUES ({})", safe_table, cols.join(", "), placeholders);
+            let mut args = SqliteArguments::default();
+            for (_, v) in &pairs { sqlite_bind_json(&mut args, v); }
+            let r = sqlx::query_with(&sql, args).execute(&mut *tx).await.map_err(|e| QueryError::from(e.to_string()))?;
+            total += r.rows_affected();
         }
 
         tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
@@ -309,6 +333,43 @@ impl DatabaseDriver for SqliteDriver {
                 target_column: r.try_get("to").unwrap_or_default(),
             })
             .collect())
+    }
+
+    async fn apply_schema_changes(
+        &self,
+        table_name: &str,
+        _schema: Option<&str>,
+        changes: &[SchemaChange],
+    ) -> Result<(), QueryError> {
+        if changes.is_empty() { return Ok(()); }
+        let safe = table_name.replace('"', "");
+        let mut conn = self.pool.acquire().await.map_err(|e| QueryError::from(e.to_string()))?;
+        for c in changes {
+            let col = c.column.replace('"', "");
+            let sql = match c.kind.as_str() {
+                "add_column" => {
+                    let dt = c.data_type.as_deref().unwrap_or("TEXT").replace('"', "");
+                    // SQLite ADD COLUMN cannot have NOT NULL without a DEFAULT
+                    format!("ALTER TABLE \"{safe}\" ADD COLUMN \"{col}\" {dt}")
+                }
+                "rename_column" => {
+                    let new = c.new_column.as_deref()
+                        .ok_or_else(|| QueryError::from("rename_column requires new_column".to_string()))?
+                        .replace('"', "");
+                    format!("ALTER TABLE \"{safe}\" RENAME COLUMN \"{col}\" TO \"{new}\"")
+                }
+                "drop_column" => format!("ALTER TABLE \"{safe}\" DROP COLUMN \"{col}\""),
+                other => return Err(QueryError::from(format!(
+                    "SQLite does not support schema change '{other}'. Use a DB migration tool for ALTER COLUMN TYPE or NOT NULL changes."
+                ))),
+            };
+            sqlx::query(&sql).execute(&mut *conn).await.map_err(|e| QueryError::from(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    async fn list_databases(&self) -> Result<Vec<String>, QueryError> {
+        Ok(vec![])
     }
 
     fn driver_name(&self) -> &'static str {

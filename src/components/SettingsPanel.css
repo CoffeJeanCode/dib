@@ -1,7 +1,7 @@
 .sp-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(7, 10, 19, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,8 +9,8 @@
 }
 
 .sp-modal {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   width: 420px;
@@ -24,7 +24,7 @@
 .sp-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--brand-turquoise);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -84,7 +84,7 @@
 }
 
 .sp-toggle input:checked + .sp-toggle-track {
-  background: var(--color-blue);
+  background: var(--brand-bright-blue);
 }
 
 .sp-toggle-track::after {
@@ -123,12 +123,11 @@
 }
 
 .sp-button--primary {
-  background: var(--color-blue);
+  background: var(--brand-bright-blue);
   color: #fff;
-  border-color: var(--color-blue);
+  border-color: var(--brand-bright-blue);
 }
 
 .sp-button--primary:hover {
-  background: var(--color-blue-dark);
-  border-color: var(--color-blue-dark);
+  opacity: 0.9;
 }

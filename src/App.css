@@ -15,7 +15,7 @@
 .app-title {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
   letter-spacing: -0.03em;
   margin-bottom: var(--space-1);
 }
@@ -29,7 +29,7 @@
 .app-back-btn {
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--brand-bright-blue);
   background: none;
   border: none;
   cursor: pointer;
@@ -39,5 +39,5 @@
 }
 
 .app-back-btn:hover {
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
 }

@@ -1,7 +1,7 @@
 .tn {
   min-width: 180px;
   max-width: 260px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-md);
   background: var(--color-bg-secondary);
   box-shadow: var(--shadow-sm);
@@ -13,12 +13,13 @@
   padding: 6px 10px;
   display: flex;
   align-items: center;
+  background: var(--brand-deep-blue);
 }
 
 .tn-name {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: #fff;
+  color: var(--brand-turquoise);
   letter-spacing: 0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -39,6 +40,7 @@
   justify-content: space-between;
   padding: 3px 10px;
   gap: 8px;
+  transition: background var(--transition-fastest);
 }
 
 .tn-col:hover {
@@ -64,6 +66,7 @@
 .tn-pk-icon {
   font-size: 8px;
   line-height: 1;
+  color: var(--brand-pale-yellow);
 }
 
 .tn-col-type {
@@ -77,6 +80,6 @@
 .tn-handle {
   width: 6px;
   height: 6px;
-  background: var(--color-border-dark);
+  background: var(--brand-turquoise);
   border: none;
 }

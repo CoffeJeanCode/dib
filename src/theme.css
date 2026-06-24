@@ -12,55 +12,75 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
 
-  /* ── Light Mode (Pastel) ─────────────────────────────── */
-  --color-bg: #fdfcfb;
-  --color-bg-secondary: #f8f7f6;
-  --color-bg-hover: rgba(55, 53, 47, 0.04);
-  --color-bg-active: #eeedeb;
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-dark: rgba(0, 0, 0, 0.15);
-  --color-text-primary: #37352f;
-  --color-text-secondary: #787774;
-  --color-text-tertiary: #b4b4b0;
+  /* ── Brand Palette (solid accents) ────────────────────── */
+  --brand-deep-blue: #122c91;
+  --brand-bright-blue: #2a6fdb;
+  --brand-turquoise: #48d6d2;
+  --brand-light-cyan: #81e9e6;
+  --brand-pale-yellow: #fefcbf;
 
-  /* ── Database Colors (Pastel) ────────────────────────── */
-  --color-db-postgres: #6b8fbf;
-  --color-db-postgres-light: #e8f0fe;
-  --color-db-sqlite: #9b8ec4;
-  --color-db-sqlite-light: #f3e8fd;
+  /* ── Dark Techno Palette ──────────────────────────────── */
+  --dt-dark: #003439;
+  --dt-light: #e6f4f1;
+  --dt-turquoise: #19b1b4;
+  --dt-orange: #a83900;
 
-  /* ── Functional UI Colors (Pastel) ───────────────────── */
-  --color-danger-bg: #fef2f2;
-  --color-danger-border: #fecaca;
-  --color-danger-text: #991b1b;
-  --color-hover: rgba(55, 53, 47, 0.04);
+  /* ── Backgrounds (solid, no transparency) ─────────────── */
+  --color-bg: #070a13;
+  --color-bg-sidebar: #0c101a;
+  --color-bg-secondary: #0f1525;
+  --color-bg-hover: rgba(42, 111, 219, 0.08);
+  --color-bg-active: #151d30;
+  --color-bg-elevated: #111827;
 
-  /* ── Semantic Colors (Pastel) ────────────────────────── */
-  --color-red: #e8706a;
-  --color-red-light: #fde8e8;
-  --color-red-dark: #c53030;
+  /* ── Borders (solid 1px, no backdrop-filter) ──────────── */
+  --color-border: rgba(72, 214, 210, 0.12);
+  --color-border-dark: rgba(72, 214, 210, 0.2);
+  --color-border-focus: var(--brand-turquoise);
 
-  --color-orange: #e8a87c;
-  --color-orange-light: #fdf0e2;
-  --color-orange-dark: #c2710c;
+  /* ── Text (muted for readability on dark) ─────────────── */
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #4a5568;
 
-  --color-green: #72c08a;
-  --color-green-light: #e6f4ea;
-  --color-green-dark: #1a7f42;
+  /* ── Database Colors ──────────────────────────────────── */
+  --color-db-postgres: #2a6fdb;
+  --color-db-postgres-light: #0f1d35;
+  --color-db-sqlite: #81e9e6;
+  --color-db-sqlite-light: #0c1a20;
 
-  --color-blue: #7ba7e2;
-  --color-blue-light: #e8f0fe;
-  --color-blue-dark: #4a7cc4;
+  /* ── Functional UI Colors ─────────────────────────────── */
+  --color-danger-bg: #1a0c0c;
+  --color-danger-border: #5c2e2e;
+  --color-danger-text: #f5a5a5;
+  --color-hover: rgba(42, 111, 219, 0.08);
 
-  --color-purple: #b89ad8;
-  --color-purple-light: #f3e8fd;
-  --color-purple-dark: #6b21a8;
+  /* ── Semantic Colors (muted for text, bright for icons) ── */
+  --color-red: #ef4444;
+  --color-red-light: #1a0c0c;
+  --color-red-dark: #fca5a5;
 
-  --color-teal: #7cc5d8;
-  --color-teal-light: #e0f2fe;
-  --color-teal-dark: #0369a1;
+  --color-orange: #f59e0b;
+  --color-orange-light: #1a1508;
+  --color-orange-dark: #fcd34d;
 
-  /* ── Spacing ─────────────────────────────────────────── */
+  --color-green: #10b981;
+  --color-green-light: #0c1a14;
+  --color-green-dark: #6ee7b7;
+
+  --color-blue: #2a6fdb;
+  --color-blue-light: #0f1d35;
+  --color-blue-dark: #81e9e6;
+
+  --color-purple: #8b5cf6;
+  --color-purple-light: #15102a;
+  --color-purple-dark: #c4b5fd;
+
+  --color-teal: #48d6d2;
+  --color-teal-light: #0c1a20;
+  --color-teal-dark: #81e9e6;
+
+  /* ── Spacing ──────────────────────────────────────────── */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -71,84 +91,43 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* ── Border Radius ───────────────────────────────────── */
+  /* ── Border Radius ────────────────────────────────────── */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
 
-  /* ── Shadows ─────────────────────────────────────────── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  /* ── Shadows (subtle, solid) ──────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
 
-  /* ── Transitions ─────────────────────────────────────── */
+  /* ── Transitions ──────────────────────────────────────── */
   --transition-fast: 120ms ease;
   --transition-fastest: 80ms ease;
   --transition-normal: 200ms ease;
 
-  /* ── Focus ring ─────────────────────────────────────────── */
-  --color-focus: var(--color-blue);
+  /* ── Focus ring ───────────────────────────────────────── */
+  --color-focus: var(--brand-turquoise);
   --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
 
-  /* ── Sidebar ─────────────────────────────────────────── */
+  /* ── Sidebar ──────────────────────────────────────────── */
   --sidebar-width: 260px;
   --sidebar-width-collapsed: 48px;
 }
 
-/* ── Dark Mode ──────────────────────────────────────────── */
+/* ── Dark Mode (this IS the primary theme) ───────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #1a1a1a;
-    --color-bg-secondary: #222222;
-    --color-bg-hover: rgba(255, 255, 255, 0.06);
-    --color-bg-active: #2a2a2a;
-    --color-border: rgba(255, 255, 255, 0.08);
-    --color-border-dark: rgba(255, 255, 255, 0.15);
-    --color-text-primary: #e8e6e3;
-    --color-text-secondary: #9b9a97;
-    --color-text-tertiary: #5a5a58;
-
-    --color-db-postgres: #8aaed4;
-    --color-db-postgres-light: #1e2a3a;
-    --color-db-sqlite: #b8a8d8;
-    --color-db-sqlite-light: #2a2040;
-
-    --color-danger-bg: #2d1b1b;
-    --color-danger-border: #5c2e2e;
-    --color-danger-text: #f5a5a5;
-    --color-hover: rgba(255, 255, 255, 0.06);
-
-    --color-red: #d4807a;
-    --color-red-light: #2d1b1b;
-    --color-red-dark: #f5a5a5;
-
-    --color-orange: #d4a07a;
-    --color-orange-light: #2d251b;
-    --color-orange-dark: #f5c8a5;
-
-    --color-green: #7ac08a;
-    --color-green-light: #1b2d1f;
-    --color-green-dark: #a5f5b5;
-
-    --color-blue: #8aaed4;
-    --color-blue-light: #1b2530;
-    --color-blue-dark: #a5c8f5;
-
-    --color-purple: #b89ad8;
-    --color-purple-light: #251b30;
-    --color-purple-dark: #d4b5f5;
-
-    --color-teal: #7cc5d8;
-    --color-teal-light: #1b2d30;
-    --color-teal-dark: #a5e5f5;
-
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+    --color-bg: #070a13;
+    --color-bg-sidebar: #0c101a;
+    --color-bg-secondary: #0f1525;
+    --color-bg-hover: rgba(42, 111, 219, 0.1);
+    --color-bg-active: #151d30;
+    --color-bg-elevated: #111827;
   }
 }
 
-/* ── Global Reset ───────────────────────────────────────── */
+/* ── Global Reset ─────────────────────────────────────────── */
 * {
   margin: 0;
   padding: 0;
@@ -201,12 +180,12 @@ a:focus-visible {
   border-radius: var(--radius-sm);
 }
 
-/* ── Notion-style Block ─────────────────────────────────── */
+/* ── Notion-style Block ──────────────────────────────────── */
 .notion-block {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
-  background: var(--color-bg);
+  background: var(--color-bg-secondary);
   transition: border-color var(--transition-fast);
 }
 
@@ -214,7 +193,7 @@ a:focus-visible {
   border-color: var(--color-border-dark);
 }
 
-/* ── Semantic Color Classes ─────────────────────────────── */
+/* ── Semantic Color Classes ──────────────────────────────── */
 .color-red { color: var(--color-red); }
 .color-orange { color: var(--color-orange); }
 .color-green { color: var(--color-green); }

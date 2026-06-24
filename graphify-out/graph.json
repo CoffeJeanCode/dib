@@ -1,0 +1,4527 @@
+{
+  "metadata": {
+    "project": "DIB - Database Interface Builder",
+    "generator": "generate-knowledge-graph.py",
+    "node_count": 274,
+    "edge_count": 379
+  },
+  "nodes": [
+    {
+      "id": "file:src/App.css@src/App.css",
+      "kind": "file",
+      "file": "src/App.css",
+      "name": "src/App.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/App.tsx@src/App.tsx",
+      "kind": "file",
+      "file": "src/App.tsx",
+      "name": "src/App.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:App@src/App.tsx",
+      "kind": "function",
+      "file": "src/App.tsx",
+      "name": "App",
+      "language": "tsx",
+      "line": 25,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ActiveConn@src/App.tsx",
+      "kind": "interface",
+      "file": "src/App.tsx",
+      "name": "ActiveConn",
+      "language": "tsx",
+      "line": 16,
+      "metadata": {}
+    },
+    {
+      "id": "interface:NavTable@src/App.tsx",
+      "kind": "interface",
+      "file": "src/App.tsx",
+      "name": "NavTable",
+      "language": "tsx",
+      "line": 22,
+      "metadata": {}
+    },
+    {
+      "id": "interface:OpenScript@src/App.tsx",
+      "kind": "interface",
+      "file": "src/App.tsx",
+      "name": "OpenScript",
+      "language": "tsx",
+      "line": 23,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/main.tsx@src/main.tsx",
+      "kind": "file",
+      "file": "src/main.tsx",
+      "name": "src/main.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/theme.css@src/theme.css",
+      "kind": "file",
+      "file": "src/theme.css",
+      "name": "src/theme.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/CommandPalette.css@src/components/CommandPalette.css",
+      "kind": "file",
+      "file": "src/components/CommandPalette.css",
+      "name": "src/components/CommandPalette.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "kind": "file",
+      "file": "src/components/CommandPalette.tsx",
+      "name": "src/components/CommandPalette.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:fuzzy@src/components/CommandPalette.tsx",
+      "kind": "function",
+      "file": "src/components/CommandPalette.tsx",
+      "name": "fuzzy",
+      "language": "tsx",
+      "line": 19,
+      "metadata": {}
+    },
+    {
+      "id": "function:extractSql@src/components/CommandPalette.tsx",
+      "kind": "function",
+      "file": "src/components/CommandPalette.tsx",
+      "name": "extractSql",
+      "language": "tsx",
+      "line": 30,
+      "metadata": {}
+    },
+    {
+      "id": "function:CommandPalette@src/components/CommandPalette.tsx",
+      "kind": "function",
+      "file": "src/components/CommandPalette.tsx",
+      "name": "CommandPalette",
+      "language": "tsx",
+      "line": 56,
+      "metadata": {}
+    },
+    {
+      "id": "interface:CommandAction@src/components/CommandPalette.tsx",
+      "kind": "interface",
+      "file": "src/components/CommandPalette.tsx",
+      "name": "CommandAction",
+      "language": "tsx",
+      "line": 7,
+      "metadata": {}
+    },
+    {
+      "id": "interface:CommandPaletteProps@src/components/CommandPalette.tsx",
+      "kind": "interface",
+      "file": "src/components/CommandPalette.tsx",
+      "name": "CommandPaletteProps",
+      "language": "tsx",
+      "line": 47,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/CommitFooter.css@src/components/CommitFooter.css",
+      "kind": "file",
+      "file": "src/components/CommitFooter.css",
+      "name": "src/components/CommitFooter.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx",
+      "kind": "file",
+      "file": "src/components/CommitFooter.tsx",
+      "name": "src/components/CommitFooter.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:CommitFooter@src/components/CommitFooter.tsx",
+      "kind": "function",
+      "file": "src/components/CommitFooter.tsx",
+      "name": "CommitFooter",
+      "language": "tsx",
+      "line": 12,
+      "metadata": {}
+    },
+    {
+      "id": "interface:CommitFooterProps@src/components/CommitFooter.tsx",
+      "kind": "interface",
+      "file": "src/components/CommitFooter.tsx",
+      "name": "CommitFooterProps",
+      "language": "tsx",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/ConnectionManager.css@src/components/ConnectionManager.css",
+      "kind": "file",
+      "file": "src/components/ConnectionManager.css",
+      "name": "src/components/ConnectionManager.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "kind": "file",
+      "file": "src/components/ConnectionManager.tsx",
+      "name": "src/components/ConnectionManager.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:ConnectionManager@src/components/ConnectionManager.tsx",
+      "kind": "function",
+      "file": "src/components/ConnectionManager.tsx",
+      "name": "ConnectionManager",
+      "language": "tsx",
+      "line": 13,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ConnectionManagerProps@src/components/ConnectionManager.tsx",
+      "kind": "interface",
+      "file": "src/components/ConnectionManager.tsx",
+      "name": "ConnectionManagerProps",
+      "language": "tsx",
+      "line": 7,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/ContextMenu.css@src/components/ContextMenu.css",
+      "kind": "file",
+      "file": "src/components/ContextMenu.css",
+      "name": "src/components/ContextMenu.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "kind": "file",
+      "file": "src/components/ContextMenu.tsx",
+      "name": "src/components/ContextMenu.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:ContextMenu@src/components/ContextMenu.tsx",
+      "kind": "function",
+      "file": "src/components/ContextMenu.tsx",
+      "name": "ContextMenu",
+      "language": "tsx",
+      "line": 24,
+      "metadata": {}
+    },
+    {
+      "id": "function:IconEdit@src/components/ContextMenu.tsx",
+      "kind": "function",
+      "file": "src/components/ContextMenu.tsx",
+      "name": "IconEdit",
+      "language": "tsx",
+      "line": 58,
+      "metadata": {}
+    },
+    {
+      "id": "function:IconTrash@src/components/ContextMenu.tsx",
+      "kind": "function",
+      "file": "src/components/ContextMenu.tsx",
+      "name": "IconTrash",
+      "language": "tsx",
+      "line": 72,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ContextMenuItem@src/components/ContextMenu.tsx",
+      "kind": "interface",
+      "file": "src/components/ContextMenu.tsx",
+      "name": "ContextMenuItem",
+      "language": "tsx",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ContextMenuProps@src/components/ContextMenu.tsx",
+      "kind": "interface",
+      "file": "src/components/ContextMenu.tsx",
+      "name": "ContextMenuProps",
+      "language": "tsx",
+      "line": 13,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/DataGrid.css@src/components/DataGrid.css",
+      "kind": "file",
+      "file": "src/components/DataGrid.css",
+      "name": "src/components/DataGrid.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "kind": "file",
+      "file": "src/components/DataGrid.tsx",
+      "name": "src/components/DataGrid.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:operatorsForType@src/components/DataGrid.tsx",
+      "kind": "function",
+      "file": "src/components/DataGrid.tsx",
+      "name": "operatorsForType",
+      "language": "tsx",
+      "line": 15,
+      "metadata": {}
+    },
+    {
+      "id": "function:cell@src/components/DataGrid.tsx",
+      "kind": "function",
+      "file": "src/components/DataGrid.tsx",
+      "name": "cell",
+      "language": "tsx",
+      "line": 25,
+      "metadata": {}
+    },
+    {
+      "id": "function:makeKey@src/components/DataGrid.tsx",
+      "kind": "function",
+      "file": "src/components/DataGrid.tsx",
+      "name": "makeKey",
+      "language": "tsx",
+      "line": 31,
+      "metadata": {}
+    },
+    {
+      "id": "function:cellId@src/components/DataGrid.tsx",
+      "kind": "function",
+      "file": "src/components/DataGrid.tsx",
+      "name": "cellId",
+      "language": "tsx",
+      "line": 35,
+      "metadata": {}
+    },
+    {
+      "id": "function:buildRangeSet@src/components/DataGrid.tsx",
+      "kind": "function",
+      "file": "src/components/DataGrid.tsx",
+      "name": "buildRangeSet",
+      "language": "tsx",
+      "line": 39,
+      "metadata": {}
+    },
+    {
+      "id": "function:makeEditState@src/components/DataGrid.tsx",
+      "kind": "function",
+      "file": "src/components/DataGrid.tsx",
+      "name": "makeEditState",
+      "language": "tsx",
+      "line": 60,
+      "metadata": {}
+    },
+    {
+      "id": "function:DataGrid@src/components/DataGrid.tsx",
+      "kind": "function",
+      "file": "src/components/DataGrid.tsx",
+      "name": "DataGrid",
+      "language": "tsx",
+      "line": 80,
+      "metadata": {}
+    },
+    {
+      "id": "interface:DataGridProps@src/components/DataGrid.tsx",
+      "kind": "interface",
+      "file": "src/components/DataGrid.tsx",
+      "name": "DataGridProps",
+      "language": "tsx",
+      "line": 65,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/EmptyWorkspaceState.css@src/components/EmptyWorkspaceState.css",
+      "kind": "file",
+      "file": "src/components/EmptyWorkspaceState.css",
+      "name": "src/components/EmptyWorkspaceState.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx",
+      "kind": "file",
+      "file": "src/components/EmptyWorkspaceState.tsx",
+      "name": "src/components/EmptyWorkspaceState.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:Keys@src/components/EmptyWorkspaceState.tsx",
+      "kind": "function",
+      "file": "src/components/EmptyWorkspaceState.tsx",
+      "name": "Keys",
+      "language": "tsx",
+      "line": 18,
+      "metadata": {}
+    },
+    {
+      "id": "function:EmptyWorkspaceState@src/components/EmptyWorkspaceState.tsx",
+      "kind": "function",
+      "file": "src/components/EmptyWorkspaceState.tsx",
+      "name": "EmptyWorkspaceState",
+      "language": "tsx",
+      "line": 36,
+      "metadata": {}
+    },
+    {
+      "id": "interface:Shortcut@src/components/EmptyWorkspaceState.tsx",
+      "kind": "interface",
+      "file": "src/components/EmptyWorkspaceState.tsx",
+      "name": "Shortcut",
+      "language": "tsx",
+      "line": 4,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/HomeView.css@src/components/HomeView.css",
+      "kind": "file",
+      "file": "src/components/HomeView.css",
+      "name": "src/components/HomeView.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/HomeView.tsx@src/components/HomeView.tsx",
+      "kind": "file",
+      "file": "src/components/HomeView.tsx",
+      "name": "src/components/HomeView.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:HomeView@src/components/HomeView.tsx",
+      "kind": "function",
+      "file": "src/components/HomeView.tsx",
+      "name": "HomeView",
+      "language": "tsx",
+      "line": 17,
+      "metadata": {}
+    },
+    {
+      "id": "interface:HomeViewProps@src/components/HomeView.tsx",
+      "kind": "interface",
+      "file": "src/components/HomeView.tsx",
+      "name": "HomeViewProps",
+      "language": "tsx",
+      "line": 6,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/Layout.css@src/components/Layout.css",
+      "kind": "file",
+      "file": "src/components/Layout.css",
+      "name": "src/components/Layout.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "kind": "file",
+      "file": "src/components/Layout.tsx",
+      "name": "src/components/Layout.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:Layout@src/components/Layout.tsx",
+      "kind": "function",
+      "file": "src/components/Layout.tsx",
+      "name": "Layout",
+      "language": "tsx",
+      "line": 20,
+      "metadata": {}
+    },
+    {
+      "id": "interface:LayoutProps@src/components/Layout.tsx",
+      "kind": "interface",
+      "file": "src/components/Layout.tsx",
+      "name": "LayoutProps",
+      "language": "tsx",
+      "line": 11,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/PasswordPrompt.css@src/components/PasswordPrompt.css",
+      "kind": "file",
+      "file": "src/components/PasswordPrompt.css",
+      "name": "src/components/PasswordPrompt.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/PasswordPrompt.tsx@src/components/PasswordPrompt.tsx",
+      "kind": "file",
+      "file": "src/components/PasswordPrompt.tsx",
+      "name": "src/components/PasswordPrompt.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:PasswordPrompt@src/components/PasswordPrompt.tsx",
+      "kind": "function",
+      "file": "src/components/PasswordPrompt.tsx",
+      "name": "PasswordPrompt",
+      "language": "tsx",
+      "line": 10,
+      "metadata": {}
+    },
+    {
+      "id": "interface:PasswordPromptProps@src/components/PasswordPrompt.tsx",
+      "kind": "interface",
+      "file": "src/components/PasswordPrompt.tsx",
+      "name": "PasswordPromptProps",
+      "language": "tsx",
+      "line": 4,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/QueryPanel.css@src/components/QueryPanel.css",
+      "kind": "file",
+      "file": "src/components/QueryPanel.css",
+      "name": "src/components/QueryPanel.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "kind": "file",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "src/components/QueryPanel.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:fmtErr@src/components/QueryPanel.tsx",
+      "kind": "function",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "fmtErr",
+      "language": "tsx",
+      "line": 4,
+      "metadata": {}
+    },
+    {
+      "id": "function:colIcon@src/components/QueryPanel.tsx",
+      "kind": "function",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "colIcon",
+      "language": "tsx",
+      "line": 21,
+      "metadata": {}
+    },
+    {
+      "id": "function:genSelect@src/components/QueryPanel.tsx",
+      "kind": "function",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "genSelect",
+      "language": "tsx",
+      "line": 31,
+      "metadata": {}
+    },
+    {
+      "id": "function:genUpdate@src/components/QueryPanel.tsx",
+      "kind": "function",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "genUpdate",
+      "language": "tsx",
+      "line": 36,
+      "metadata": {}
+    },
+    {
+      "id": "function:defaultTableTabState@src/components/QueryPanel.tsx",
+      "kind": "function",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "defaultTableTabState",
+      "language": "tsx",
+      "line": 68,
+      "metadata": {}
+    },
+    {
+      "id": "function:tableTabId@src/components/QueryPanel.tsx",
+      "kind": "function",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "tableTabId",
+      "language": "tsx",
+      "line": 72,
+      "metadata": {}
+    },
+    {
+      "id": "function:QueryPanel@src/components/QueryPanel.tsx",
+      "kind": "function",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "QueryPanel",
+      "language": "tsx",
+      "line": 85,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TableTabState@src/components/QueryPanel.tsx",
+      "kind": "interface",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "TableTabState",
+      "language": "tsx",
+      "line": 57,
+      "metadata": {}
+    },
+    {
+      "id": "interface:QueryPanelProps@src/components/QueryPanel.tsx",
+      "kind": "interface",
+      "file": "src/components/QueryPanel.tsx",
+      "name": "QueryPanelProps",
+      "language": "tsx",
+      "line": 76,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/SchemaVisualizer.css@src/components/SchemaVisualizer.css",
+      "kind": "file",
+      "file": "src/components/SchemaVisualizer.css",
+      "name": "src/components/SchemaVisualizer.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "kind": "file",
+      "file": "src/components/SchemaVisualizer.tsx",
+      "name": "src/components/SchemaVisualizer.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:FullSchemaView@src/components/SchemaVisualizer.tsx",
+      "kind": "function",
+      "file": "src/components/SchemaVisualizer.tsx",
+      "name": "FullSchemaView",
+      "language": "tsx",
+      "line": 31,
+      "metadata": {}
+    },
+    {
+      "id": "function:RelationView@src/components/SchemaVisualizer.tsx",
+      "kind": "function",
+      "file": "src/components/SchemaVisualizer.tsx",
+      "name": "RelationView",
+      "language": "tsx",
+      "line": 84,
+      "metadata": {}
+    },
+    {
+      "id": "function:SchemaVisualizer@src/components/SchemaVisualizer.tsx",
+      "kind": "function",
+      "file": "src/components/SchemaVisualizer.tsx",
+      "name": "SchemaVisualizer",
+      "language": "tsx",
+      "line": 199,
+      "metadata": {}
+    },
+    {
+      "id": "interface:SchemaVisualizerProps@src/components/SchemaVisualizer.tsx",
+      "kind": "interface",
+      "file": "src/components/SchemaVisualizer.tsx",
+      "name": "SchemaVisualizerProps",
+      "language": "tsx",
+      "line": 21,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/SettingsPanel.css@src/components/SettingsPanel.css",
+      "kind": "file",
+      "file": "src/components/SettingsPanel.css",
+      "name": "src/components/SettingsPanel.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/SettingsPanel.tsx@src/components/SettingsPanel.tsx",
+      "kind": "file",
+      "file": "src/components/SettingsPanel.tsx",
+      "name": "src/components/SettingsPanel.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:SettingsPanel@src/components/SettingsPanel.tsx",
+      "kind": "function",
+      "file": "src/components/SettingsPanel.tsx",
+      "name": "SettingsPanel",
+      "language": "tsx",
+      "line": 9,
+      "metadata": {}
+    },
+    {
+      "id": "interface:SettingsPanelProps@src/components/SettingsPanel.tsx",
+      "kind": "interface",
+      "file": "src/components/SettingsPanel.tsx",
+      "name": "SettingsPanelProps",
+      "language": "tsx",
+      "line": 4,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/Sidebar.css@src/components/Sidebar.css",
+      "kind": "file",
+      "file": "src/components/Sidebar.css",
+      "name": "src/components/Sidebar.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "kind": "file",
+      "file": "src/components/Sidebar.tsx",
+      "name": "src/components/Sidebar.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:PostgresIcon@src/components/Sidebar.tsx",
+      "kind": "function",
+      "file": "src/components/Sidebar.tsx",
+      "name": "PostgresIcon",
+      "language": "tsx",
+      "line": 14,
+      "metadata": {}
+    },
+    {
+      "id": "function:SqliteIcon@src/components/Sidebar.tsx",
+      "kind": "function",
+      "file": "src/components/Sidebar.tsx",
+      "name": "SqliteIcon",
+      "language": "tsx",
+      "line": 26,
+      "metadata": {}
+    },
+    {
+      "id": "function:Sidebar@src/components/Sidebar.tsx",
+      "kind": "function",
+      "file": "src/components/Sidebar.tsx",
+      "name": "Sidebar",
+      "language": "tsx",
+      "line": 64,
+      "metadata": {}
+    },
+    {
+      "id": "interface:SidebarProps@src/components/Sidebar.tsx",
+      "kind": "interface",
+      "file": "src/components/Sidebar.tsx",
+      "name": "SidebarProps",
+      "language": "tsx",
+      "line": 42,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/SqlEditor.css@src/components/SqlEditor.css",
+      "kind": "file",
+      "file": "src/components/SqlEditor.css",
+      "name": "src/components/SqlEditor.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "kind": "file",
+      "file": "src/components/SqlEditor.tsx",
+      "name": "src/components/SqlEditor.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:fmtErr@src/components/SqlEditor.tsx",
+      "kind": "function",
+      "file": "src/components/SqlEditor.tsx",
+      "name": "fmtErr",
+      "language": "tsx",
+      "line": 7,
+      "metadata": {}
+    },
+    {
+      "id": "function:defineDibThemes@src/components/SqlEditor.tsx",
+      "kind": "function",
+      "file": "src/components/SqlEditor.tsx",
+      "name": "defineDibThemes",
+      "language": "tsx",
+      "line": 33,
+      "metadata": {}
+    },
+    {
+      "id": "function:getSystemTheme@src/components/SqlEditor.tsx",
+      "kind": "function",
+      "file": "src/components/SqlEditor.tsx",
+      "name": "getSystemTheme",
+      "language": "tsx",
+      "line": 103,
+      "metadata": {}
+    },
+    {
+      "id": "function:SqlEditor@src/components/SqlEditor.tsx",
+      "kind": "function",
+      "file": "src/components/SqlEditor.tsx",
+      "name": "SqlEditor",
+      "language": "tsx",
+      "line": 134,
+      "metadata": {}
+    },
+    {
+      "id": "interface:SqlEditorProps@src/components/SqlEditor.tsx",
+      "kind": "interface",
+      "file": "src/components/SqlEditor.tsx",
+      "name": "SqlEditorProps",
+      "language": "tsx",
+      "line": 18,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/StatusBlock.css@src/components/StatusBlock.css",
+      "kind": "file",
+      "file": "src/components/StatusBlock.css",
+      "name": "src/components/StatusBlock.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/StatusBlock.tsx@src/components/StatusBlock.tsx",
+      "kind": "file",
+      "file": "src/components/StatusBlock.tsx",
+      "name": "src/components/StatusBlock.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:StatusBlock@src/components/StatusBlock.tsx",
+      "kind": "function",
+      "file": "src/components/StatusBlock.tsx",
+      "name": "StatusBlock",
+      "language": "tsx",
+      "line": 15,
+      "metadata": {}
+    },
+    {
+      "id": "interface:SystemStatus@src/components/StatusBlock.tsx",
+      "kind": "interface",
+      "file": "src/components/StatusBlock.tsx",
+      "name": "SystemStatus",
+      "language": "tsx",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/Tab.css@src/components/Tab.css",
+      "kind": "file",
+      "file": "src/components/Tab.css",
+      "name": "src/components/Tab.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "kind": "file",
+      "file": "src/components/Tab.tsx",
+      "name": "src/components/Tab.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:Tab@src/components/Tab.tsx",
+      "kind": "function",
+      "file": "src/components/Tab.tsx",
+      "name": "Tab",
+      "language": "tsx",
+      "line": 41,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TabPayload@src/components/Tab.tsx",
+      "kind": "interface",
+      "file": "src/components/Tab.tsx",
+      "name": "TabPayload",
+      "language": "tsx",
+      "line": 7,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TabData@src/components/Tab.tsx",
+      "kind": "interface",
+      "file": "src/components/Tab.tsx",
+      "name": "TabData",
+      "language": "tsx",
+      "line": 13,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TabProps@src/components/Tab.tsx",
+      "kind": "interface",
+      "file": "src/components/Tab.tsx",
+      "name": "TabProps",
+      "language": "tsx",
+      "line": 22,
+      "metadata": {}
+    },
+    {
+      "id": "type:TabType@src/components/Tab.tsx",
+      "kind": "interface",
+      "file": "src/components/Tab.tsx",
+      "name": "TabType",
+      "language": "tsx",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/TabBar.css@src/components/TabBar.css",
+      "kind": "file",
+      "file": "src/components/TabBar.css",
+      "name": "src/components/TabBar.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "kind": "file",
+      "file": "src/components/TabBar.tsx",
+      "name": "src/components/TabBar.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:SortableTab@src/components/TabBar.tsx",
+      "kind": "function",
+      "file": "src/components/TabBar.tsx",
+      "name": "SortableTab",
+      "language": "tsx",
+      "line": 30,
+      "metadata": {}
+    },
+    {
+      "id": "function:TabBar@src/components/TabBar.tsx",
+      "kind": "function",
+      "file": "src/components/TabBar.tsx",
+      "name": "TabBar",
+      "language": "tsx",
+      "line": 63,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TabBarProps@src/components/TabBar.tsx",
+      "kind": "interface",
+      "file": "src/components/TabBar.tsx",
+      "name": "TabBarProps",
+      "language": "tsx",
+      "line": 21,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/TableNode.css@src/components/TableNode.css",
+      "kind": "file",
+      "file": "src/components/TableNode.css",
+      "name": "src/components/TableNode.css",
+      "language": "css",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "kind": "file",
+      "file": "src/components/TableNode.tsx",
+      "name": "src/components/TableNode.tsx",
+      "language": "tsx",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:TableNodeComponent@src/components/TableNode.tsx",
+      "kind": "function",
+      "file": "src/components/TableNode.tsx",
+      "name": "TableNodeComponent",
+      "language": "tsx",
+      "line": 18,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TableNodeData@src/components/TableNode.tsx",
+      "kind": "interface",
+      "file": "src/components/TableNode.tsx",
+      "name": "TableNodeData",
+      "language": "tsx",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "constant:TableNode@src/components/TableNode.tsx",
+      "kind": "constant",
+      "file": "src/components/TableNode.tsx",
+      "name": "TableNode",
+      "language": "tsx",
+      "line": 44,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/hooks/useContextMenu.ts@src/hooks/useContextMenu.ts",
+      "kind": "file",
+      "file": "src/hooks/useContextMenu.ts",
+      "name": "src/hooks/useContextMenu.ts",
+      "language": "ts",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:useContextMenu@src/hooks/useContextMenu.ts",
+      "kind": "function",
+      "file": "src/hooks/useContextMenu.ts",
+      "name": "useContextMenu",
+      "language": "ts",
+      "line": 9,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ContextMenuState@src/hooks/useContextMenu.ts",
+      "kind": "interface",
+      "file": "src/hooks/useContextMenu.ts",
+      "name": "ContextMenuState",
+      "language": "ts",
+      "line": 3,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "kind": "file",
+      "file": "src/hooks/useKeybindings.ts",
+      "name": "src/hooks/useKeybindings.ts",
+      "language": "ts",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:_key@src/hooks/useKeybindings.ts",
+      "kind": "function",
+      "file": "src/hooks/useKeybindings.ts",
+      "name": "_key",
+      "language": "ts",
+      "line": 13,
+      "metadata": {}
+    },
+    {
+      "id": "function:_isMonaco@src/hooks/useKeybindings.ts",
+      "kind": "function",
+      "file": "src/hooks/useKeybindings.ts",
+      "name": "_isMonaco",
+      "language": "ts",
+      "line": 22,
+      "metadata": {}
+    },
+    {
+      "id": "function:_isPlainInput@src/hooks/useKeybindings.ts",
+      "kind": "function",
+      "file": "src/hooks/useKeybindings.ts",
+      "name": "_isPlainInput",
+      "language": "ts",
+      "line": 26,
+      "metadata": {}
+    },
+    {
+      "id": "function:_initListener@src/hooks/useKeybindings.ts",
+      "kind": "function",
+      "file": "src/hooks/useKeybindings.ts",
+      "name": "_initListener",
+      "language": "ts",
+      "line": 35,
+      "metadata": {}
+    },
+    {
+      "id": "function:useKeybindings@src/hooks/useKeybindings.ts",
+      "kind": "function",
+      "file": "src/hooks/useKeybindings.ts",
+      "name": "useKeybindings",
+      "language": "ts",
+      "line": 68,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ShortcutDef@src/hooks/useKeybindings.ts",
+      "kind": "interface",
+      "file": "src/hooks/useKeybindings.ts",
+      "name": "ShortcutDef",
+      "language": "ts",
+      "line": 3,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "kind": "file",
+      "file": "src/hooks/useSavedConnections.ts",
+      "name": "src/hooks/useSavedConnections.ts",
+      "language": "ts",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:useSavedConnections@src/hooks/useSavedConnections.ts",
+      "kind": "function",
+      "file": "src/hooks/useSavedConnections.ts",
+      "name": "useSavedConnections",
+      "language": "ts",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "kind": "file",
+      "file": "src/hooks/useUiState.ts",
+      "name": "src/hooks/useUiState.ts",
+      "language": "ts",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:useUiState@src/hooks/useUiState.ts",
+      "kind": "function",
+      "file": "src/hooks/useUiState.ts",
+      "name": "useUiState",
+      "language": "ts",
+      "line": 16,
+      "metadata": {}
+    },
+    {
+      "id": "interface:UiState@src/hooks/useUiState.ts",
+      "kind": "interface",
+      "file": "src/hooks/useUiState.ts",
+      "name": "UiState",
+      "language": "ts",
+      "line": 4,
+      "metadata": {}
+    },
+    {
+      "id": "file:src/types/db.ts@src/types/db.ts",
+      "kind": "file",
+      "file": "src/types/db.ts",
+      "name": "src/types/db.ts",
+      "language": "ts",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "interface:DbConfig@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "DbConfig",
+      "language": "ts",
+      "line": 1,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ConnectionInfo@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "ConnectionInfo",
+      "language": "ts",
+      "line": 13,
+      "metadata": {}
+    },
+    {
+      "id": "interface:QueryError@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "QueryError",
+      "language": "ts",
+      "line": 19,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TableInfo@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "TableInfo",
+      "language": "ts",
+      "line": 25,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ColumnInfo@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "ColumnInfo",
+      "language": "ts",
+      "line": 30,
+      "metadata": {}
+    },
+    {
+      "id": "interface:QueryResult@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "QueryResult",
+      "language": "ts",
+      "line": 37,
+      "metadata": {}
+    },
+    {
+      "id": "interface:PagedResult@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "PagedResult",
+      "language": "ts",
+      "line": 43,
+      "metadata": {}
+    },
+    {
+      "id": "interface:SavedConnection@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "SavedConnection",
+      "language": "ts",
+      "line": 51,
+      "metadata": {}
+    },
+    {
+      "id": "interface:GridFilter@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "GridFilter",
+      "language": "ts",
+      "line": 68,
+      "metadata": {}
+    },
+    {
+      "id": "interface:TableRelation@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "TableRelation",
+      "language": "ts",
+      "line": 74,
+      "metadata": {}
+    },
+    {
+      "id": "interface:PendingChange@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "PendingChange",
+      "language": "ts",
+      "line": 83,
+      "metadata": {}
+    },
+    {
+      "id": "interface:InternalScript@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "InternalScript",
+      "language": "ts",
+      "line": 94,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ScriptInfo@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "ScriptInfo",
+      "language": "ts",
+      "line": 103,
+      "metadata": {}
+    },
+    {
+      "id": "interface:ScriptMeta@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "ScriptMeta",
+      "language": "ts",
+      "line": 109,
+      "metadata": {}
+    },
+    {
+      "id": "type:ConnectionStatus@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "ConnectionStatus",
+      "language": "ts",
+      "line": 11,
+      "metadata": {}
+    },
+    {
+      "id": "type:FilterOperator@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "FilterOperator",
+      "language": "ts",
+      "line": 63,
+      "metadata": {}
+    },
+    {
+      "id": "type:PendingChangeType@src/types/db.ts",
+      "kind": "interface",
+      "file": "src/types/db.ts",
+      "name": "PendingChangeType",
+      "language": "ts",
+      "line": 81,
+      "metadata": {}
+    },
+    {
+      "id": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "kind": "file",
+      "file": "src-tauri/src/lib.rs",
+      "name": "src-tauri/src/lib.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "module:commands@src-tauri/src/lib.rs",
+      "kind": "module",
+      "file": "src-tauri/src/lib.rs",
+      "name": "commands",
+      "language": "rust",
+      "line": 1,
+      "metadata": {}
+    },
+    {
+      "id": "module:db@src-tauri/src/lib.rs",
+      "kind": "module",
+      "file": "src-tauri/src/lib.rs",
+      "name": "db",
+      "language": "rust",
+      "line": 2,
+      "metadata": {}
+    },
+    {
+      "id": "module:storage@src-tauri/src/lib.rs",
+      "kind": "module",
+      "file": "src-tauri/src/lib.rs",
+      "name": "storage",
+      "language": "rust",
+      "line": 3,
+      "metadata": {}
+    },
+    {
+      "id": "function:run@src-tauri/src/lib.rs",
+      "kind": "function",
+      "file": "src-tauri/src/lib.rs",
+      "name": "run",
+      "language": "rust",
+      "line": 15,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "file:src-tauri/src/main.rs@src-tauri/src/main.rs",
+      "kind": "file",
+      "file": "src-tauri/src/main.rs",
+      "name": "src-tauri/src/main.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "function:main@src-tauri/src/main.rs",
+      "kind": "function",
+      "file": "src-tauri/src/main.rs",
+      "name": "main",
+      "language": "rust",
+      "line": 3,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "kind": "file",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "src-tauri/src/commands/db.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:DbState@src-tauri/src/commands/db.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "DbState",
+      "language": "rust",
+      "line": 11,
+      "metadata": {}
+    },
+    {
+      "id": "impl:DbState@src-tauri/src/commands/db.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "DbState",
+      "language": "rust",
+      "line": 15,
+      "metadata": {}
+    },
+    {
+      "id": "function:new@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "new",
+      "language": "rust",
+      "line": 16,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:connect_to_db@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "connect_to_db",
+      "language": "rust",
+      "line": 24,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:fetch_tables@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "fetch_tables",
+      "language": "rust",
+      "line": 42,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:fetch_table_schema@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "fetch_table_schema",
+      "language": "rust",
+      "line": 55,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:run_query@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "run_query",
+      "language": "rust",
+      "line": 73,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:apply_changes@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "apply_changes",
+      "language": "rust",
+      "line": 86,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:test_connection@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "test_connection",
+      "language": "rust",
+      "line": 107,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:connect_saved@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "connect_saved",
+      "language": "rust",
+      "line": 119,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:disconnect@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "disconnect",
+      "language": "rust",
+      "line": 204,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:fetch_table_relations@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "fetch_table_relations",
+      "language": "rust",
+      "line": 211,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:fetch_table_data@src-tauri/src/commands/db.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/db.rs",
+      "name": "fetch_table_data",
+      "language": "rust",
+      "line": 227,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "file:src-tauri/src/commands/mod.rs@src-tauri/src/commands/mod.rs",
+      "kind": "file",
+      "file": "src-tauri/src/commands/mod.rs",
+      "name": "src-tauri/src/commands/mod.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "module:db@src-tauri/src/commands/mod.rs",
+      "kind": "module",
+      "file": "src-tauri/src/commands/mod.rs",
+      "name": "db",
+      "language": "rust",
+      "line": 1,
+      "metadata": {}
+    },
+    {
+      "id": "module:persistence@src-tauri/src/commands/mod.rs",
+      "kind": "module",
+      "file": "src-tauri/src/commands/mod.rs",
+      "name": "persistence",
+      "language": "rust",
+      "line": 2,
+      "metadata": {}
+    },
+    {
+      "id": "module:system_status@src-tauri/src/commands/mod.rs",
+      "kind": "module",
+      "file": "src-tauri/src/commands/mod.rs",
+      "name": "system_status",
+      "language": "rust",
+      "line": 3,
+      "metadata": {}
+    },
+    {
+      "id": "module:workspace@src-tauri/src/commands/mod.rs",
+      "kind": "module",
+      "file": "src-tauri/src/commands/mod.rs",
+      "name": "workspace",
+      "language": "rust",
+      "line": 4,
+      "metadata": {}
+    },
+    {
+      "id": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "kind": "file",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "src-tauri/src/commands/persistence.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:UiState@src-tauri/src/commands/persistence.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "UiState",
+      "language": "rust",
+      "line": 12,
+      "metadata": {}
+    },
+    {
+      "id": "function:default_true@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "default_true",
+      "language": "rust",
+      "line": 8,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:default_sidebar_width@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "default_sidebar_width",
+      "language": "rust",
+      "line": 9,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_data_path@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "get_data_path",
+      "language": "rust",
+      "line": 20,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:save_connection@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "save_connection",
+      "language": "rust",
+      "line": 30,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:get_saved_connections@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "get_saved_connections",
+      "language": "rust",
+      "line": 39,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:delete_connection@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "delete_connection",
+      "language": "rust",
+      "line": 45,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:save_ui_state@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "save_ui_state",
+      "language": "rust",
+      "line": 51,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:load_ui_state@src-tauri/src/commands/persistence.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/persistence.rs",
+      "name": "load_ui_state",
+      "language": "rust",
+      "line": 59,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "file:src-tauri/src/commands/system_status.rs@src-tauri/src/commands/system_status.rs",
+      "kind": "file",
+      "file": "src-tauri/src/commands/system_status.rs",
+      "name": "src-tauri/src/commands/system_status.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:SystemStatus@src-tauri/src/commands/system_status.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/commands/system_status.rs",
+      "name": "SystemStatus",
+      "language": "rust",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "function:check_system_status@src-tauri/src/commands/system_status.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/system_status.rs",
+      "name": "check_system_status",
+      "language": "rust",
+      "line": 16,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "kind": "file",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "src-tauri/src/commands/workspace.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:ScriptMeta@src-tauri/src/commands/workspace.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "ScriptMeta",
+      "language": "rust",
+      "line": 30,
+      "metadata": {}
+    },
+    {
+      "id": "struct:ImportedScript@src-tauri/src/commands/workspace.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "ImportedScript",
+      "language": "rust",
+      "line": 108,
+      "metadata": {}
+    },
+    {
+      "id": "function:workspace_path@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "workspace_path",
+      "language": "rust",
+      "line": 10,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:safe_filename@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "safe_filename",
+      "language": "rust",
+      "line": 21,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:save_script@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "save_script",
+      "language": "rust",
+      "line": 38,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:list_scripts@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "list_scripts",
+      "language": "rust",
+      "line": 67,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:read_script@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "read_script",
+      "language": "rust",
+      "line": 101,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:export_script_dialog@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "export_script_dialog",
+      "language": "rust",
+      "line": 116,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:save_internal_script@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "save_internal_script",
+      "language": "rust",
+      "line": 143,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:get_internal_scripts@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "get_internal_scripts",
+      "language": "rust",
+      "line": 154,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:delete_internal_script@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "delete_internal_script",
+      "language": "rust",
+      "line": 160,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "function:import_script_dialog@src-tauri/src/commands/workspace.rs",
+      "kind": "function",
+      "file": "src-tauri/src/commands/workspace.rs",
+      "name": "import_script_dialog",
+      "language": "rust",
+      "line": 168,
+      "metadata": {
+        "tauri_command": true
+      }
+    },
+    {
+      "id": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "kind": "file",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "src-tauri/src/db/driver.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:DbConfig@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "DbConfig",
+      "language": "rust",
+      "line": 5,
+      "metadata": {}
+    },
+    {
+      "id": "struct:ConnectionInfo@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "ConnectionInfo",
+      "language": "rust",
+      "line": 22,
+      "metadata": {}
+    },
+    {
+      "id": "struct:QueryError@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "QueryError",
+      "language": "rust",
+      "line": 29,
+      "metadata": {}
+    },
+    {
+      "id": "struct:TableInfo@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "TableInfo",
+      "language": "rust",
+      "line": 42,
+      "metadata": {}
+    },
+    {
+      "id": "struct:QueryResult@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "QueryResult",
+      "language": "rust",
+      "line": 48,
+      "metadata": {}
+    },
+    {
+      "id": "struct:ColumnInfo@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "ColumnInfo",
+      "language": "rust",
+      "line": 55,
+      "metadata": {}
+    },
+    {
+      "id": "struct:ChangeRow@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "ChangeRow",
+      "language": "rust",
+      "line": 63,
+      "metadata": {}
+    },
+    {
+      "id": "struct:GridFilter@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "GridFilter",
+      "language": "rust",
+      "line": 87,
+      "metadata": {}
+    },
+    {
+      "id": "struct:TableRelation@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "TableRelation",
+      "language": "rust",
+      "line": 95,
+      "metadata": {}
+    },
+    {
+      "id": "struct:PagedResult@src-tauri/src/db/driver.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "PagedResult",
+      "language": "rust",
+      "line": 103,
+      "metadata": {}
+    },
+    {
+      "id": "trait:DatabaseDriver@src-tauri/src/db/driver.rs",
+      "kind": "trait",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "DatabaseDriver",
+      "language": "rust",
+      "line": 112,
+      "metadata": {}
+    },
+    {
+      "id": "impl:From for QueryError@src-tauri/src/db/driver.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "From for QueryError",
+      "language": "rust",
+      "line": 35,
+      "metadata": {}
+    },
+    {
+      "id": "function:from@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "from",
+      "language": "rust",
+      "line": 36,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_tables@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "get_tables",
+      "language": "rust",
+      "line": 113,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_table_schema@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "get_table_schema",
+      "language": "rust",
+      "line": 114,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:execute_query@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "execute_query",
+      "language": "rust",
+      "line": 119,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:apply_changes@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "apply_changes",
+      "language": "rust",
+      "line": 120,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:fetch_page@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "fetch_page",
+      "language": "rust",
+      "line": 126,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_table_relations@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "get_table_relations",
+      "language": "rust",
+      "line": 134,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:driver_name@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "driver_name",
+      "language": "rust",
+      "line": 139,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:create_driver@src-tauri/src/db/driver.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/driver.rs",
+      "name": "create_driver",
+      "language": "rust",
+      "line": 142,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "file:src-tauri/src/db/mod.rs@src-tauri/src/db/mod.rs",
+      "kind": "file",
+      "file": "src-tauri/src/db/mod.rs",
+      "name": "src-tauri/src/db/mod.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "module:driver@src-tauri/src/db/mod.rs",
+      "kind": "module",
+      "file": "src-tauri/src/db/mod.rs",
+      "name": "driver",
+      "language": "rust",
+      "line": 1,
+      "metadata": {}
+    },
+    {
+      "id": "module:postgres@src-tauri/src/db/mod.rs",
+      "kind": "module",
+      "file": "src-tauri/src/db/mod.rs",
+      "name": "postgres",
+      "language": "rust",
+      "line": 2,
+      "metadata": {}
+    },
+    {
+      "id": "module:sqlite@src-tauri/src/db/mod.rs",
+      "kind": "module",
+      "file": "src-tauri/src/db/mod.rs",
+      "name": "sqlite",
+      "language": "rust",
+      "line": 3,
+      "metadata": {}
+    },
+    {
+      "id": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "kind": "file",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "src-tauri/src/db/postgres.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:PostgresDriver@src-tauri/src/db/postgres.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "PostgresDriver",
+      "language": "rust",
+      "line": 47,
+      "metadata": {}
+    },
+    {
+      "id": "impl:DatabaseDriver for PostgresDriver@src-tauri/src/db/postgres.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "DatabaseDriver for PostgresDriver",
+      "language": "rust",
+      "line": 116,
+      "metadata": {}
+    },
+    {
+      "id": "impl:PostgresDriver@src-tauri/src/db/postgres.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "PostgresDriver",
+      "language": "rust",
+      "line": 65,
+      "metadata": {}
+    },
+    {
+      "id": "function:build_where_pg@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "build_where_pg",
+      "language": "rust",
+      "line": 12,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:pg_bind_json@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "pg_bind_json",
+      "language": "rust",
+      "line": 51,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:from_config@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "from_config",
+      "language": "rust",
+      "line": 67,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:is_select@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "is_select",
+      "language": "rust",
+      "line": 87,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:pg_value_to_json@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "pg_value_to_json",
+      "language": "rust",
+      "line": 94,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:qualified@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "qualified",
+      "language": "rust",
+      "line": 107,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_tables@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "get_tables",
+      "language": "rust",
+      "line": 117,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_table_schema@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "get_table_schema",
+      "language": "rust",
+      "line": 138,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:execute_query@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "execute_query",
+      "language": "rust",
+      "line": 180,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:fetch_page@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "fetch_page",
+      "language": "rust",
+      "line": 214,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:apply_changes@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "apply_changes",
+      "language": "rust",
+      "line": 261,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_table_relations@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "get_table_relations",
+      "language": "rust",
+      "line": 347,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:driver_name@src-tauri/src/db/postgres.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/postgres.rs",
+      "name": "driver_name",
+      "language": "rust",
+      "line": 387,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "kind": "file",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "src-tauri/src/db/sqlite.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "SqliteDriver",
+      "language": "rust",
+      "line": 42,
+      "metadata": {}
+    },
+    {
+      "id": "impl:DatabaseDriver for SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "DatabaseDriver for SqliteDriver",
+      "language": "rust",
+      "line": 97,
+      "metadata": {}
+    },
+    {
+      "id": "impl:SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "SqliteDriver",
+      "language": "rust",
+      "line": 60,
+      "metadata": {}
+    },
+    {
+      "id": "function:build_where_sqlite@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "build_where_sqlite",
+      "language": "rust",
+      "line": 8,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:sqlite_bind_json@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "sqlite_bind_json",
+      "language": "rust",
+      "line": 46,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:connect@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "connect",
+      "language": "rust",
+      "line": 61,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:is_select@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "is_select",
+      "language": "rust",
+      "line": 75,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:sqlite_value_to_json@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "sqlite_value_to_json",
+      "language": "rust",
+      "line": 82,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_tables@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "get_tables",
+      "language": "rust",
+      "line": 98,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_table_schema@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "get_table_schema",
+      "language": "rust",
+      "line": 117,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:execute_query@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "execute_query",
+      "language": "rust",
+      "line": 145,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:apply_changes@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "apply_changes",
+      "language": "rust",
+      "line": 183,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:fetch_page@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "fetch_page",
+      "language": "rust",
+      "line": 268,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_table_relations@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "get_table_relations",
+      "language": "rust",
+      "line": 314,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:driver_name@src-tauri/src/db/sqlite.rs",
+      "kind": "function",
+      "file": "src-tauri/src/db/sqlite.rs",
+      "name": "driver_name",
+      "language": "rust",
+      "line": 338,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "kind": "file",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "src-tauri/src/storage/mod.rs",
+      "language": "rust",
+      "line": 0,
+      "metadata": {}
+    },
+    {
+      "id": "struct:InternalScript@src-tauri/src/storage/mod.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "InternalScript",
+      "language": "rust",
+      "line": 7,
+      "metadata": {}
+    },
+    {
+      "id": "struct:AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "AppDb",
+      "language": "rust",
+      "line": 23,
+      "metadata": {}
+    },
+    {
+      "id": "struct:SavedConnection@src-tauri/src/storage/mod.rs",
+      "kind": "struct",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "SavedConnection",
+      "language": "rust",
+      "line": 32,
+      "metadata": {}
+    },
+    {
+      "id": "impl:Send for AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "Send for AppDb",
+      "language": "rust",
+      "line": 28,
+      "metadata": {}
+    },
+    {
+      "id": "impl:Sync for AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "Sync for AppDb",
+      "language": "rust",
+      "line": 29,
+      "metadata": {}
+    },
+    {
+      "id": "impl:AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "impl",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "AppDb",
+      "language": "rust",
+      "line": 44,
+      "metadata": {}
+    },
+    {
+      "id": "function:keyring_entry@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "keyring_entry",
+      "language": "rust",
+      "line": 18,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:init@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "init",
+      "language": "rust",
+      "line": 45,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:save_connection@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "save_connection",
+      "language": "rust",
+      "line": 79,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_connections@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "get_connections",
+      "language": "rust",
+      "line": 114,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_connection_by_id@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "get_connection_by_id",
+      "language": "rust",
+      "line": 156,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_password_for@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "get_password_for",
+      "language": "rust",
+      "line": 181,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:upsert_password_for@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "upsert_password_for",
+      "language": "rust",
+      "line": 187,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:delete_connection@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "delete_connection",
+      "language": "rust",
+      "line": 203,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:save_script_internal@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "save_script_internal",
+      "language": "rust",
+      "line": 224,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:get_scripts_internal@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "get_scripts_internal",
+      "language": "rust",
+      "line": 239,
+      "metadata": {
+        "tauri_command": false
+      }
+    },
+    {
+      "id": "function:delete_script_internal@src-tauri/src/storage/mod.rs",
+      "kind": "function",
+      "file": "src-tauri/src/storage/mod.rs",
+      "name": "delete_script_internal",
+      "language": "rust",
+      "line": 265,
+      "metadata": {
+        "tauri_command": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/components/PasswordPrompt.tsx@src/components/PasswordPrompt.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/components/HomeView.tsx@src/components/HomeView.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/components/SettingsPanel.tsx@src/components/SettingsPanel.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "file:src/App",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "function:App@src/App.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "interface:ActiveConn@src/App.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "interface:NavTable@src/App.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/App.tsx@src/App.tsx",
+      "target": "interface:OpenScript@src/App.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/main.tsx@src/main.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/main.tsx@src/main.tsx",
+      "target": "package:react-dom/client",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/main.tsx@src/main.tsx",
+      "target": "file:src/App.tsx@src/App.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/main.tsx@src/main.tsx",
+      "target": "file:src/theme",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "file:src/components/CommandPalette",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "function:fuzzy@src/components/CommandPalette.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "function:extractSql@src/components/CommandPalette.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "function:CommandPalette@src/components/CommandPalette.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "interface:CommandAction@src/components/CommandPalette.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/CommandPalette.tsx@src/components/CommandPalette.tsx",
+      "target": "interface:CommandPaletteProps@src/components/CommandPalette.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx",
+      "target": "file:src/components/CommitFooter",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx",
+      "target": "function:CommitFooter@src/components/CommitFooter.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx",
+      "target": "interface:CommitFooterProps@src/components/CommitFooter.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "target": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "target": "file:src/components/ConnectionManager",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "target": "function:ConnectionManager@src/components/ConnectionManager.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/ConnectionManager.tsx@src/components/ConnectionManager.tsx",
+      "target": "interface:ConnectionManagerProps@src/components/ConnectionManager.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "target": "package:react-dom",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "target": "file:src/components/ContextMenu",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "target": "function:ContextMenu@src/components/ContextMenu.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "target": "function:IconEdit@src/components/ContextMenu.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "target": "function:IconTrash@src/components/ContextMenu.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "target": "interface:ContextMenuItem@src/components/ContextMenu.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "target": "interface:ContextMenuProps@src/components/ContextMenu.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "package:react-dom",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "file:src/components/DataGrid",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "function:operatorsForType@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "function:cell@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "function:makeKey@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "function:cellId@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "function:buildRangeSet@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "function:makeEditState@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "function:DataGrid@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "target": "interface:DataGridProps@src/components/DataGrid.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx",
+      "target": "file:src/components/EmptyWorkspaceState",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx",
+      "target": "function:Keys@src/components/EmptyWorkspaceState.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx",
+      "target": "function:EmptyWorkspaceState@src/components/EmptyWorkspaceState.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx",
+      "target": "interface:Shortcut@src/components/EmptyWorkspaceState.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/HomeView.tsx@src/components/HomeView.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/HomeView.tsx@src/components/HomeView.tsx",
+      "target": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/HomeView.tsx@src/components/HomeView.tsx",
+      "target": "file:src/components/HomeView",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/HomeView.tsx@src/components/HomeView.tsx",
+      "target": "function:HomeView@src/components/HomeView.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/HomeView.tsx@src/components/HomeView.tsx",
+      "target": "interface:HomeViewProps@src/components/HomeView.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "target": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "target": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "target": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "target": "file:src/components/Layout",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "target": "function:Layout@src/components/Layout.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Layout.tsx@src/components/Layout.tsx",
+      "target": "interface:LayoutProps@src/components/Layout.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/PasswordPrompt.tsx@src/components/PasswordPrompt.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/PasswordPrompt.tsx@src/components/PasswordPrompt.tsx",
+      "target": "file:src/components/PasswordPrompt",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/PasswordPrompt.tsx@src/components/PasswordPrompt.tsx",
+      "target": "function:PasswordPrompt@src/components/PasswordPrompt.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/PasswordPrompt.tsx@src/components/PasswordPrompt.tsx",
+      "target": "interface:PasswordPromptProps@src/components/PasswordPrompt.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/hooks/useContextMenu.ts@src/hooks/useContextMenu.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "file:src/components/QueryPanel",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "function:fmtErr@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "function:colIcon@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "function:genSelect@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "function:genUpdate@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "function:defaultTableTabState@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "function:tableTabId@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "function:QueryPanel@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "interface:TableTabState@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx",
+      "target": "interface:QueryPanelProps@src/components/QueryPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "package:@xyflow/react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "package:@xyflow/react/dist/style.css",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "file:src/components/SchemaVisualizer",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "function:FullSchemaView@src/components/SchemaVisualizer.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "function:RelationView@src/components/SchemaVisualizer.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "function:SchemaVisualizer@src/components/SchemaVisualizer.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SchemaVisualizer.tsx@src/components/SchemaVisualizer.tsx",
+      "target": "interface:SchemaVisualizerProps@src/components/SchemaVisualizer.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SettingsPanel.tsx@src/components/SettingsPanel.tsx",
+      "target": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SettingsPanel.tsx@src/components/SettingsPanel.tsx",
+      "target": "file:src/components/SettingsPanel",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SettingsPanel.tsx@src/components/SettingsPanel.tsx",
+      "target": "function:SettingsPanel@src/components/SettingsPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SettingsPanel.tsx@src/components/SettingsPanel.tsx",
+      "target": "interface:SettingsPanelProps@src/components/SettingsPanel.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "file:src/hooks/useContextMenu.ts@src/hooks/useContextMenu.ts",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "file:src/components/Sidebar",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "function:PostgresIcon@src/components/Sidebar.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "function:SqliteIcon@src/components/Sidebar.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "function:Sidebar@src/components/Sidebar.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Sidebar.tsx@src/components/Sidebar.tsx",
+      "target": "interface:SidebarProps@src/components/Sidebar.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "package:@monaco-editor/react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "file:src/components/DataGrid.tsx@src/components/DataGrid.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "file:src/components/SqlEditor",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "function:fmtErr@src/components/SqlEditor.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "function:defineDibThemes@src/components/SqlEditor.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "function:getSystemTheme@src/components/SqlEditor.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "function:SqlEditor@src/components/SqlEditor.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx",
+      "target": "interface:SqlEditorProps@src/components/SqlEditor.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/StatusBlock.tsx@src/components/StatusBlock.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/StatusBlock.tsx@src/components/StatusBlock.tsx",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/StatusBlock.tsx@src/components/StatusBlock.tsx",
+      "target": "file:src/components/StatusBlock",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/StatusBlock.tsx@src/components/StatusBlock.tsx",
+      "target": "function:StatusBlock@src/components/StatusBlock.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/StatusBlock.tsx@src/components/StatusBlock.tsx",
+      "target": "interface:SystemStatus@src/components/StatusBlock.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "target": "file:src/components/Tab",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "target": "function:Tab@src/components/Tab.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "target": "interface:TabPayload@src/components/Tab.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "target": "interface:TabData@src/components/Tab.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "target": "interface:TabProps@src/components/Tab.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "target": "type:TabType@src/components/Tab.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "package:@dnd-kit/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "package:@dnd-kit/sortable",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "package:@dnd-kit/utilities",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "package:lucide-react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "file:src/components/Tab.tsx@src/components/Tab.tsx",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "file:src/components/TabBar",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "function:SortableTab@src/components/TabBar.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "function:TabBar@src/components/TabBar.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/TabBar.tsx@src/components/TabBar.tsx",
+      "target": "interface:TabBarProps@src/components/TabBar.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "target": "package:@xyflow/react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "target": "file:src/components/TableNode",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "target": "function:TableNodeComponent@src/components/TableNode.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "target": "interface:TableNodeData@src/components/TableNode.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/components/TableNode.tsx@src/components/TableNode.tsx",
+      "target": "constant:TableNode@src/components/TableNode.tsx",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useContextMenu.ts@src/hooks/useContextMenu.ts",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/hooks/useContextMenu.ts@src/hooks/useContextMenu.ts",
+      "target": "function:useContextMenu@src/hooks/useContextMenu.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useContextMenu.ts@src/hooks/useContextMenu.ts",
+      "target": "interface:ContextMenuState@src/hooks/useContextMenu.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "target": "function:_key@src/hooks/useKeybindings.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "target": "function:_isMonaco@src/hooks/useKeybindings.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "target": "function:_isPlainInput@src/hooks/useKeybindings.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "target": "function:_initListener@src/hooks/useKeybindings.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "target": "function:useKeybindings@src/hooks/useKeybindings.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useKeybindings.ts@src/hooks/useKeybindings.ts",
+      "target": "interface:ShortcutDef@src/hooks/useKeybindings.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/hooks/useSavedConnections.ts@src/hooks/useSavedConnections.ts",
+      "target": "function:useSavedConnections@src/hooks/useSavedConnections.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "target": "package:react",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "target": "package:@tauri-apps/api/core",
+      "kind": "imports"
+    },
+    {
+      "source": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "target": "function:useUiState@src/hooks/useUiState.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/hooks/useUiState.ts@src/hooks/useUiState.ts",
+      "target": "interface:UiState@src/hooks/useUiState.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:DbConfig@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:ConnectionInfo@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:QueryError@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:TableInfo@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:ColumnInfo@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:QueryResult@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:PagedResult@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:SavedConnection@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:GridFilter@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:TableRelation@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:PendingChange@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:InternalScript@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:ScriptInfo@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "interface:ScriptMeta@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "type:ConnectionStatus@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "type:FilterOperator@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src/types/db.ts@src/types/db.ts",
+      "target": "type:PendingChangeType@src/types/db.ts",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:commands::db::{apply_changes, connect_saved, connect_to_db, disconnect, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, run_query, test_connection, DbState}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:commands::persistence::{\n    delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state,\n}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:commands::system_status::check_system_status",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:commands::workspace::{delete_internal_script, export_script_dialog, get_internal_scripts, import_script_dialog, list_scripts, read_script, save_internal_script, save_script}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:storage::AppDb",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:tauri::Manager",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:commands@src-tauri/src/lib.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:db@src-tauri/src/lib.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "module:storage@src-tauri/src/lib.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/lib.rs@src-tauri/src/lib.rs",
+      "target": "function:run@src-tauri/src/lib.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/main.rs@src-tauri/src/main.rs",
+      "target": "function:main@src-tauri/src/main.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "module:std::collections::HashMap",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "module:tauri::State",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "module:tokio::sync::Mutex",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "module:crate::db::{\n    ChangeRow, ColumnInfo, create_driver, ConnectionInfo, ConnectionStatus, DatabaseDriver,\n    DbConfig, GridFilter, PagedResult, QueryError, QueryResult, TableInfo, TableRelation,\n}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "module:crate::storage::AppDb",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "struct:DbState@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "impl:DbState@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:new@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:connect_to_db@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:fetch_tables@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:fetch_table_schema@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:run_query@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:apply_changes@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:test_connection@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:connect_saved@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:disconnect@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:fetch_table_relations@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "target": "function:fetch_table_data@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/mod.rs@src-tauri/src/commands/mod.rs",
+      "target": "module:db@src-tauri/src/commands/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "module:db@src-tauri/src/commands/mod.rs",
+      "target": "file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/mod.rs@src-tauri/src/commands/mod.rs",
+      "target": "module:persistence@src-tauri/src/commands/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "module:persistence@src-tauri/src/commands/mod.rs",
+      "target": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/mod.rs@src-tauri/src/commands/mod.rs",
+      "target": "module:system_status@src-tauri/src/commands/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "module:system_status@src-tauri/src/commands/mod.rs",
+      "target": "file:src-tauri/src/commands/system_status.rs@src-tauri/src/commands/system_status.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/mod.rs@src-tauri/src/commands/mod.rs",
+      "target": "module:workspace@src-tauri/src/commands/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "module:workspace@src-tauri/src/commands/mod.rs",
+      "target": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "module:serde::{Deserialize, Serialize}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "module:std::fs",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "module:std::path::PathBuf",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "module:tauri::Manager",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "module:crate::storage::SavedConnection",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "struct:UiState@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:default_true@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:default_sidebar_width@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:get_data_path@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:save_connection@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:get_saved_connections@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:delete_connection@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:save_ui_state@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/persistence.rs@src-tauri/src/commands/persistence.rs",
+      "target": "function:load_ui_state@src-tauri/src/commands/persistence.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/system_status.rs@src-tauri/src/commands/system_status.rs",
+      "target": "module:serde::Serialize",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/system_status.rs@src-tauri/src/commands/system_status.rs",
+      "target": "module:sysinfo::System",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/system_status.rs@src-tauri/src/commands/system_status.rs",
+      "target": "struct:SystemStatus@src-tauri/src/commands/system_status.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/system_status.rs@src-tauri/src/commands/system_status.rs",
+      "target": "function:check_system_status@src-tauri/src/commands/system_status.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "module:crate::storage::InternalScript",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "module:serde::{Deserialize, Serialize}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "module:std::fs",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "module:std::path::PathBuf",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "module:std::time::UNIX_EPOCH",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "module:tauri::Manager",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "struct:ScriptMeta@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "struct:ImportedScript@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:workspace_path@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:safe_filename@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:save_script@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:list_scripts@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:read_script@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:export_script_dialog@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:save_internal_script@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:get_internal_scripts@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:delete_internal_script@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/commands/workspace.rs@src-tauri/src/commands/workspace.rs",
+      "target": "function:import_script_dialog@src-tauri/src/commands/workspace.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "module:async_trait::async_trait",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "module:serde::{Deserialize, Serialize}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:DbConfig@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:ConnectionInfo@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:QueryError@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:TableInfo@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:QueryResult@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:ColumnInfo@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:ChangeRow@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:GridFilter@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:TableRelation@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "struct:PagedResult@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "trait:DatabaseDriver@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "impl:From for QueryError@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "impl:From for QueryError@src-tauri/src/db/driver.rs",
+      "target": "trait:From@",
+      "kind": "implements"
+    },
+    {
+      "source": "impl:From for QueryError@src-tauri/src/db/driver.rs",
+      "target": "struct:QueryError@",
+      "kind": "implements"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:from@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:get_tables@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:get_table_schema@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:execute_query@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:apply_changes@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:fetch_page@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:get_table_relations@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:driver_name@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "target": "function:create_driver@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/mod.rs@src-tauri/src/db/mod.rs",
+      "target": "module:driver::{\n    ChangeRow, ColumnInfo, create_driver, ConnectionInfo, ConnectionStatus, DatabaseDriver,\n    DbConfig, GridFilter, PagedResult, QueryError, QueryResult, TableInfo, TableRelation,\n}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/mod.rs@src-tauri/src/db/mod.rs",
+      "target": "module:driver@src-tauri/src/db/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "module:driver@src-tauri/src/db/mod.rs",
+      "target": "file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/mod.rs@src-tauri/src/db/mod.rs",
+      "target": "module:postgres@src-tauri/src/db/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "module:postgres@src-tauri/src/db/mod.rs",
+      "target": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/mod.rs@src-tauri/src/db/mod.rs",
+      "target": "module:sqlite@src-tauri/src/db/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "module:sqlite@src-tauri/src/db/mod.rs",
+      "target": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:async_trait::async_trait",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:serde_json::{json, Value}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:sqlx::{Column, PgPool, Row, TypeInfo}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:super::driver::{\n    ChangeRow, ColumnInfo, DatabaseDriver, DbConfig, GridFilter, PagedResult, QueryError,\n    QueryResult, TableInfo, TableRelation,\n}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:sqlx::Arguments",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:sqlx::postgres::PgConnectOptions",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:std::collections::HashMap",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "module:sqlx::postgres::PgArguments",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "struct:PostgresDriver@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "impl:DatabaseDriver for PostgresDriver@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "impl:DatabaseDriver for PostgresDriver@src-tauri/src/db/postgres.rs",
+      "target": "trait:DatabaseDriver@",
+      "kind": "implements"
+    },
+    {
+      "source": "impl:DatabaseDriver for PostgresDriver@src-tauri/src/db/postgres.rs",
+      "target": "struct:PostgresDriver@",
+      "kind": "implements"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "impl:PostgresDriver@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:build_where_pg@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:pg_bind_json@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:from_config@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:is_select@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:pg_value_to_json@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:qualified@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:get_tables@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:get_table_schema@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:execute_query@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:fetch_page@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:apply_changes@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:get_table_relations@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/postgres.rs@src-tauri/src/db/postgres.rs",
+      "target": "function:driver_name@src-tauri/src/db/postgres.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "module:async_trait::async_trait",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "module:serde_json::{json, Value}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "module:sqlx::{Column, Row, SqlitePool, TypeInfo}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "module:super::driver::{ChangeRow, ColumnInfo, DatabaseDriver, GridFilter, PagedResult, QueryError, QueryResult, TableInfo, TableRelation}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "module:sqlx::Arguments",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "module:std::collections::HashMap",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "module:sqlx::sqlite::SqliteArguments",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "struct:SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "impl:DatabaseDriver for SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "impl:DatabaseDriver for SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "target": "trait:DatabaseDriver@",
+      "kind": "implements"
+    },
+    {
+      "source": "impl:DatabaseDriver for SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "target": "struct:SqliteDriver@",
+      "kind": "implements"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "impl:SqliteDriver@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:build_where_sqlite@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:sqlite_bind_json@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:connect@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:is_select@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:sqlite_value_to_json@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:get_tables@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:get_table_schema@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:execute_query@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:apply_changes@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:fetch_page@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:get_table_relations@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs",
+      "target": "function:driver_name@src-tauri/src/db/sqlite.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "module:rusqlite::{params, Connection}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "module:serde::{Deserialize, Serialize}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "module:std::sync::Mutex",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "module:tauri::{AppHandle, Manager}",
+      "kind": "uses"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "struct:InternalScript@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "struct:AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "struct:SavedConnection@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "impl:Send for AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "impl:Send for AppDb@src-tauri/src/storage/mod.rs",
+      "target": "trait:Send@",
+      "kind": "implements"
+    },
+    {
+      "source": "impl:Send for AppDb@src-tauri/src/storage/mod.rs",
+      "target": "struct:AppDb@",
+      "kind": "implements"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "impl:Sync for AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "impl:Sync for AppDb@src-tauri/src/storage/mod.rs",
+      "target": "trait:Sync@",
+      "kind": "implements"
+    },
+    {
+      "source": "impl:Sync for AppDb@src-tauri/src/storage/mod.rs",
+      "target": "struct:AppDb@",
+      "kind": "implements"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "impl:AppDb@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:keyring_entry@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:init@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:save_connection@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:get_connections@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:get_connection_by_id@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:get_password_for@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:upsert_password_for@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:delete_connection@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:save_script_internal@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:get_scripts_internal@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    },
+    {
+      "source": "file:src-tauri/src/storage/mod.rs@src-tauri/src/storage/mod.rs",
+      "target": "function:delete_script_internal@src-tauri/src/storage/mod.rs",
+      "kind": "defines"
+    }
+  ]
+}

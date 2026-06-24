@@ -1,5 +1,15 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useContext } from "react";
 import { invoke } from "@tauri-apps/api/core";
+
+function fmtErr(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    return String(o.message ?? o.error ?? o.msg ?? JSON.stringify(e));
+  }
+  return "Unknown error";
+}
+import { useKeybindings } from "../hooks/useKeybindings";
 import {
   LogOut, Network, ChevronRight,
   Key, Hash, Type, Calendar,
@@ -18,31 +28,19 @@ function colIcon(col: ColumnInfo) {
   return <Type size={12} className="qp-col-icon qp-col-icon--text" />;
 }
 
-function genSelect(tableName: string, cols: ColumnInfo[]): string {
-  const list = cols.length > 0 ? cols.map((c) => c.name).join(", ") : "*";
-  return `SELECT ${list}\nFROM ${tableName};`;
-}
-
-function genUpdate(tableName: string, cols: ColumnInfo[]): string {
-  const pk = cols.find((c) => c.is_primary_key);
-  const setCols = cols.filter((c) => !c.is_primary_key);
-  const setClause = setCols.length > 0
-    ? setCols.map((c) => `  ${c.name} = ?`).join(",\n")
-    : "  -- columna = valor";
-  return `UPDATE ${tableName}\nSET\n${setClause}\nWHERE ${pk?.name ?? "id"} = ?;`;
-}
 
 import { DataGrid } from "./DataGrid";
 import { CommitFooter } from "./CommitFooter";
 import { TabBar } from "./TabBar";
 import { SqlEditor } from "./SqlEditor";
 import { SchemaVisualizer } from "./SchemaVisualizer";
+import { EmptyWorkspaceState } from "./EmptyWorkspaceState";
 import { ContextMenu } from "./ContextMenu";
 import { useContextMenu } from "../hooks/useContextMenu";
+import { ToastContext } from "../App";
 import "./QueryPanel.css";
 
 const PAGE_SIZE = 100;
-const SCHEMA_TAB_ID = "tab-schema";
 
 interface TableTabState {
   table: TableInfo;
@@ -69,30 +67,132 @@ interface QueryPanelProps {
   engine?: string;
   onDisconnect?: () => void;
   navigateTo?: { table: TableInfo; v: number } | null;
-  openScript?: { sql: string; name: string; v: number } | null;
+  openScript?: { sql: string; name: string; id: string; v: number } | null;
 }
 
 export function QueryPanel({ connectionId, connectionName, engine, onDisconnect, navigateTo, openScript }: QueryPanelProps) {
+  const toast = useContext(ToastContext);
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [tablesLoading, setTablesLoading] = useState(true);
   const [tablesError, setTablesError] = useState<string | null>(null);
   const [columnMap, setColumnMap] = useState<Record<string, ColumnInfo[]>>({});
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
 
-  const [tabs, setTabs] = useState<TabData[]>([
-    { id: SCHEMA_TAB_ID, type: "schema", title: "Schema", isDirty: false, payload: {}, closeable: false },
-  ]);
-  const [activeTabId, setActiveTabId] = useState(SCHEMA_TAB_ID);
+  const [tabs, setTabs] = useState<TabData[]>([]);
+  const [activeTabId, setActiveTabId] = useState("");
+  const untitledCounterRef = useRef(0);
+  // Stack of closed tabs for Ctrl+Shift+T resurrection
+  const closedTabsHistoryRef = useRef<Array<{ tab: TabData; sql?: string }>>([]);
+  // Stable ref to tabSql so handleTabClose can read it without capturing stale closure
+  const tabSqlRef = useRef<Record<string, string>>({});
 
   // Per-table-tab state
   const [tableTabStates, setTableTabStates] = useState<Record<string, TableTabState>>({});
 
   // SQL tab content
   const [tabSql, setTabSql] = useState<Record<string, string>>({});
+  tabSqlRef.current = tabSql;
 
   const { menuState, openMenu, closeMenu } = useContextMenu();
   const [contextTable, setContextTable] = useState<TableInfo | null>(null);
   const [committing, setCommitting] = useState<string | null>(null); // tabId being committed
+
+  // ── Tab navigation shortcuts ──────────────────────────────
+  useKeybindings([
+    {
+      combo: "ctrl+w",
+      handler: () => {
+        const tab = tabs.find((t) => t.id === activeTabId);
+        if (tab?.closeable) handleTabClose(activeTabId);
+      },
+      allowInMonaco: true,
+    },
+    {
+      combo: "ctrl+tab",
+      handler: () => {
+        if (tabs.length < 2) return;
+        const idx = tabs.findIndex((t) => t.id === activeTabId);
+        setActiveTabId(tabs[(idx + 1) % tabs.length].id);
+      },
+      allowInMonaco: true,
+    },
+    {
+      combo: "ctrl+shift+tab",
+      handler: () => {
+        if (tabs.length < 2) return;
+        const idx = tabs.findIndex((t) => t.id === activeTabId);
+        setActiveTabId(tabs[(idx - 1 + tabs.length) % tabs.length].id);
+      },
+      allowInMonaco: true,
+    },
+    {
+      // Force-close active tab, ignoring dirty state
+      combo: "ctrl+shift+w",
+      handler: () => handleTabClose(activeTabId),
+      allowInMonaco: true,
+    },
+    {
+      // Import SQL file → save to internal DB then open tab
+      combo: "ctrl+o",
+      handler: () => {
+        invoke<{ name: string; content: string } | null>("import_script_dialog")
+          .then((result) => {
+            if (result) {
+              const newId = crypto.randomUUID();
+              openSqlTab(result.content, result.name, newId);
+              invoke("save_internal_script", { id: newId, title: result.name, content: result.content })
+                .catch(console.error);
+            }
+          })
+          .catch(() => {});
+      },
+      allowInMonaco: true,
+    },
+    {
+      // Focus the active content panel (Monaco editor or DataGrid)
+      combo: "ctrl+l",
+      handler: () => {
+        const main = document.getElementById("dib-main-panel");
+        const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+        const grid = main?.querySelector<HTMLElement>(".dg-wrap");
+        (editor ?? grid ?? main)?.focus();
+      },
+      allowInMonaco: true,
+    },
+    {
+      // New untitled SQL editor tab
+      combo: "ctrl+t",
+      handler: () => {
+        untitledCounterRef.current += 1;
+        const count = untitledCounterRef.current;
+        const name = count === 1 ? "Untitled.sql" : `Untitled-${count}.sql`;
+        openSqlTab("", name);
+      },
+      allowInMonaco: true,
+    },
+    {
+      // Reopen last closed tab
+      combo: "ctrl+shift+t",
+      handler: () => {
+        const history = closedTabsHistoryRef.current;
+        if (!history.length) return;
+        const last = history[history.length - 1];
+        closedTabsHistoryRef.current = history.slice(0, -1);
+        const { tab, sql } = last;
+        if (tab.type === "table" && tab.payload.table) {
+          openTableTab(tab.payload.table);
+        } else {
+          setTabs((prev) => {
+            if (prev.some((t) => t.id === tab.id)) { setActiveTabId(tab.id); return prev; }
+            return [...prev, { ...tab, confirmClose: false, isDirty: false }];
+          });
+          if (sql !== undefined) setTabSql((prev) => ({ ...prev, [tab.id]: sql }));
+          setActiveTabId(tab.id);
+        }
+      },
+      allowInMonaco: true,
+    },
+  ]);
 
   // ── Helpers ────────────────────────────────────────────
   const markTabDirty = useCallback((tabId: string) => {
@@ -111,32 +211,47 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     });
   }, []);
 
-  // ── Load tables ─────────────────────────────────────────
+  // ── Load table list (no schemas — lazy) ────────────────
+  // Depends on connectionName too: switching the active database (same connection,
+  // different db) keeps connectionId but changes the db name, so this re-runs and
+  // repopulates the tree. Clear stale entities + cached columns first.
   useEffect(() => {
+    setTables([]);
+    setColumnMap({});
+    setExpandedTables(new Set());
     setTablesLoading(true);
     setTablesError(null);
     invoke<TableInfo[]>("fetch_tables", { connectionId })
-      .then((t) => {
-        setTables(t);
-        Promise.all(
-          t.map((table) =>
-            invoke<ColumnInfo[]>("fetch_table_schema", {
-              connectionId,
-              tableName: table.name,
-              schema: table.schema ?? null,
-            }).then((cols) => [table.name, cols] as const),
-          ),
-        )
-          .then((entries) => {
-            const map: Record<string, ColumnInfo[]> = {};
-            for (const [name, cols] of entries) map[name] = cols;
-            setColumnMap(map);
-          })
-          .catch(() => {});
+      .then(setTables)
+      .catch(() => {
+        setTablesError("Error cargando tablas");
+        toast.error("Error cargando tablas");
       })
-      .catch(() => setTablesError("Error cargando tablas"))
       .finally(() => setTablesLoading(false));
-  }, [connectionId]);
+  }, [connectionId, connectionName]);
+
+  // ── Ctrl+R reload listener — registered once, handler updated via ref ──
+  const reloadHandlerRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const dispatch = () => reloadHandlerRef.current?.();
+    window.addEventListener("dib:reload", dispatch);
+    return () => window.removeEventListener("dib:reload", dispatch);
+  }, []);
+
+  // ── Lazy column load on expand ──────────────────────────
+  const loadColumnsIfNeeded = useCallback(
+    (table: TableInfo) => {
+      if (columnMap[table.name] !== undefined) return;
+      invoke<ColumnInfo[]>("fetch_table_schema", {
+        connectionId,
+        tableName: table.name,
+        schema: table.schema ?? null,
+      })
+        .then((cols) => setColumnMap((prev) => ({ ...prev, [table.name]: cols })))
+        .catch(() => setColumnMap((prev) => ({ ...prev, [table.name]: [] })));
+    },
+    [connectionId, columnMap],
+  );
 
   // ── Load table data for a tab ────────────────────────────
   const loadTablePage = useCallback(
@@ -167,11 +282,22 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
           ...(pageOffset === 0 ? { primaryKeyColumn: pkCol, filters, pendingChanges: [] } : { filters }),
         });
       } catch (e) {
-        updateTableTabState(tabId, { error: String(e), loading: false });
+        const msg = fmtErr(e);
+        updateTableTabState(tabId, { error: msg, loading: false });
+        toast.error(msg);
       }
     },
-    [connectionId, updateTableTabState],
+    [connectionId, updateTableTabState, toast],
   );
+
+  // Update reload handler every render so it always has fresh closures
+  reloadHandlerRef.current = () => {
+    const tab = tabs.find((t) => t.id === activeTabId) ?? null;
+    if (tab?.type === "table" && tab.payload.table) {
+      const ts = tableTabStates[tab.id];
+      if (ts) loadTablePage(tab.id, ts.table, ts.offset, ts.filters);
+    }
+  };
 
   // ── Open / activate a table tab ──────────────────────────
   const openTableTab = useCallback(
@@ -202,19 +328,25 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   );
 
   // ── Open SQL editor tab ──────────────────────────────────
-  const openSqlTab = useCallback((sql: string, name: string) => {
-    const tabId = `tab-sql-${Date.now()}`;
-    const newTab: TabData = {
-      id: tabId,
-      type: "sql_editor",
-      title: name,
-      isDirty: false,
-      payload: { sql, filename: name },
-      closeable: true,
-    };
-    setTabs((prev) => [...prev, newTab]);
-    setTabSql((prev) => ({ ...prev, [tabId]: sql }));
-    setActiveTabId(tabId);
+  const openSqlTab = useCallback((sql: string, name: string, scriptId?: string) => {
+    const tabId = scriptId ?? crypto.randomUUID();
+    setTabs((prev) => {
+      if (prev.some((t) => t.id === tabId)) {
+        setActiveTabId(tabId);
+        return prev;
+      }
+      const newTab: TabData = {
+        id: tabId,
+        type: "sql_editor",
+        title: name,
+        isDirty: false,
+        payload: { sql, filename: name },
+        closeable: true,
+      };
+      setTabSql((prev2) => ({ ...prev2, [tabId]: sql }));
+      setActiveTabId(tabId);
+      return [...prev, newTab];
+    });
   }, []);
 
   // ── External navigation ──────────────────────────────────
@@ -226,17 +358,37 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
 
   useEffect(() => {
     if (!openScript) return;
-    openSqlTab(openScript.sql, openScript.name);
+    openSqlTab(openScript.sql, openScript.name, openScript.id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openScript]);
 
-  // ── Tab close / reorder ──────────────────────────────────
+  // ── Tab select — clears any pending confirmClose on other tabs ──
+  const handleTabSelect = useCallback((id: string) => {
+    setActiveTabId(id);
+    setTabs((prev) => prev.map((t) => t.confirmClose ? { ...t, confirmClose: false } : t));
+  }, []);
+
+  // ── Tab close — first click on dirty tab prompts, second actually closes ──
   const handleTabClose = useCallback((id: string) => {
-    if (id === SCHEMA_TAB_ID) return;
-    setTabs((prev) => prev.filter((t) => t.id !== id));
-    setTabSql((prev) => { const next = { ...prev }; delete next[id]; return next; });
-    setTableTabStates((prev) => { const next = { ...prev }; delete next[id]; return next; });
-    setActiveTabId((prev) => (prev === id ? SCHEMA_TAB_ID : prev));
+    setTabs((prev) => {
+      const tab = prev.find((t) => t.id === id);
+      if (!tab) return prev;
+      if (tab.isDirty && !tab.confirmClose) {
+        return prev.map((t) => t.id === id ? { ...t, confirmClose: true } : t);
+      }
+      // Push to closed-tabs history before removing (enables Ctrl+Shift+T)
+      if (tab.closeable) {
+        closedTabsHistoryRef.current = [
+          ...closedTabsHistoryRef.current.slice(-9),
+          { tab, sql: tabSqlRef.current[id] },
+        ];
+      }
+      const next = prev.filter((t) => t.id !== id);
+      setActiveTabId((cur) => cur === id ? (next.length > 0 ? next[next.length - 1].id : "") : cur);
+      setTabSql((p) => { const n = { ...p }; delete n[id]; return n; });
+      setTableTabStates((p) => { const n = { ...p }; delete n[id]; return n; });
+      return next;
+    });
   }, []);
 
   const handleTabReorder = useCallback((newTabs: TabData[]) => {
@@ -260,7 +412,7 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
         markTabClean(tabId);
         loadTablePage(tabId, ts.table, ts.offset, ts.filters);
       } catch (e) {
-        updateTableTabState(tabId, { error: String(e) });
+        updateTableTabState(tabId, { error: fmtErr(e) });
       } finally {
         setCommitting(null);
       }
@@ -268,32 +420,41 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     [tableTabStates, connectionId, updateTableTabState, markTabClean, loadTablePage],
   );
 
-  // ── Save SQL tab to workspace ────────────────────────────
+  // ── Save SQL tab → always persists to internal SQLite ───────
   const saveSqlTab = useCallback(
     async (tabId: string, sql: string) => {
       const tab = tabs.find((t) => t.id === tabId);
       if (!tab) return;
-      const filename = tab.payload.filename ?? tab.title ?? "query.sql";
+      const title = tab.title;
       try {
-        await invoke("save_script", { filename, content: sql, format: "sql" });
+        await invoke("save_internal_script", { id: tabId, title, content: sql });
         markTabClean(tabId);
-        // Update stored SQL and payload filename
         setTabSql((prev) => ({ ...prev, [tabId]: sql }));
         setTabs((prev) => prev.map((t) =>
-          t.id === tabId
-            ? { ...t, payload: { ...t.payload, sql, filename } }
-            : t,
+          t.id === tabId ? { ...t, payload: { ...t.payload, sql } } : t,
         ));
+        window.dispatchEvent(new CustomEvent("dib:script-saved"));
       } catch (e) {
-        console.error("[DIB] save_script failed:", e);
+        console.error("[DIB] save_internal_script failed:", e);
       }
     },
     [tabs, markTabClean],
   );
 
+  // ── Auto-focus content when switching tabs ───────────────
+  useEffect(() => {
+    if (!activeTabId) return;
+    requestAnimationFrame(() => {
+      const main = document.getElementById("dib-main-panel");
+      const grid = main?.querySelector<HTMLElement>(".dg-wrap");
+      const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+      (grid ?? editor)?.focus();
+    });
+  }, [activeTabId]);
+
   // ── Schema / relation tab ────────────────────────────────
   const openRelationTab = useCallback((table: TableInfo) => {
-    const tabId = `tab-rel-${table.name}-${Date.now()}`;
+    const tabId = `tab-rel-${table.name}-${crypto.randomUUID()}`;
     const newTab: TabData = {
       id: tabId,
       type: "schema",
@@ -311,14 +472,26 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     openSqlTab(sql, label);
   }, [openSqlTab]);
 
-  // ── Column tree toggle ───────────────────────────────────
-  const toggleExpand = useCallback((name: string) => {
+  // ── Import from file: open tab + persist to internal DB ──
+  const handleImportScriptAndSave = useCallback((sql: string, name: string) => {
+    const newId = crypto.randomUUID();
+    openSqlTab(sql, name, newId);
+    invoke("save_internal_script", { id: newId, title: name, content: sql }).catch(console.error);
+  }, [openSqlTab]);
+
+  // ── Column tree toggle (lazy-load columns on first expand) ─
+  const toggleExpand = useCallback((table: TableInfo) => {
     setExpandedTables((prev) => {
       const next = new Set(prev);
-      if (next.has(name)) next.delete(name); else next.add(name);
+      if (next.has(table.name)) {
+        next.delete(table.name);
+      } else {
+        next.add(table.name);
+        loadColumnsIfNeeded(table);
+      }
       return next;
     });
-  }, []);
+  }, [loadColumnsIfNeeded]);
 
   // ── Active tab info ──────────────────────────────────────
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
@@ -327,13 +500,59 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   const gridRows = useMemo(() => activeTableState?.result?.rows ?? [], [activeTableState]);
   const gridCols = useMemo(() => activeTableState?.result?.columns ?? [], [activeTableState]);
 
+  // ── Stable DataGrid callbacks (prevents infinite loop) ───
+  // DO NOT inline these in JSX — new references cause onPendingChanges
+  // effect to fire every render even with the ref guard in DataGrid.
+  const activeTabIdRef = useRef(activeTabId);
+  activeTabIdRef.current = activeTabId;
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  // per-tab caches — plain refs, no re-render
+  const monacoViewStateCache = useRef<Record<string, unknown>>({});
+
+  // Hoisted DataGrid cursor: persist active cell onto the tab's global payload
+  // so it survives unmount / tab switch (criterion: state lives in tab.payload).
+  const handleGridActiveCellChange = useCallback((cell: { row: number; col: number } | null) => {
+    const tabId = activeTabIdRef.current;
+    setTabs((prev) =>
+      prev.map((t) =>
+        t.id === tabId ? { ...t, payload: { ...t.payload, activeCell: cell } } : t,
+      ),
+    );
+  }, []);
+
+  const handleGridPendingChanges = useCallback((changes: import("../types/db").PendingChange[]) => {
+    const tabId = activeTabIdRef.current;
+    updateTableTabState(tabId, { pendingChanges: changes });
+    if (changes.length > 0) markTabDirty(tabId);
+    else markTabClean(tabId);
+  }, [updateTableTabState, markTabDirty, markTabClean]);
+
+  const handleGridFiltersChange = useCallback((newFilters: import("../types/db").GridFilter[]) => {
+    const tabId = activeTabIdRef.current;
+    const tab = activeTabRef.current;
+    if (tab?.payload.table) loadTablePage(tabId, tab.payload.table, 0, newFilters);
+  }, [loadTablePage]);
+
+  const handleGridSave = useCallback((changes: import("../types/db").PendingChange[]): Promise<void> => {
+    if (changes.length > 0) return handleCommit(activeTabIdRef.current);
+    return Promise.resolve();
+  }, [handleCommit]);
+
+  const handleGridForceClose = useCallback(() => {
+    handleTabClose(activeTabIdRef.current);
+  }, [handleTabClose]);
+
+  const handleGridFocusEditor = useCallback(() => {
+    const main = document.getElementById("dib-main-panel");
+    const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+    const grid = main?.querySelector<HTMLElement>(".dg-wrap");
+    (editor ?? grid ?? main)?.focus();
+  }, []);
+
   const totalRows = activeTableState?.result?.total ?? 0;
   const currentPage = Math.floor((activeTableState?.offset ?? 0) / PAGE_SIZE);
   const totalPages = Math.ceil(totalRows / PAGE_SIZE);
-
-  // ── Pagination ref for current tab ───────────────────────
-  const activeTabIdRef = useRef(activeTabId);
-  activeTabIdRef.current = activeTabId;
 
   return (
     <div className="qp">
@@ -371,7 +590,7 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                 >
                   <button
                     className={`qp-chevron${expanded ? " qp-chevron--open" : ""}`}
-                    onClick={(e) => { e.stopPropagation(); toggleExpand(t.name); }}
+                    onClick={(e) => { e.stopPropagation(); toggleExpand(t); }}
                     aria-label={expanded ? "Collapse" : "Expand"}
                   >
                     <ChevronRight size={12} />
@@ -404,13 +623,15 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
 
       {/* ── Right: tabbed content ─────────────────────── */}
       <div className="qp-data">
-        <TabBar
-          tabs={tabs}
-          activeId={activeTabId}
-          onSelect={setActiveTabId}
-          onClose={handleTabClose}
-          onReorder={handleTabReorder}
-        />
+        {tabs.length > 0 && (
+          <TabBar
+            tabs={tabs}
+            activeId={activeTabId}
+            onSelect={handleTabSelect}
+            onClose={handleTabClose}
+            onReorder={handleTabReorder}
+          />
+        )}
 
         {/* ── Table view ─────────────────────────────── */}
         {activeTab?.type === "table" && (
@@ -444,20 +665,13 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                   primaryKeyColumn={activeTableState?.primaryKeyColumn}
                   columnInfos={activeTab.payload.table ? columnMap[activeTab.payload.table.name] : undefined}
                   filters={activeTableState?.filters}
-                  onFiltersChange={(newFilters) => {
-                    if (activeTab.payload.table) {
-                      loadTablePage(activeTabId, activeTab.payload.table, 0, newFilters);
-                    }
-                  }}
-                  onPendingChanges={(changes) => {
-                    updateTableTabState(activeTabId, { pendingChanges: changes });
-                    if (changes.length > 0) markTabDirty(activeTabId);
-                    else markTabClean(activeTabId);
-                  }}
-                  onSave={(changes) => {
-                    if (changes.length > 0) return handleCommit(activeTabId);
-                    return Promise.resolve();
-                  }}
+                  onPendingChanges={handleGridPendingChanges}
+                  onFiltersChange={handleGridFiltersChange}
+                  onSave={handleGridSave}
+                  onForceClose={handleGridForceClose}
+                  onFocusEditor={handleGridFocusEditor}
+                  activeCell={activeTab.payload.activeCell ?? null}
+                  onActiveCellChange={handleGridActiveCellChange}
                 />
               )}
             </div>
@@ -509,9 +723,11 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
             connectionId={connectionId}
             connectionName={connectionName}
             initialSql={tabSql[activeTabId] ?? activeTab.payload.sql}
-            onImportScript={openSqlTab}
+            onImportScript={handleImportScriptAndSave}
             onDirty={() => markTabDirty(activeTabId)}
             onSaveScript={(sql) => saveSqlTab(activeTabId, sql)}
+            tabId={activeTabId}
+            viewStateCache={monacoViewStateCache}
           />
         )}
 
@@ -526,12 +742,8 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
           />
         )}
 
-        {/* ── Empty state ─────────────────────────────── */}
-        {!activeTab && (
-          <div className="qp-data-empty">
-            <p>Selecciona una tabla o abre una consulta</p>
-          </div>
-        )}
+        {/* ── Empty workspace ─────────────────────────── */}
+        {!activeTab && <EmptyWorkspaceState />}
       </div>
 
       <ContextMenu
@@ -551,22 +763,39 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
             icon: <Table2 size={14} />,
             label: "Generar SELECT",
             onClick: () => {
-              if (contextTable) {
-                const cols = columnMap[contextTable.name] ?? [];
-                openSnippetTab(genSelect(contextTable.name, cols), `SELECT ${contextTable.name}`);
-              }
+              const t = contextTable;
               setContextTable(null); closeMenu();
+              if (t) {
+                invoke<string>("generate_crud_sql", { connectionId, tableName: t.name, schema: t.schema ?? null, action: "select" })
+                  .then((sql) => openSnippetTab(sql, `SELECT ${t.name}`))
+                  .catch((e) => toast.error(fmtErr(e)));
+              }
+            },
+          },
+          {
+            icon: <Pencil size={14} />,
+            label: "Generar INSERT",
+            onClick: () => {
+              const t = contextTable;
+              setContextTable(null); closeMenu();
+              if (t) {
+                invoke<string>("generate_crud_sql", { connectionId, tableName: t.name, schema: t.schema ?? null, action: "insert" })
+                  .then((sql) => openSnippetTab(sql, `INSERT ${t.name}`))
+                  .catch((e) => toast.error(fmtErr(e)));
+              }
             },
           },
           {
             icon: <Pencil size={14} />,
             label: "Generar UPDATE",
             onClick: () => {
-              if (contextTable) {
-                const cols = columnMap[contextTable.name] ?? [];
-                openSnippetTab(genUpdate(contextTable.name, cols), `UPDATE ${contextTable.name}`);
-              }
+              const t = contextTable;
               setContextTable(null); closeMenu();
+              if (t) {
+                invoke<string>("generate_crud_sql", { connectionId, tableName: t.name, schema: t.schema ?? null, action: "update" })
+                  .then((sql) => openSnippetTab(sql, `UPDATE ${t.name}`))
+                  .catch((e) => toast.error(fmtErr(e)));
+              }
             },
           },
           {

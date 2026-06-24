@@ -9,10 +9,10 @@
   position: fixed;
   z-index: 1000;
   min-width: 200px;
-  background: var(--color-bg);
+  background: var(--color-bg-elevated);
   border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-lg);
   padding: 4px 0;
   outline: none;
 }
@@ -33,14 +33,20 @@
   text-align: left;
   transition: background var(--transition-fast);
   white-space: nowrap;
+  border-left: 2px solid transparent;
 }
 
 .ctx-item:hover {
   background: var(--color-bg-hover);
+  border-left-color: var(--brand-turquoise);
 }
 
 .ctx-item--danger {
   color: var(--color-red);
+}
+
+.ctx-item--danger:hover {
+  border-left-color: var(--color-red);
 }
 
 .ctx-item--danger .ctx-item-icon {
@@ -53,7 +59,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--color-text-secondary);
+  color: var(--brand-bright-blue);
   flex-shrink: 0;
 }
 

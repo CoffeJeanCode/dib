@@ -4,18 +4,20 @@ use tokio::sync::Mutex;
 
 use crate::db::{
     ChangeRow, ColumnInfo, create_driver, ConnectionInfo, ConnectionStatus, DatabaseDriver,
-    DbConfig, GridFilter, PagedResult, QueryError, QueryResult, TableInfo, TableRelation,
+    DbConfig, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, TableInfo, TableRelation,
 };
 use crate::storage::AppDb;
 
 pub struct DbState {
     connections: Mutex<HashMap<String, Box<dyn DatabaseDriver>>>,
+    configs: Mutex<HashMap<String, DbConfig>>,
 }
 
 impl DbState {
     pub fn new() -> Self {
         Self {
             connections: Mutex::new(HashMap::new()),
+            configs: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -28,12 +30,15 @@ pub async fn connect_to_db(config: DbConfig, state: State<'_, DbState>) -> Resul
 
     let info = ConnectionInfo {
         id: id.clone(),
-        config,
+        config: DbConfig { password: None, ..config.clone() },
         status: ConnectionStatus::Connected,
     };
 
     let mut connections = state.connections.lock().await;
-    connections.insert(id, driver);
+    connections.insert(id.clone(), driver);
+    drop(connections);
+    let mut configs = state.configs.lock().await;
+    configs.insert(id, config);
 
     Ok(info)
 }
@@ -190,12 +195,15 @@ pub async fn connect_saved(
     // Strip password before returning to frontend
     let info = ConnectionInfo {
         id: new_id.clone(),
-        config: DbConfig { password: None, ..config },
+        config: DbConfig { password: None, ..config.clone() },
         status: ConnectionStatus::Connected,
     };
 
     let mut connections = db_state.connections.lock().await;
-    connections.insert(new_id, driver);
+    connections.insert(new_id.clone(), driver);
+    drop(connections);
+    let mut configs = db_state.configs.lock().await;
+    configs.insert(new_id, config);
 
     Ok(info)
 }
@@ -204,6 +212,43 @@ pub async fn connect_saved(
 pub async fn disconnect(connection_id: String, state: State<'_, DbState>) -> Result<(), String> {
     let mut connections = state.connections.lock().await;
     connections.remove(&connection_id);
+    drop(connections);
+    let mut configs = state.configs.lock().await;
+    configs.remove(&connection_id);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn list_databases(connection_id: String, state: State<'_, DbState>) -> Result<Vec<String>, QueryError> {
+    let connections = state.connections.lock().await;
+    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?;
+    driver.list_databases().await
+}
+
+#[tauri::command]
+pub async fn switch_database(connection_id: String, db_name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
+    let base_config = {
+        let configs = state.configs.lock().await;
+        configs.get(&connection_id).cloned().ok_or_else(|| QueryError {
+            message: format!("Connection config not found: {}", connection_id),
+            code: None,
+            severity: Some("ERROR".to_string()),
+        })?
+    };
+    let new_config = DbConfig { database: Some(db_name), ..base_config };
+    let new_driver = create_driver(&new_config).await?;
+    {
+        let mut connections = state.connections.lock().await;
+        connections.insert(connection_id.clone(), new_driver);
+    }
+    {
+        let mut configs = state.configs.lock().await;
+        configs.insert(connection_id, new_config);
+    }
     Ok(())
 }
 
@@ -241,4 +286,96 @@ pub async fn fetch_table_data(
         severity: Some("ERROR".to_string()),
     })?;
     driver.fetch_page(&table_name, schema.as_deref(), offset, limit, filters.as_deref().unwrap_or(&[])).await
+}
+
+#[tauri::command]
+pub async fn apply_schema_changes(
+    connection_id: String,
+    table_name: String,
+    schema: Option<String>,
+    changes: Vec<SchemaChange>,
+    state: State<'_, DbState>,
+) -> Result<(), QueryError> {
+    let connections = state.connections.lock().await;
+    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?;
+    driver.apply_schema_changes(&table_name, schema.as_deref(), &changes).await
+}
+
+#[tauri::command]
+pub async fn generate_crud_sql(
+    connection_id: String,
+    table_name: String,
+    schema: Option<String>,
+    action: String,
+    state: State<'_, DbState>,
+) -> Result<String, QueryError> {
+    let cols = {
+        let connections = state.connections.lock().await;
+        let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+            message: format!("Connection not found: {}", connection_id),
+            code: None,
+            severity: Some("ERROR".to_string()),
+        })?;
+        driver.get_table_schema(&table_name, schema.as_deref()).await?
+    };
+
+    let qualified = match &schema {
+        Some(s) => format!("\"{}\".\"{}\"", s, table_name),
+        None => format!("\"{}\"", table_name),
+    };
+
+    let sql = match action.as_str() {
+        "select" => {
+            if cols.is_empty() {
+                format!("SELECT *\nFROM {};", qualified)
+            } else {
+                let col_list = cols.iter()
+                    .map(|c| format!("  \"{}\"", c.name))
+                    .collect::<Vec<_>>()
+                    .join(",\n");
+                format!("SELECT\n{}\nFROM {};", col_list, qualified)
+            }
+        }
+        "insert" => {
+            let insertable: Vec<&ColumnInfo> = cols.iter()
+                .filter(|c| !c.data_type.to_lowercase().contains("serial"))
+                .collect();
+            if insertable.is_empty() {
+                format!("INSERT INTO {} DEFAULT VALUES;", qualified)
+            } else {
+                let names = insertable.iter()
+                    .map(|c| format!("\"{}\"", c.name))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let placeholders = insertable.iter()
+                    .map(|c| format!("  -- {}: {}", c.name, c.data_type))
+                    .collect::<Vec<_>>()
+                    .join(",\n");
+                format!("INSERT INTO {} ({})\nVALUES (\n{}\n);", qualified, names, placeholders)
+            }
+        }
+        "update" => {
+            let pk = cols.iter().find(|c| c.is_primary_key);
+            let non_pk: Vec<&ColumnInfo> = cols.iter().filter(|c| !c.is_primary_key).collect();
+            let set_clause = if non_pk.is_empty() {
+                "  -- col = value".to_string()
+            } else {
+                non_pk.iter()
+                    .map(|c| format!("  \"{}\" = -- {}", c.name, c.data_type))
+                    .collect::<Vec<_>>()
+                    .join(",\n")
+            };
+            let where_clause = pk
+                .map(|p| format!("WHERE \"{}\" = -- pk_value", p.name))
+                .unwrap_or_else(|| "WHERE id = -- value".to_string());
+            format!("UPDATE {}\nSET\n{}\n{};", qualified, set_clause, where_clause)
+        }
+        _ => return Err(QueryError::from(format!("Unknown action: {}", action))),
+    };
+
+    Ok(sql)
 }

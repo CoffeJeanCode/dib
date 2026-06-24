@@ -1,3 +1,4 @@
+use crate::storage::{InternalScript, QueryHistoryEntry};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -134,6 +135,56 @@ pub async fn export_script_dialog(content: String) -> Result<Option<String>, Str
         }
         None => Ok(None),
     }
+}
+
+// ── Internal script CRUD (primary storage) ─────────────────
+
+#[tauri::command]
+pub fn save_internal_script(
+    app_handle: tauri::AppHandle,
+    id: String,
+    title: String,
+    content: String,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.save_script_internal(&id, &title, &content)
+}
+
+#[tauri::command]
+pub fn get_internal_scripts(app_handle: tauri::AppHandle) -> Result<Vec<InternalScript>, String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.get_scripts_internal()
+}
+
+#[tauri::command]
+pub fn delete_internal_script(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.delete_script_internal(&id)
+}
+
+// ── Query history ────────────────────────────────────────────
+
+#[tauri::command]
+pub fn save_query_history(
+    app_handle: tauri::AppHandle,
+    connection_id: String,
+    query_text: String,
+    success: bool,
+    execution_time_ms: i64,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.save_query_history_internal(&connection_id, &query_text, success, execution_time_ms)
+}
+
+#[tauri::command]
+pub fn get_query_history(
+    app_handle: tauri::AppHandle,
+    connection_id: String,
+    limit: Option<i64>,
+    offset: Option<i64>,
+) -> Result<Vec<QueryHistoryEntry>, String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.get_query_history_internal(&connection_id, limit.unwrap_or(50), offset.unwrap_or(0))
 }
 
 /// Opens a native open dialog and returns the file name + content.

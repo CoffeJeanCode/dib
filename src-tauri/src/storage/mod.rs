@@ -3,6 +3,25 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QueryHistoryEntry {
+    pub id: i64,
+    pub connection_id: String,
+    pub query_text: String,
+    pub executed_at: String,
+    pub success: bool,
+    pub execution_time_ms: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InternalScript {
+    pub id: String,
+    pub title: String,
+    pub content: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 const KEYRING_SVC: &str = "dib_app";
 
 /// Single constructor — guarantees (service, user) are identical at every call site.
@@ -44,7 +63,15 @@ impl AppDb {
         let conn = Connection::open(data_dir.join("dib.db")).map_err(|e| e.to_string())?;
 
         conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS saved_connections (
+            "CREATE TABLE IF NOT EXISTS query_history (
+                id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                connection_id      TEXT NOT NULL,
+                query_text         TEXT NOT NULL,
+                executed_at        TEXT NOT NULL DEFAULT (datetime('now')),
+                success            INTEGER NOT NULL DEFAULT 1,
+                execution_time_ms  INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS saved_connections (
                 id       TEXT PRIMARY KEY,
                 name     TEXT NOT NULL,
                 engine   TEXT NOT NULL,
@@ -53,6 +80,13 @@ impl AppDb {
                 username TEXT NOT NULL DEFAULT '',
                 db_name  TEXT NOT NULL DEFAULT '',
                 path     TEXT
+            );
+            CREATE TABLE IF NOT EXISTS saved_scripts (
+                id         TEXT PRIMARY KEY,
+                title      TEXT NOT NULL,
+                content    TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
             );",
         )
         .map_err(|e| e.to_string())?;
@@ -201,5 +235,89 @@ impl AppDb {
         }
 
         Ok(())
+    }
+
+    // ── Internal scripts ────────────────────────────────────
+
+    pub fn save_script_internal(&self, id: &str, title: &str, content: &str) -> Result<(), String> {
+        let db = self.0.lock().map_err(|e| e.to_string())?;
+        db.execute(
+            "INSERT INTO saved_scripts (id, title, content, created_at, updated_at)
+             VALUES (?1, ?2, ?3, datetime('now'), datetime('now'))
+             ON CONFLICT(id) DO UPDATE SET
+                 title      = excluded.title,
+                 content    = excluded.content,
+                 updated_at = datetime('now')",
+            params![id, title, content],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn get_scripts_internal(&self) -> Result<Vec<InternalScript>, String> {
+        let db = self.0.lock().map_err(|e| e.to_string())?;
+        let mut stmt = db
+            .prepare(
+                "SELECT id, title, content, created_at, updated_at
+                 FROM saved_scripts ORDER BY updated_at DESC",
+            )
+            .map_err(|e| e.to_string())?;
+
+        let rows = stmt
+            .query_map([], |r| {
+                Ok(InternalScript {
+                    id: r.get(0)?,
+                    title: r.get(1)?,
+                    content: r.get(2)?,
+                    created_at: r.get(3)?,
+                    updated_at: r.get(4)?,
+                })
+            })
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        Ok(rows)
+    }
+
+    pub fn delete_script_internal(&self, id: &str) -> Result<(), String> {
+        let db = self.0.lock().map_err(|e| e.to_string())?;
+        db.execute("DELETE FROM saved_scripts WHERE id = ?1", params![id])
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    // ── Query history ───────────────────────────────────────
+
+    pub fn save_query_history_internal(&self, connection_id: &str, query_text: &str, success: bool, execution_time_ms: i64) -> Result<(), String> {
+        let db = self.0.lock().map_err(|e| e.to_string())?;
+        db.execute(
+            "INSERT INTO query_history (connection_id, query_text, success, execution_time_ms)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![connection_id, query_text, success as i64, execution_time_ms],
+        ).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn get_query_history_internal(&self, connection_id: &str, limit: i64, offset: i64) -> Result<Vec<QueryHistoryEntry>, String> {
+        let db = self.0.lock().map_err(|e| e.to_string())?;
+        let mut stmt = db.prepare(
+            "SELECT id, connection_id, query_text, executed_at, success, execution_time_ms
+             FROM query_history WHERE connection_id = ?1
+             ORDER BY executed_at DESC LIMIT ?2 OFFSET ?3",
+        ).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map(params![connection_id, limit, offset], |r| {
+            Ok(QueryHistoryEntry {
+                id: r.get(0)?,
+                connection_id: r.get(1)?,
+                query_text: r.get(2)?,
+                executed_at: r.get(3)?,
+                success: r.get::<_, i64>(4)? != 0,
+                execution_time_ms: r.get(5)?,
+            })
+        }).map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+        Ok(rows)
     }
 }

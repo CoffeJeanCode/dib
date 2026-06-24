@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, createContext, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Layout } from "./components/Layout";
 import { ConnectionManager } from "./components/ConnectionManager";
@@ -7,8 +7,11 @@ import { CommandPalette } from "./components/CommandPalette";
 import { PasswordPrompt } from "./components/PasswordPrompt";
 import { HomeView } from "./components/HomeView";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { ToastContainer } from "./components/Toast";
 import { useSavedConnections } from "./hooks/useSavedConnections";
 import { useUiState } from "./hooks/useUiState";
+import { useKeybindings } from "./hooks/useKeybindings";
+import { useToast } from "./hooks/useToast";
 import type { ConnectionInfo, TableInfo, SavedConnection } from "./types/db";
 import "./App.css";
 
@@ -19,7 +22,14 @@ interface ActiveConn {
 }
 
 interface NavTable { table: TableInfo; v: number }
-interface OpenScript { sql: string; name: string; v: number }
+interface OpenScript { sql: string; name: string; id: string; v: number }
+
+export interface ToastCtx {
+  info: (msg: string) => void;
+  error: (msg: string) => void;
+}
+
+export const ToastContext = createContext<ToastCtx>({ info: () => {}, error: () => {} });
 
 function App() {
   const { connections } = useSavedConnections();
@@ -27,6 +37,7 @@ function App() {
   const [active, setActive] = useState<ActiveConn | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const { toasts, info, error, remove } = useToast();
 
   const [navigateTo, setNavigateTo] = useState<NavTable | null>(null);
   const [openScript, setOpenScript] = useState<OpenScript | null>(null);
@@ -35,16 +46,37 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [passwordPrompt, setPasswordPrompt] = useState<{ savedId: string; name: string } | null>(null);
 
+  // Monaco fires this when Ctrl+P is pressed inside the editor
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "k")) {
-        e.preventDefault();
-        setPaletteOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const handler = () => setPaletteOpen(true);
+    window.addEventListener("dib:open-palette", handler);
+    return () => window.removeEventListener("dib:open-palette", handler);
   }, []);
+
+  useKeybindings([
+    { combo: "ctrl+p", handler: () => setPaletteOpen((p) => !p) },
+    { combo: "ctrl+k", handler: () => setPaletteOpen((p) => !p) },
+    {
+      combo: "ctrl+1",
+      handler: () => (document.getElementById("dib-sidebar-nav") as HTMLElement | null)?.focus(),
+      allowInMonaco: true,
+    },
+    {
+      combo: "ctrl+2",
+      handler: () => (document.getElementById("dib-main-panel") as HTMLElement | null)?.focus(),
+      allowInMonaco: true,
+    },
+    {
+      combo: "ctrl+r",
+      handler: () => window.dispatchEvent(new CustomEvent("dib:reload")),
+      allowInMonaco: true,
+    },
+    {
+      combo: "ctrl+shift+r",
+      handler: () => window.location.reload(),
+      allowInMonaco: true,
+    },
+  ]);
 
   const handleConnectionSelect = useCallback(
     async (savedId: string, password?: string) => {
@@ -67,13 +99,14 @@ function App() {
           const saved = connections.find((c) => c.id === savedId);
           setPasswordPrompt({ savedId, name: saved?.name || savedId });
         } else {
-          console.error("[DIB] connect_saved failed:", e);
+          const msg = err?.message || String(e);
+          error(msg);
         }
       } finally {
         setConnecting(false);
       }
     },
-    [connections, uiState.save_password],
+    [connections, uiState.save_password, error],
   );
 
   const handleNewConnection = useCallback((info: ConnectionInfo) => {
@@ -98,13 +131,26 @@ function App() {
     setNavigateTo({ table, v: Date.now() });
   }, []);
 
-  const handleScriptOpen = useCallback((sql: string, name: string) => {
-    setOpenScript({ sql, name, v: Date.now() });
+  const handleScriptOpen = useCallback((sql: string, name: string, id?: string) => {
+    setOpenScript({ sql, name, id: id ?? `ext-${Date.now()}`, v: Date.now() });
   }, []);
 
   const handleEditConnection = useCallback((conn: SavedConnection) => {
     setEditingConn(conn);
   }, []);
+
+  const handleDatabaseSwitch = useCallback(async (dbName: string) => {
+    if (!active) return;
+    try {
+      await invoke("switch_database", { connectionId: active.activeId, dbName });
+      setActive((prev) => prev ? { ...prev, name: dbName } : prev);
+      window.dispatchEvent(new CustomEvent("dib:reload"));
+      info(`Conectado a "${dbName}"`);
+    } catch (e: unknown) {
+      const msg = e && typeof e === "object" && "message" in e ? String((e as { message: unknown }).message) : String(e);
+      error(msg);
+    }
+  }, [active, info, error]);
 
   const handlePasswordSubmit = useCallback(
     (password: string) => {
@@ -120,8 +166,9 @@ function App() {
   }, []);
 
   return (
-    <>
+    <ToastContext.Provider value={{ info, error }}>
     <Layout
+      activeConnectionId={active?.activeId ?? null}
       onConnectionSelect={handleConnectionSelect}
       onEditConnection={handleEditConnection}
       onSettingsOpen={() => setSettingsOpen(true)}
@@ -132,6 +179,7 @@ function App() {
         connectionId={active?.activeId ?? null}
         onTableSelect={handleTableSelect}
         onScriptOpen={handleScriptOpen}
+        onDatabaseSwitch={handleDatabaseSwitch}
         actions={[
           ...(active ? [{ id: "disconnect", label: "Desconectar", onAction: handleDisconnect }] : []),
           { id: "new-connection", label: "Nueva Conexión", onAction: () => { setPaletteOpen(false); setShowNewConnection(true); } },
@@ -185,7 +233,8 @@ function App() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
-    </>
+      <ToastContainer toasts={toasts} onDismiss={remove} />
+    </ToastContext.Provider>
   );
 }
 

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { ToastContext } from "../App";
 import "./StatusBlock.css";
 
 interface SystemStatus {
@@ -13,14 +14,19 @@ interface SystemStatus {
 }
 
 export function StatusBlock() {
+  const toast = useContext(ToastContext);
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     invoke<SystemStatus>("check_system_status")
       .then(setStatus)
-      .catch((err) => setError(String(err)));
-  }, []);
+      .catch((err) => {
+        const msg = String(err);
+        setError(msg);
+        toast.error(`System status: ${msg}`);
+      });
+  }, [toast]);
 
   if (error) {
     return (

@@ -15,7 +15,7 @@
 .home-title {
   font-size: 2.5rem;
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
   letter-spacing: -0.04em;
   margin-bottom: var(--space-1);
 }
@@ -37,17 +37,16 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   padding: var(--space-2) var(--space-5);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--brand-bright-blue);
   border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  color: var(--color-text-primary);
+  background: var(--brand-deep-blue);
+  color: #fff;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: opacity var(--transition-fast);
 }
 
 .home-new-btn:hover {
-  background: var(--color-bg-hover);
-  border-color: var(--color-border-dark);
+  opacity: 0.9;
 }
 
 .home-recent {
@@ -58,7 +57,7 @@
   display: block;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--brand-turquoise);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: var(--space-3);
@@ -77,14 +76,15 @@
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-bg);
+  background: var(--color-bg-secondary);
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast);
+  border-left: 3px solid transparent;
 }
 
 .home-conn-card:hover {
   background: var(--color-bg-hover);
-  border-color: var(--color-border-dark);
+  border-left-color: var(--brand-turquoise);
 }
 
 .home-conn-icon {
@@ -92,11 +92,11 @@
 }
 
 .home-conn-icon--blue {
-  color: var(--color-db-postgres);
+  color: var(--brand-bright-blue);
 }
 
 .home-conn-icon--gray {
-  color: var(--color-db-sqlite);
+  color: var(--brand-light-cyan);
 }
 
 .home-conn-info {

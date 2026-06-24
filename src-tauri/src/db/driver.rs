@@ -61,11 +61,32 @@ pub struct ColumnInfo {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChangeRow {
-    pub row_index: usize,
-    pub column: String,
-    pub new_value: serde_json::Value,
+    /// "update" | "insert" | "delete"
+    #[serde(rename = "type")]
+    pub change_type: String,
+    /// Opaque client-side id — ignored by backend
+    #[serde(default)]
+    pub id: String,
+    /// Required for UPDATE (grouping); ignored for INSERT/DELETE
+    #[serde(default)]
+    pub row_index: Option<usize>,
+    /// Required for UPDATE; ignored for DELETE/INSERT
+    #[serde(default)]
+    pub column: Option<String>,
+    /// UPDATE: new cell value. INSERT: Record<col, val> object.
+    #[serde(default)]
+    pub new_value: Option<serde_json::Value>,
+    #[serde(default)]
+    pub old_value: Option<serde_json::Value>,
+    /// Required for UPDATE and DELETE
     #[serde(default)]
     pub row_pk_value: Option<serde_json::Value>,
+    /// For UPDATE: information_schema data_type of the changed column (e.g. "date")
+    #[serde(default)]
+    pub column_type: Option<String>,
+    /// For INSERT: map of column name → data_type
+    #[serde(default)]
+    pub column_types: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,6 +112,22 @@ pub struct PagedResult {
     pub total: u64,
     pub offset: u64,
     pub limit: u64,
+}
+
+/// One structural change to apply to an existing table.
+/// kind: "add_column" | "drop_column" | "rename_column" | "alter_type" | "set_nullable"
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SchemaChange {
+    pub kind: String,
+    pub column: String,
+    #[serde(default)]
+    pub new_column: Option<String>,
+    #[serde(default)]
+    pub data_type: Option<String>,
+    #[serde(default)]
+    pub nullable: Option<bool>,
+    #[serde(default)]
+    pub default_value: Option<String>,
 }
 
 #[async_trait]
@@ -121,6 +158,13 @@ pub trait DatabaseDriver: Send + Sync {
         table_name: &str,
         schema: Option<&str>,
     ) -> Result<Vec<TableRelation>, QueryError>;
+    async fn apply_schema_changes(
+        &self,
+        table_name: &str,
+        schema: Option<&str>,
+        changes: &[SchemaChange],
+    ) -> Result<(), QueryError>;
+    async fn list_databases(&self) -> Result<Vec<String>, QueryError>;
     fn driver_name(&self) -> &'static str;
 }
 

@@ -7,9 +7,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
-  background: var(--color-bg);
+  background: var(--color-bg-elevated);
   border-top: 1px solid var(--color-border);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   z-index: 10;
 }
 
@@ -20,7 +19,7 @@
 }
 
 .commit-footer-icon {
-  color: var(--color-text-tertiary);
+  color: var(--brand-turquoise);
   flex-shrink: 0;
 }
 
@@ -59,15 +58,15 @@
 
 .commit-footer-btn--ghost:hover:not(:disabled) {
   background: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
 }
 
 .commit-footer-btn--solid {
-  background: var(--color-blue);
+  background: var(--brand-bright-blue);
   color: white;
   border: none;
 }
 
 .commit-footer-btn--solid:hover:not(:disabled) {
-  background: var(--color-blue-dark);
+  opacity: 0.9;
 }

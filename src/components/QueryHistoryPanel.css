@@ -1,0 +1,120 @@
+.qhp {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  min-width: 220px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.qhp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.qhp-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.qhp-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+}
+.qhp-close:hover { color: var(--text); background: var(--bg-hover); }
+
+.qhp-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.qhp-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.qhp-entry {
+  padding: 6px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.qhp-entry:hover { background: var(--bg-hover); }
+.qhp-entry--err .qhp-entry-icon { color: var(--red, #e05252); }
+.qhp-entry:not(.qhp-entry--err) .qhp-entry-icon { color: var(--green, #52a852); }
+
+.qhp-entry-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.qhp-entry-icon { flex-shrink: 0; padding-top: 1px; }
+
+.qhp-entry-sql {
+  flex: 1;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qhp-entry-meta {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.qhp-entry-detail {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+
+.qhp-entry-full {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0 0 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 6px;
+  border-radius: 4px;
+}
+
+.qhp-restore-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.qhp-restore-btn:hover { color: var(--accent, #7ba7e2); border-color: var(--accent, #7ba7e2); }

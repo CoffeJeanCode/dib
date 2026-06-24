@@ -13,6 +13,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Network } from "lucide-react";
 import { Tab } from "./Tab";
 import type { TabData } from "./Tab";
 import "./TabBar.css";
@@ -23,6 +24,7 @@ interface TabBarProps {
   onSelect: (id: string) => void;
   onClose: (id: string) => void;
   onReorder: (tabs: TabData[]) => void;
+  onSchemaOpen?: () => void;
 }
 
 function SortableTab({
@@ -58,7 +60,7 @@ function SortableTab({
   );
 }
 
-export function TabBar({ tabs, activeId, onSelect, onClose, onReorder }: TabBarProps) {
+export function TabBar({ tabs, activeId, onSelect, onClose, onReorder, onSchemaOpen }: TabBarProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -91,6 +93,11 @@ export function TabBar({ tabs, activeId, onSelect, onClose, onReorder }: TabBarP
           </div>
         </SortableContext>
       </DndContext>
+      {onSchemaOpen && (
+        <button className="tabbar-schema-btn" onClick={onSchemaOpen} title="Ver Esquema">
+          <Network size={14} />
+        </button>
+      )}
     </div>
   );
 }

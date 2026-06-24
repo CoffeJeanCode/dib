@@ -21,16 +21,16 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--color-text-muted, #888);
+  color: var(--color-text-tertiary);
   font-size: 13px;
 }
 
 .sv-no-relations {
-  background: var(--color-bg-secondary, #1e1e1e);
-  border: 1px solid var(--color-border, #333);
+  background: var(--color-bg-active);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 6px 14px;
   font-size: 12px;
-  color: var(--color-text-muted, #888);
+  color: var(--brand-turquoise);
   pointer-events: none;
 }

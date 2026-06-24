@@ -86,16 +86,48 @@ export interface PendingChange {
   table: string;
   row_index?: number;
   column?: string;
+  column_type?: string;
+  column_types?: Record<string, string>;
   old_value?: unknown;
   new_value?: unknown;
   row_pk_value?: unknown;
 }
 
+export interface InternalScript {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QueryHistoryEntry {
+  id: number;
+  connection_id: string;
+  query_text: string;
+  executed_at: string;
+  success: boolean;
+  execution_time_ms: number;
+}
+
+export type SchemaChangeKind = "add_column" | "drop_column" | "rename_column" | "alter_type" | "set_nullable";
+
+export interface SchemaChange {
+  kind: SchemaChangeKind;
+  column: string;
+  new_column?: string;
+  data_type?: string;
+  nullable?: boolean;
+  default_value?: string;
+}
+
+/** @deprecated use InternalScript */
 export interface ScriptInfo {
   name: string;
   path: string;
 }
 
+/** @deprecated use InternalScript */
 export interface ScriptMeta {
   name: string;
   modified_ms: number;

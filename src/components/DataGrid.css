@@ -18,7 +18,7 @@
 .dg-scroll::-webkit-scrollbar-track { background: transparent; }
 .dg-scroll::-webkit-scrollbar-thumb { background: var(--color-border-dark); border-radius: 3px; }
 
-/* ── Header ─────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────── */
 .dg-header {
   display: flex;
   flex-wrap: nowrap;
@@ -26,22 +26,27 @@
   top: 0;
   z-index: 3;
   background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-dark);
+  border-bottom: 1px solid var(--color-border);
+  min-width: 100%;
+  width: max-content;
 }
 
-/* ── Row ────────────────────────────────────────────────── */
+/* ── Row ─────────────────────────────────────────────────── */
 .dg-row {
   display: flex;
   flex-wrap: nowrap;
   border-bottom: 1px solid var(--color-border);
   height: 38px;
+  min-width: 100%;
+  width: max-content;
+  transition: background var(--transition-fastest);
 }
 
 .dg-row:hover {
   background: var(--color-bg-hover);
 }
 
-/* ── Cell (shared) ──────────────────────────────────────── */
+/* ── Cell (shared) ───────────────────────────────────────── */
 .dg-cell {
   height: 38px;
   padding: 0 8px;
@@ -63,46 +68,20 @@
   border-right: none;
 }
 
-/* ── Active cell — keyboard focus ───────────────────────── */
+/* ── Active cell — keyboard focus ────────────────────────── */
 .dg-cell--active {
-  outline: 2px solid var(--color-blue);
+  outline: 2px solid var(--brand-turquoise);
   outline-offset: -2px;
   z-index: 1;
 }
 
-/* ── Index column (sticky left) ─────────────────────────── */
-.dg-cell--index {
-  width: 50px;
-  min-width: 50px;
-  max-width: 50px;
-  justify-content: center;
-  background: var(--color-bg-secondary);
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  position: sticky;
-  left: 0;
-  z-index: 4;
-  border-right: 1px solid var(--color-border-dark);
-  cursor: default;
-}
-
-.dg-header .dg-cell--index {
-  z-index: 5;
-  background: var(--color-bg-secondary);
-}
-
-.dg-row:hover .dg-cell--index {
-  background: var(--color-bg-active);
-}
-
-/* ── Header cell ────────────────────────────────────────── */
+/* ── Header cell ─────────────────────────────────────────── */
 .dg-th {
-  background: var(--color-bg-secondary);
+  background: transparent;
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  color: var(--brand-turquoise);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   user-select: none;
@@ -137,7 +116,7 @@
   line-height: 1.2;
 }
 
-/* ── Resizer handle ─────────────────────────────────────── */
+/* ── Resizer handle ──────────────────────────────────────── */
 .dg-resizer {
   position: absolute;
   top: 0;
@@ -150,11 +129,11 @@
 
 .dg-resizer:hover,
 .dg-resizer:active {
-  background: var(--color-blue);
-  opacity: 0.4;
+  background: var(--brand-turquoise);
+  opacity: 0.6;
 }
 
-/* ── Body — virtualized ─────────────────────────────────── */
+/* ── Body — virtualized ──────────────────────────────────── */
 .dg-body {
   position: relative;
 }
@@ -163,44 +142,44 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  right: auto;
 }
 
-/* ── Data cell ──────────────────────────────────────────── */
+/* ── Data cell ───────────────────────────────────────────── */
 .dg-cell:empty::after {
   content: "null";
   color: var(--color-text-tertiary);
   font-style: italic;
 }
 
-/* ── Selected cell (multi-select) ──────────────────────── */
+/* ── Selected cell (multi-select) ───────────────────────── */
 .dg-cell--selected {
-  background: rgba(47, 128, 237, 0.10);
+  background: rgba(72, 214, 210, 0.1);
 }
 
 .dg-cell--selected.dg-cell--active {
-  background: rgba(47, 128, 237, 0.16);
+  background: rgba(72, 214, 210, 0.15);
 }
 
-/* ── Dirty cell — pending change indicator ──────────────── */
+/* ── Dirty cell — pending change indicator ───────────────── */
 .dg-cell--changed {
-  background: rgba(253, 224, 71, 0.08);
+  background: rgba(254, 252, 191, 0.08);
 }
 
 .dg-cell--changed::before {
   content: "";
   position: absolute;
   top: 0;
-  right: 0;
+  left: 0;
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 0 6px 6px 0;
-  border-color: transparent var(--color-orange) transparent transparent;
+  border-width: 8px 8px 0 0;
+  border-color: var(--brand-pale-yellow) transparent transparent transparent;
   pointer-events: none;
 }
 
-/* ── Edit input ─────────────────────────────────────────── */
+/* ── Edit input ──────────────────────────────────────────── */
 .dg-cell-input {
   width: 100%;
   height: 100%;
@@ -212,7 +191,7 @@
   outline: none;
 }
 
-/* ── Footer ─────────────────────────────────────────────── */
+/* ── Footer ──────────────────────────────────────────────── */
 .dg-footer {
   padding: 0 var(--space-3);
   height: 28px;
@@ -228,7 +207,7 @@
 }
 
 .dg-footer:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--color-blue);
+  box-shadow: inset 0 0 0 2px var(--brand-turquoise);
 }
 
 .dg-footer-note {
@@ -237,7 +216,7 @@
 }
 
 .dg-footer-changes {
-  color: var(--color-orange);
+  color: var(--brand-pale-yellow);
   font-weight: var(--font-weight-medium);
 }
 
@@ -256,7 +235,7 @@
 }
 
 .dg-footer-selection {
-  color: var(--color-blue);
+  color: var(--brand-turquoise);
   font-weight: var(--font-weight-medium);
 }
 
@@ -266,7 +245,7 @@
   color: var(--color-text-tertiary);
 }
 
-/* ── Filter button ──────────────────────────────────────── */
+/* ── Filter button ───────────────────────────────────────── */
 .dg-filter-btn {
   display: none;
   align-items: center;
@@ -290,14 +269,14 @@
 
 .dg-filter-btn:hover {
   background: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
 }
 
 .dg-filter-btn--active {
-  color: var(--color-blue, #4f9cf9);
+  color: var(--brand-turquoise);
 }
 
-/* ── Filter popover ─────────────────────────────────────── */
+/* ── Filter popover ──────────────────────────────────────── */
 .dg-filter-backdrop {
   position: fixed;
   inset: 0;
@@ -307,9 +286,9 @@
 .dg-filter-popover {
   position: fixed;
   z-index: 991;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 6px);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   padding: 10px;
   display: flex;
@@ -333,7 +312,7 @@
 
 .dg-filter-select:focus,
 .dg-filter-input:focus {
-  border-color: var(--color-blue, #4f9cf9);
+  border-color: var(--brand-turquoise);
 }
 
 .dg-filter-actions {
@@ -354,9 +333,9 @@
 }
 
 .dg-filter-apply {
-  background: var(--color-blue, #4f9cf9);
+  background: var(--brand-bright-blue);
   color: #fff;
-  border-color: var(--color-blue, #4f9cf9);
+  border-color: var(--brand-bright-blue);
 }
 
 .dg-filter-apply:hover { opacity: 0.88; }
@@ -368,7 +347,7 @@
 
 .dg-filter-clear:hover { background: var(--color-bg-hover); }
 
-/* ── Empty / Loading states ─────────────────────────────── */
+/* ── Empty / Loading states ──────────────────────────────── */
 .dg-empty {
   display: flex;
   align-items: center;
@@ -381,4 +360,36 @@
 
 .dg-loading {
   color: var(--color-text-secondary);
+}
+
+/* ── Ghost row (pending INSERT) ──────────────────────────── */
+.dg-row--ghost {
+  background: rgba(16, 185, 129, 0.06);
+}
+
+/* ── Deleted row (pending DELETE) ────────────────────────── */
+.dg-row--deleted {
+  opacity: 0.45;
+}
+
+.dg-row--deleted .dg-cell {
+  text-decoration: line-through;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Footer history indicator ────────────────────────────── */
+.dg-footer-history {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ── Outer wrapper focus ring ─────────────────────────────── */
+.dg-wrap:focus {
+  outline: none;
+}
+
+.dg-wrap:focus-visible {
+  outline: 2px solid var(--brand-turquoise);
+  outline-offset: -2px;
 }

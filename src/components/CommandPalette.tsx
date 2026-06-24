@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Search, Table2, FileText, Terminal } from "lucide-react";
-import type { TableInfo, ScriptMeta } from "../types/db";
+import { Search, Table2, FileText, Zap, Database } from "lucide-react";
+import type { TableInfo, InternalScript } from "../types/db";
 import "./CommandPalette.css";
 
 export interface CommandAction {
@@ -11,37 +11,23 @@ export interface CommandAction {
 }
 
 type PaletteItem =
-  | { kind: "table";  id: string; label: string; table: TableInfo }
-  | { kind: "script"; id: string; label: string; script: ScriptMeta }
-  | { kind: "action"; id: string; label: string; onAction: () => void };
-
-// Subsequence fuzzy: all chars of query appear in order in text
-function fuzzy(query: string, text: string): boolean {
-  if (!query) return true;
-  const q = query.toLowerCase();
-  const t = text.toLowerCase();
-  let qi = 0;
-  for (let i = 0; i < t.length && qi < q.length; i++) {
-    if (t[i] === q[qi]) qi++;
-  }
-  return qi === q.length;
-}
-
-function extractSql(raw: string): string {
-  const m = raw.match(/```sql\n([\s\S]*?)\n```/);
-  return m ? m[1] : raw;
-}
+  | { kind: "table";    id: string; label: string; table: TableInfo }
+  | { kind: "script";   id: string; label: string; script: InternalScript }
+  | { kind: "action";   id: string; label: string; onAction: () => void }
+  | { kind: "database"; id: string; label: string; dbName: string };
 
 const ITEM_ICON: Record<PaletteItem["kind"], React.ReactNode> = {
-  table:  <Table2 size={16} />,
-  script: <FileText size={16} />,
-  action: <Terminal size={16} />,
+  table:    <Table2 size={16} />,
+  script:   <FileText size={16} />,
+  action:   <Zap size={16} />,
+  database: <Database size={16} />,
 };
 
 const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
-  table:  "Tabla",
-  script: "Script",
-  action: "Acción",
+  table:    "Tabla",
+  script:   "Script",
+  action:   "Acción",
+  database: "Base de datos",
 };
 
 interface CommandPaletteProps {
@@ -49,7 +35,8 @@ interface CommandPaletteProps {
   onClose: () => void;
   connectionId?: string | null;
   onTableSelect?: (table: TableInfo) => void;
-  onScriptOpen?: (sql: string, name: string) => void;
+  onScriptOpen?: (sql: string, name: string, id?: string) => void;
+  onDatabaseSwitch?: (dbName: string) => void;
   actions?: CommandAction[];
 }
 
@@ -59,12 +46,20 @@ export function CommandPalette({
   connectionId,
   onTableSelect,
   onScriptOpen,
+  onDatabaseSwitch,
   actions = [],
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [baseItems, setBaseItems] = useState<PaletteItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!resultsRef.current) return;
+    const el = resultsRef.current.querySelector(`[data-palette-index="${selectedIndex}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
 
   useEffect(() => {
     if (!open) return;
@@ -86,13 +81,22 @@ export function CommandPalette({
           })
           .catch(console.error),
       );
+      loaders.push(
+        invoke<string[]>("list_databases", { connectionId })
+          .then((dbs) => {
+            for (const db of dbs) {
+              next.push({ kind: "database", id: `db:${db}`, label: db, dbName: db });
+            }
+          })
+          .catch(() => {}),
+      );
     }
 
     loaders.push(
-      invoke<ScriptMeta[]>("list_scripts")
+      invoke<InternalScript[]>("get_internal_scripts")
         .then((scripts) => {
           for (const s of scripts) {
-            next.push({ kind: "script", id: `s:${s.name}`, label: s.name, script: s });
+            next.push({ kind: "script", id: `s:${s.id}`, label: s.title, script: s });
           }
         })
         .catch(console.error),
@@ -101,19 +105,18 @@ export function CommandPalette({
     Promise.all(loaders).then(() => setBaseItems([...next]));
   }, [open, connectionId]);
 
-  // Prefix routing — pure filter, useMemo for performance
+  // Strict substring match across all item types — no prefix routing
   const filtered = useMemo<PaletteItem[]>(() => {
-    if (query.startsWith(">")) {
-      const q = query.slice(1).trimStart();
-      return actions
-        .filter((a) => fuzzy(q, a.label))
-        .map((a) => ({ kind: "action" as const, id: `a:${a.id}`, label: a.label, onAction: a.onAction }));
-    }
-    if (query.startsWith("#")) {
-      const q = query.slice(1).trimStart();
-      return baseItems.filter((item) => item.kind === "script" && fuzzy(q, item.label));
-    }
-    return baseItems.filter((item) => item.kind === "table" && fuzzy(query, item.label));
+    const actionItems: PaletteItem[] = actions.map((a) => ({
+      kind: "action" as const,
+      id: `a:${a.id}`,
+      label: a.label,
+      onAction: a.onAction,
+    }));
+    const allItems = [...baseItems, ...actionItems];
+    const q = query.toLowerCase().trim();
+    if (!q) return allItems;
+    return allItems.filter((item) => item.label.toLowerCase().includes(q));
   }, [query, baseItems, actions]);
 
   useEffect(() => { setSelectedIndex(0); }, [query]);
@@ -123,18 +126,15 @@ export function CommandPalette({
       if (item.kind === "table") {
         onTableSelect?.(item.table);
       } else if (item.kind === "script") {
-        try {
-          const raw = await invoke<string>("read_script", { filename: item.script.name });
-          onScriptOpen?.(extractSql(raw), item.script.name);
-        } catch (e) {
-          console.error(e);
-        }
+        onScriptOpen?.(item.script.content, item.script.title, item.script.id);
+      } else if (item.kind === "database") {
+        onDatabaseSwitch?.(item.dbName);
       } else {
         item.onAction();
       }
       onClose();
     },
-    [onTableSelect, onScriptOpen, onClose],
+    [onTableSelect, onScriptOpen, onDatabaseSwitch, onClose],
   );
 
   const handleKeyDown = useCallback(
@@ -163,11 +163,7 @@ export function CommandPalette({
 
   if (!open) return null;
 
-  const prefix = query.startsWith(">") ? ">" : query.startsWith("#") ? "#" : null;
-  const placeholder =
-    prefix === ">" ? "Buscar acciones…" :
-    prefix === "#" ? "Buscar scripts…" :
-    "Buscar tablas…";
+  const placeholder = "Buscar tablas, scripts, acciones…";
 
   return (
     <div className="palette-backdrop" onClick={onClose}>
@@ -183,25 +179,26 @@ export function CommandPalette({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <span className="palette-input-hint">&gt; acciones · # scripts</span>
+          <span className="palette-input-hint">↑↓ navegar · Enter seleccionar</span>
         </div>
 
-        <div className="palette-results">
+        <div className="palette-results" ref={resultsRef}>
           {filtered.length === 0 ? (
             <div className="palette-empty">Sin resultados</div>
           ) : (
             filtered.map((item, i) => (
               <div
                 key={item.id}
+                data-palette-index={i}
                 className={`palette-item${i === selectedIndex ? " palette-item--selected" : ""}`}
                 onClick={() => execute(item)}
                 onMouseEnter={() => setSelectedIndex(i)}
               >
-                <span className="palette-item-icon">
+                <span className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}>
                   {ITEM_ICON[item.kind]}
                 </span>
                 <span className="palette-item-label">{item.label}</span>
-                <span className="palette-item-category">{ITEM_CATEGORY[item.kind]}</span>
+                <span className={`palette-item-category${item.kind === "action" || item.kind === "database" ? " palette-item-category--action" : ""}`}>{ITEM_CATEGORY[item.kind]}</span>
               </div>
             ))
           )}

@@ -1,7 +1,7 @@
 .sidebar {
   width: var(--sidebar-width-dynamic, var(--sidebar-width));
   min-width: var(--sidebar-width-dynamic, var(--sidebar-width));
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-sidebar);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -21,8 +21,8 @@
 }
 
 .sidebar-resize-handle:hover {
-  background: var(--color-blue);
-  opacity: 0.4;
+  background: var(--brand-turquoise);
+  opacity: 0.6;
 }
 
 .sidebar--collapsed {
@@ -53,14 +53,16 @@
   height: 32px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background var(--transition-fastest);
+  transition: background var(--transition-fastest), color var(--transition-fastest);
+  color: var(--color-text-secondary);
 }
 
 .sidebar-collapsed-icon:hover {
-  background: var(--color-hover);
+  background: var(--color-bg-hover);
+  color: var(--brand-bright-blue);
 }
 
-/* ── Hover flyout ───────────────────────────────────────── */
+/* ── Hover flyout ────────────────────────────────────────── */
 .sidebar--collapsed .sidebar-flyout {
   position: absolute;
   top: 0;
@@ -68,7 +70,7 @@
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
   height: 100%;
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-sidebar);
   border-right: 1px solid var(--color-border);
   box-shadow: var(--shadow-lg);
   z-index: 100;
@@ -97,7 +99,7 @@
 .sidebar-logo {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+  color: var(--brand-bright-blue);
   letter-spacing: -0.02em;
 }
 
@@ -119,7 +121,7 @@
 
 .sidebar-toggle:hover {
   background: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
 }
 
 .sidebar-header-actions {
@@ -145,7 +147,7 @@
 
 .sidebar-icon-btn:hover {
   background: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
 }
 
 .sidebar-nav {
@@ -162,7 +164,7 @@
   display: block;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--brand-turquoise);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: var(--space-1);
@@ -182,7 +184,7 @@
 }
 
 .sidebar-section-toggle:hover {
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
 }
 
 .sidebar-chevron {
@@ -202,10 +204,12 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition-fastest);
+  border-left: 2px solid transparent;
 }
 
 .sidebar-item:hover {
-  background: var(--color-hover);
+  background: var(--color-bg-hover);
+  border-left-color: var(--brand-turquoise);
 }
 
 .sidebar-item--empty {
@@ -214,6 +218,7 @@
 
 .sidebar-item--empty:hover {
   background: transparent;
+  border-left-color: transparent;
 }
 
 .sidebar-item-text {
@@ -273,7 +278,7 @@
 
 .sidebar-item-more:hover {
   background: var(--color-bg-hover);
-  color: var(--color-text-primary);
+  color: var(--brand-turquoise);
 }
 
 .sidebar-icon {
@@ -281,13 +286,265 @@
 }
 
 .sidebar-icon--blue {
-  color: var(--color-db-postgres);
+  color: var(--brand-bright-blue);
 }
 
 .sidebar-icon--gray {
-  color: var(--color-db-sqlite);
+  color: var(--brand-light-cyan);
 }
 
 .sidebar-icon--file {
   color: var(--color-text-tertiary);
+}
+
+/* ── Keyboard navigation ─────────────────────────────────── */
+.sidebar-item--keyboard-selected {
+  background: var(--brand-deep-blue);
+  color: #fff;
+  border-left-color: var(--brand-turquoise);
+}
+
+.sidebar-item--keyboard-selected .sidebar-item-text,
+.sidebar-item--keyboard-selected .sidebar-item-detail {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-item--keyboard-selected:hover {
+  background: var(--brand-deep-blue);
+}
+
+/* ── Inline rename input ─────────────────────────────────── */
+.sidebar-rename-input {
+  flex: 1;
+  background: var(--color-bg);
+  border: 1px solid var(--brand-turquoise);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-sans);
+  padding: 0 var(--space-1);
+  height: 22px;
+  outline: none;
+  min-width: 0;
+}
+
+/* ── Hover action buttons ────────────────────────────────── */
+.sidebar-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fastest);
+  flex-shrink: 0;
+}
+
+.sidebar-item:hover .sidebar-item-actions {
+  opacity: 1;
+}
+
+.sidebar-item-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fastest), color var(--transition-fastest);
+}
+
+.sidebar-item-action-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--brand-turquoise);
+}
+
+.sidebar-item-action-btn--danger:hover {
+  color: var(--color-red);
+}
+
+/* ── Undo hint ───────────────────────────────────────────── */
+.sidebar-undo-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  padding: var(--space-1) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-2);
+  font-style: italic;
+}
+
+/* sidebar-nav focus ring */
+.sidebar-nav:focus {
+  outline: none;
+}
+
+/* ── Database Selector (Beekeeper-style) ─────────────────── */
+.sidebar-db-selector {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebar-db-selector-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-active);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fastest);
+  text-align: left;
+}
+
+.sidebar-db-selector-btn:hover {
+  border-color: var(--brand-turquoise);
+}
+
+.sidebar-db-selector-icon {
+  flex-shrink: 0;
+  color: var(--brand-bright-blue);
+}
+
+.sidebar-db-selector-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+}
+
+.sidebar-db-selector-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  transition: transform var(--transition-fast);
+}
+
+.sidebar-db-selector-chevron--open {
+  transform: rotate(180deg);
+}
+
+.sidebar-db-dropdown {
+  position: absolute;
+  top: 100%;
+  left: var(--space-3);
+  right: var(--space-3);
+  margin-top: 2px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+  outline: none;
+}
+
+.sidebar-db-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  transition: background var(--transition-fastest);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+.sidebar-db-option:hover {
+  background: var(--color-bg-hover);
+}
+
+.sidebar-db-option--active {
+  background: var(--color-bg-active);
+  border-left: 2px solid var(--brand-turquoise);
+}
+
+.sidebar-db-option-icon {
+  flex-shrink: 0;
+  color: var(--brand-bright-blue);
+}
+
+.sidebar-db-option-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-db-option-name {
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-db-option-detail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Segmented Tabs (Connections / Scripts) ─────────────── */
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebar-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-fastest), border-color var(--transition-fastest);
+}
+
+.sidebar-tab:hover {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-hover);
+}
+
+.sidebar-tab--active {
+  color: var(--dt-light);
+  border-bottom-color: var(--dt-turquoise);
+}
+
+/* ── DB Categories ──────────────────────────────────────── */
+.sidebar-db-categories {
+  padding-left: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-1);
+}
+
+.sidebar-db-category {
+  padding: 0;
+}
+
+.sidebar-db-category .sidebar-section-toggle {
+  padding: var(--space-1) 0;
+  gap: var(--space-2);
+}
+
+.sidebar-db-category-items {
+  padding-left: var(--space-3);
+  padding-bottom: var(--space-1);
 }
