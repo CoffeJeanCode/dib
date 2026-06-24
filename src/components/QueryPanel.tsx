@@ -228,6 +228,8 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
         toast.error("Error cargando tablas");
       })
       .finally(() => setTablesLoading(false));
+    // toast is a stable context value; excluding it keeps this from refetching every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionId, connectionName]);
 
   // ── Ctrl+R reload listener — registered once, handler updated via ref ──
@@ -507,8 +509,14 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   activeTabIdRef.current = activeTabId;
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
-  // per-tab caches — plain refs, no re-render
-  const monacoViewStateCache = useRef<Record<string, unknown>>({});
+  // Hoisted Monaco view state: persist onto the tab's global payload (zero amnesia)
+  const handleSaveViewState = useCallback((tabId: string, viewState: unknown) => {
+    setTabs((prev) =>
+      prev.map((t) =>
+        t.id === tabId ? { ...t, payload: { ...t.payload, viewState } } : t,
+      ),
+    );
+  }, []);
 
   // Hoisted DataGrid cursor: persist active cell onto the tab's global payload
   // so it survives unmount / tab switch (criterion: state lives in tab.payload).
@@ -727,7 +735,8 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
             onDirty={() => markTabDirty(activeTabId)}
             onSaveScript={(sql) => saveSqlTab(activeTabId, sql)}
             tabId={activeTabId}
-            viewStateCache={monacoViewStateCache}
+            viewState={activeTab.payload.viewState}
+            onSaveViewState={handleSaveViewState}
           />
         )}
 

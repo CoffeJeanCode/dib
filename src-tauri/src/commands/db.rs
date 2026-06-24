@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 
 use crate::db::{
     ChangeRow, ColumnInfo, create_driver, ConnectionInfo, ConnectionStatus, DatabaseDriver,
-    DbConfig, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, TableInfo, TableRelation,
+    DbConfig, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation,
 };
 use crate::storage::AppDb;
 
@@ -54,6 +54,19 @@ pub async fn fetch_tables(connection_id: String, state: State<'_, DbState>) -> R
     })?;
 
     driver.get_tables().await
+}
+
+#[tauri::command]
+pub async fn fetch_schema_objects(connection_id: String, state: State<'_, DbState>) -> Result<SchemaObjects, QueryError> {
+    let connections = state.connections.lock().await;
+
+    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?;
+
+    driver.get_schema_objects().await
 }
 
 #[tauri::command]

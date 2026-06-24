@@ -548,3 +548,13 @@
   padding-left: var(--space-3);
   padding-bottom: var(--space-1);
 }
+
+/* Entity count badge — Dark Techno turquoise accent */
+.sidebar-section-count {
+  margin-left: auto;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--dt-turquoise);
+  opacity: 0.7;
+  padding: 0 var(--space-1);
+}

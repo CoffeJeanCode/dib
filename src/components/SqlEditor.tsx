@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useContext, type RefObject } from "react";
+import { useState, useCallback, useRef, useEffect, useContext } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { invoke } from "@tauri-apps/api/core";
 import { Play, Upload, Download } from "lucide-react";
@@ -24,7 +24,9 @@ interface SqlEditorProps {
   onDirty?: () => void;
   onSaveScript?: (sql: string) => void;
   tabId?: string;
-  viewStateCache?: RefObject<Record<string, unknown>>;
+  // Hoisted Monaco view state: read from tab.payload, persisted back via callback.
+  viewState?: unknown;
+  onSaveViewState?: (tabId: string, viewState: unknown) => void;
 }
 
 const DEFAULT_SQL = "SELECT * FROM ";
@@ -134,7 +136,7 @@ const SQL_FUNCTIONS = [
   "TO_CHAR", "TO_NUMBER",
 ];
 
-export function SqlEditor({ connectionId, connectionName, initialSql, onImportScript, onDirty, onSaveScript, tabId, viewStateCache }: SqlEditorProps) {
+export function SqlEditor({ connectionId, connectionName, initialSql, onImportScript, onDirty, onSaveScript, tabId, viewState, onSaveViewState }: SqlEditorProps) {
   const toast = useContext(ToastContext);
   const [sql, setSql] = useState(initialSql ?? DEFAULT_SQL);
   const initialSqlRef = useRef(initialSql ?? DEFAULT_SQL);
@@ -143,18 +145,20 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const tabIdRef = useRef(tabId);
   tabIdRef.current = tabId;
-  const viewStateCacheRef = useRef(viewStateCache);
-  viewStateCacheRef.current = viewStateCache;
+  // latest hoisted view state (tab.payload.viewState) + persistence callback
+  const viewStateRef = useRef(viewState);
+  viewStateRef.current = viewState;
+  const onSaveViewStateRef = useRef(onSaveViewState);
+  onSaveViewStateRef.current = onSaveViewState;
   const prevTabIdRef = useRef(tabId);
 
   useEffect(() => {
     if (initialSql !== undefined) {
-      // Save view state for old tab before resetting content
-      const cache = viewStateCacheRef.current?.current;
+      // Persist the OUTGOING tab's view state into its global payload before swapping content
       const prevId = prevTabIdRef.current;
-      if (cache && prevId && editorRef.current) {
+      if (prevId && editorRef.current) {
         const state = editorRef.current.saveViewState();
-        if (state) cache[prevId] = state;
+        if (state) onSaveViewStateRef.current?.(prevId, state);
       }
       setSql(initialSql);
       initialSqlRef.current = initialSql;
@@ -162,11 +166,10 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
     }
   }, [initialSql]);
 
-  // Restore view state after Monaco has updated value for the new tab
+  // Restore the new tab's view state (from payload) after Monaco swaps value
   useEffect(() => {
-    const cache = viewStateCacheRef.current?.current;
-    if (cache && tabId && cache[tabId] && editorRef.current) {
-      const state = cache[tabId];
+    const state = viewStateRef.current;
+    if (state && editorRef.current) {
       requestAnimationFrame(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         editorRef.current?.restoreViewState(state as any);
@@ -174,6 +177,17 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
     }
     prevTabIdRef.current = tabId;
   }, [tabId]);
+
+  // On unmount, persist current tab's view state into its payload
+  useEffect(() => {
+    return () => {
+      const id = tabIdRef.current;
+      if (id && editorRef.current) {
+        const state = editorRef.current.saveViewState();
+        if (state) onSaveViewStateRef.current?.(id, state);
+      }
+    };
+  }, []);
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -404,11 +418,11 @@ export function SqlEditor({ connectionId, connectionName, initialSql, onImportSc
     });
 
     completionDisposable.current = disposable;
-    // Restore view state for this tab if available
-    const cache = viewStateCacheRef.current?.current;
-    if (cache && tabIdRef.current && cache[tabIdRef.current]) {
+    // Restore view state for this tab from the hoisted payload, if available
+    const saved = viewStateRef.current;
+    if (saved) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      editor.restoreViewState(cache[tabIdRef.current] as any);
+      editor.restoreViewState(saved as any);
     }
     editor.focus();
   }, []); // stable — reads from refs only

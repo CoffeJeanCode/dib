@@ -371,7 +371,7 @@ export const DataGrid = memo(function DataGrid({
       if (moveDirection === "down" && row + 1 < totalR) setActiveCell({ row: row + 1, col });
       else if (moveDirection === "right" && col + 1 < columns.length) setActiveCell({ row, col: col + 1 });
     },
-    [activeCell, editValue, rows, columns, tableName, pkColIdx, editState, mutate, getPkStr],
+    [activeCell, editValue, rows, columns, tableName, pkColIdx, editState, mutate, getPkStr, colInfoMap, setActiveCell],
   );
 
   const cancelEdit = useCallback(() => {
@@ -387,7 +387,7 @@ export const DataGrid = memo(function DataGrid({
       setEditValue(cell(editState.rows[rowIdx]?.[colIdx]));
       setIsEditing(true);
     },
-    [editState.rows, tableName],
+    [editState.rows, tableName, setActiveCell],
   );
 
   // ── Row operations ────────────────────────────────────────────
@@ -422,7 +422,7 @@ export const DataGrid = memo(function DataGrid({
     setActiveCell({ row: 0, col: 0 });
     setAnchorCell({ row: 0, col: 0 });
     setSelectedCells(new Set(["0:0"]));
-  }, [tableName, columns, editState, mutate]);
+  }, [tableName, columns, editState, mutate, colInfoMap, setActiveCell]);
 
   const duplicateRow = useCallback(() => {
     if (!activeCell || !tableName) return;
@@ -461,7 +461,7 @@ export const DataGrid = memo(function DataGrid({
       ghostRowIds: newGhostRowIds,
     });
     setActiveCell({ row: insertAt, col: activeCell.col });
-  }, [activeCell, tableName, editState, mutate, pkColIdx]);
+  }, [activeCell, tableName, editState, mutate, pkColIdx, colInfoMap, columns, primaryKeyColumn, setActiveCell]);
 
   const markRowForDeletion = useCallback((row: number) => {
     if (!tableName) return;
@@ -589,9 +589,12 @@ export const DataGrid = memo(function DataGrid({
         return; // let other keys reach the input normally
       }
 
-      // DOM guard: if an <input> owns focus (e.g. cell editor not yet committed),
-      // skip all navigation so the browser handles cursor movement inside the input.
-      if (document.activeElement?.tagName === "INPUT") return;
+      // DOM guard: if a native text field owns focus (cell editor, filter input,
+      // contentEditable), yield all navigation so the browser handles caret movement.
+      {
+        const ae = document.activeElement as HTMLElement | null;
+        if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return;
+      }
 
       // ── Delete / Backspace → mark selected rows for deletion ──
       if (e.key === "Delete" || e.key === "Backspace") {
@@ -649,7 +652,7 @@ export const DataGrid = memo(function DataGrid({
     [
       activeCell, anchorCell, isEditing, editState.rows, columns, selectedCells,
       triggerSave, undo, redo, copySelection, insertGhostRow, duplicateRow,
-      markRowForDeletion, commitEdit, cancelEdit, startEdit,
+      markRowForDeletion, commitEdit, cancelEdit, startEdit, setActiveCell,
     ],
   );
 
@@ -676,7 +679,7 @@ export const DataGrid = memo(function DataGrid({
         setActiveCell({ row: rowIdx, col: colIdx });
       }
     },
-    [isEditing, commitEdit, anchorCell],
+    [isEditing, commitEdit, anchorCell, setActiveCell],
   );
 
   // ── Resize ────────────────────────────────────────────────────

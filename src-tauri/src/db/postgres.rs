@@ -4,7 +4,7 @@ use sqlx::{Column, PgPool, Row, TypeInfo};
 
 use super::driver::{
     ChangeRow, ColumnInfo, DatabaseDriver, DbConfig, GridFilter, PagedResult, QueryError,
-    QueryResult, SchemaChange, TableInfo, TableRelation,
+    QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation,
 };
 
 /// Try to coerce a filter string to a numeric JSON value so Postgres
@@ -163,6 +163,53 @@ impl DatabaseDriver for PostgresDriver {
                 })
                 .collect()
         })
+    }
+
+    async fn get_schema_objects(&self) -> Result<SchemaObjects, QueryError> {
+        let tables = self.get_tables().await?;
+
+        let views = sqlx::query(
+            "SELECT schemaname, viewname \
+             FROM pg_catalog.pg_views \
+             WHERE schemaname NOT IN ('pg_catalog', 'information_schema') \
+             ORDER BY schemaname, viewname",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .iter()
+        .map(|r| TableInfo {
+            schema: r.try_get("schemaname").ok(),
+            name: r.try_get("viewname").unwrap_or_default(),
+        })
+        .collect();
+
+        let routines = sqlx::query(
+            "SELECT routine_schema, routine_name, routine_type \
+             FROM information_schema.routines \
+             WHERE routine_schema NOT IN ('pg_catalog', 'information_schema') \
+             ORDER BY routine_name",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let mut functions = Vec::new();
+        let mut procedures = Vec::new();
+        for r in &routines {
+            let info = TableInfo {
+                schema: r.try_get("routine_schema").ok(),
+                name: r.try_get("routine_name").unwrap_or_default(),
+            };
+            let rtype: String = r.try_get("routine_type").unwrap_or_default();
+            if rtype.eq_ignore_ascii_case("PROCEDURE") {
+                procedures.push(info);
+            } else {
+                functions.push(info);
+            }
+        }
+
+        Ok(SchemaObjects { tables, views, functions, procedures })
     }
 
     async fn get_table_schema(

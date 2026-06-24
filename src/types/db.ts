@@ -27,6 +27,13 @@ export interface TableInfo {
   schema: string | null;
 }
 
+export interface SchemaObjects {
+  tables: TableInfo[];
+  views: TableInfo[];
+  functions: TableInfo[];
+  procedures: TableInfo[];
+}
+
 export interface ColumnInfo {
   name: string;
   data_type: string;

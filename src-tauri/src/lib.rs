@@ -2,7 +2,7 @@ mod commands;
 mod db;
 mod storage;
 
-use commands::db::{apply_changes, apply_schema_changes, connect_saved, connect_to_db, disconnect, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, generate_crud_sql, list_databases, run_query, switch_database, test_connection, DbState};
+use commands::db::{apply_changes, apply_schema_changes, connect_saved, connect_to_db, disconnect, fetch_schema_objects, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, generate_crud_sql, list_databases, run_query, switch_database, test_connection, DbState};
 use commands::persistence::{
     delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state,
 };
@@ -30,6 +30,7 @@ pub fn run() {
             connect_saved,
             disconnect,
             fetch_tables,
+            fetch_schema_objects,
             fetch_table_schema,
             fetch_table_data,
             fetch_table_relations,

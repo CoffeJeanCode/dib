@@ -44,6 +44,15 @@ pub struct TableInfo {
     pub schema: Option<String>,
 }
 
+/// Categorized schema entities for the sidebar tree (deep fetch).
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SchemaObjects {
+    pub tables: Vec<TableInfo>,
+    pub views: Vec<TableInfo>,
+    pub functions: Vec<TableInfo>,
+    pub procedures: Vec<TableInfo>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryResult {
     pub columns: Vec<String>,
@@ -133,6 +142,16 @@ pub struct SchemaChange {
 #[async_trait]
 pub trait DatabaseDriver: Send + Sync {
     async fn get_tables(&self) -> Result<Vec<TableInfo>, QueryError>;
+    /// Deep schema fetch — categorized entities. Default returns tables only;
+    /// drivers override to add views / routines.
+    async fn get_schema_objects(&self) -> Result<SchemaObjects, QueryError> {
+        Ok(SchemaObjects {
+            tables: self.get_tables().await?,
+            views: Vec::new(),
+            functions: Vec::new(),
+            procedures: Vec::new(),
+        })
+    }
     async fn get_table_schema(
         &self,
         table_name: &str,
@@ -165,6 +184,7 @@ pub trait DatabaseDriver: Send + Sync {
         changes: &[SchemaChange],
     ) -> Result<(), QueryError>;
     async fn list_databases(&self) -> Result<Vec<String>, QueryError>;
+    #[allow(dead_code)]
     fn driver_name(&self) -> &'static str;
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { Database } from "lucide-react";
 
 export function PostgresIcon({ className }: { className?: string }) {

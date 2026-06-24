@@ -10,6 +10,8 @@ export interface TabPayload {
   filename?: string;
   // Hoisted DataGrid cursor — lives on the tab so it survives unmount/tab switch
   activeCell?: { row: number; col: number } | null;
+  // Hoisted Monaco view state (cursor, scroll, folds) for sql_editor tabs
+  viewState?: unknown;
 }
 
 export interface TabData {

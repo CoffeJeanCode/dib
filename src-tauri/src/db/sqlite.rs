@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, Row, SqlitePool, TypeInfo};
 
-use super::driver::{ChangeRow, ColumnInfo, DatabaseDriver, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, TableInfo, TableRelation};
+use super::driver::{ChangeRow, ColumnInfo, DatabaseDriver, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation};
 
 /// Builds ` WHERE ...` clause with ? placeholders for SQLite.
 fn build_where_sqlite(filters: &[GridFilter]) -> (String, Vec<String>) {
@@ -112,6 +112,20 @@ impl DatabaseDriver for SqliteDriver {
                 })
                 .collect()
         })
+    }
+
+    async fn get_schema_objects(&self) -> Result<SchemaObjects, QueryError> {
+        let tables = self.get_tables().await?;
+        let views = sqlx::query(
+            "SELECT name FROM sqlite_master WHERE type='view' ORDER BY name",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .iter()
+        .map(|r| TableInfo { schema: None, name: r.try_get("name").unwrap_or_default() })
+        .collect();
+        Ok(SchemaObjects { tables, views, functions: Vec::new(), procedures: Vec::new() })
     }
 
     async fn get_table_schema(

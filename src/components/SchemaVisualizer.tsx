@@ -156,6 +156,8 @@ function RelationView({
     return () => {
       cancelled = true;
     };
+    // setEdges/setNodes are stable React Flow setters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionId, focusTable.name, focusTable.schema, engine]);
 
   if (loading) {
