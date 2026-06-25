@@ -1,0 +1,238 @@
+{
+  "C:/tech-grow/tools/dib/.opencode/plugins/graphify.js": {
+    "mtime": 1782301890187.927,
+    "hash": "111287aed37970b605d3ab422d1c93ec"
+  },
+  "C:/tech-grow/tools/dib/eslint.config.js": {
+    "mtime": 1782228825946.9575,
+    "hash": "525964dde992780c48a067a935a8e97f"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/build.rs": {
+    "mtime": 1782228718940.9358,
+    "hash": "1be34a5c61c2c35365de3dab14298f0b"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/commands/db.rs": {
+    "mtime": 1782331525797.6787,
+    "hash": "1ad11d1a2a4318e3017544f6716f2403"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/commands/mod.rs": {
+    "mtime": 1782240127433.0447,
+    "hash": "f786545dac9e5d309bd2508b7a08a3ec"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/commands/persistence.rs": {
+    "mtime": 1782255786368.4255,
+    "hash": "2d90a857e9f11abff05d5ae057864a25"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/commands/system_status.rs": {
+    "mtime": 1782228727976.8708,
+    "hash": "9438493abdb0ddfeff2b612608a331cb"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/commands/workspace.rs": {
+    "mtime": 1782315105605.9985,
+    "hash": "b61caf6a6fd7c6dca3590ccff9ed4923"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/db/driver.rs": {
+    "mtime": 1782331903865.2126,
+    "hash": "c89ef63164ab849f1cf6326d6bcdb272"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/db/mod.rs": {
+    "mtime": 1782331496079.5442,
+    "hash": "af769ddfd10e7c7b572c0c6b0d647bea"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/db/postgres.rs": {
+    "mtime": 1782331511335.735,
+    "hash": "c813224aa69c29c1d660315a8de7ef24"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/db/sqlite.rs": {
+    "mtime": 1782331517352.2285,
+    "hash": "7590c05b70ac72fccd58975bfe0aa5e8"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/lib.rs": {
+    "mtime": 1782331544630.5913,
+    "hash": "d3ccafc0968d9285533aef11c04258a9"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/main.rs": {
+    "mtime": 1782228724109.5183,
+    "hash": "97acae23b621279708066dbbbea9469a"
+  },
+  "C:/tech-grow/tools/dib/src-tauri/src/storage/mod.rs": {
+    "mtime": 1782315047873.52,
+    "hash": "51c09f0ea2f6e24ec7d9cc7bcab0222e"
+  },
+  "C:/tech-grow/tools/dib/src/App.tsx": {
+    "mtime": 1782342255890.8188,
+    "hash": "3cf4c93549b00a23caa6e38bcf74d497"
+  },
+  "C:/tech-grow/tools/dib/src/components/CommandPalette.tsx": {
+    "mtime": 1782317348756.593,
+    "hash": "b9a50cad1d636d9ebc73ee2870b82871"
+  },
+  "C:/tech-grow/tools/dib/src/components/CommitFooter.tsx": {
+    "mtime": 1782237504761.0923,
+    "hash": "e4e50c129bf5f178db09b064572d6b38"
+  },
+  "C:/tech-grow/tools/dib/src/components/ConnectionManager.tsx": {
+    "mtime": 1782308722273.4043,
+    "hash": "4bd018ee48ebf4a92b70fd8060decc2a"
+  },
+  "C:/tech-grow/tools/dib/src/components/ContextMenu.tsx": {
+    "mtime": 1782234353388.1313,
+    "hash": "0e9fcc4e3a1fa8ea339b20369f6c2e56"
+  },
+  "C:/tech-grow/tools/dib/src/components/DataGrid.tsx": {
+    "mtime": 1782342093684.6787,
+    "hash": "870e511f63977690d2a18441496c3760"
+  },
+  "C:/tech-grow/tools/dib/src/components/EmptyWorkspaceState.tsx": {
+    "mtime": 1782258806231.2168,
+    "hash": "088b0b5c943ac839123e6425bcb6ffbd"
+  },
+  "C:/tech-grow/tools/dib/src/components/HomeView.tsx": {
+    "mtime": 1782341459767.926,
+    "hash": "1b940dd743f52de362b16c18b76ebd2a"
+  },
+  "C:/tech-grow/tools/dib/src/components/Layout.tsx": {
+    "mtime": 1782317293330.6294,
+    "hash": "d0136270ff493c16d501253655ac3eb8"
+  },
+  "C:/tech-grow/tools/dib/src/components/QueryHistoryPanel.tsx": {
+    "mtime": 1782316002856.9004,
+    "hash": "4c9ef52d263f94b7f806bad9df95dcf6"
+  },
+  "C:/tech-grow/tools/dib/src/components/QueryPanel.tsx": {
+    "mtime": 1782342222993.7102,
+    "hash": "7be048ab5cb924dd97283356438d6e5e"
+  },
+  "C:/tech-grow/tools/dib/src/components/SchemaVisualizer.tsx": {
+    "mtime": 1782331869256.6787,
+    "hash": "89e130ab64b2fb9b445bec493ee9bd20"
+  },
+  "C:/tech-grow/tools/dib/src/components/SettingsPanel.tsx": {
+    "mtime": 1782250273935.23,
+    "hash": "7c7d81209dc95bddb639792ad811744d"
+  },
+  "C:/tech-grow/tools/dib/src/components/Sidebar.tsx": {
+    "mtime": 1782342129316.2488,
+    "hash": "570bc715f27c934cc6c8dbb8325af605"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/ConnectionItem.tsx": {
+    "mtime": 1782313978818.364,
+    "hash": "aff6d852d9f046704c4df688c7558cba"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/DatabaseCategories.tsx": {
+    "mtime": 1782331641511.0967,
+    "hash": "9ceb3750b251145cb1e4eb1a63886680"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/DatabaseSelector.tsx": {
+    "mtime": 1782313960571.424,
+    "hash": "d5a1ec81910a622e78b3dde1db172eab"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/ScriptItem.tsx": {
+    "mtime": 1782342312471.1675,
+    "hash": "11e9bd9b0ab4c9217acb1bb43f913d7b"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/SidebarHeader.tsx": {
+    "mtime": 1782313942120.8435,
+    "hash": "ee60df7386efc1fb2fbabe59bf9d0d63"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/SidebarNav.tsx": {
+    "mtime": 1782342320560.9304,
+    "hash": "661f23fbfec37404b5921908f804cb3b"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/index.ts": {
+    "mtime": 1782314011769.8054,
+    "hash": "feb0bce4434d67af5fc6dc95b1e14aef"
+  },
+  "C:/tech-grow/tools/dib/src/components/SidebarParts/utils.tsx": {
+    "mtime": 1782331867427.5312,
+    "hash": "3009fa3bb1fdae98dfa65f5962ddd0c0"
+  },
+  "C:/tech-grow/tools/dib/src/components/SqlEditor.tsx": {
+    "mtime": 1782342109097.1587,
+    "hash": "529352748a11679a0ba67a4163a06bba"
+  },
+  "C:/tech-grow/tools/dib/src/components/StatusBlock.tsx": {
+    "mtime": 1782308881613.4578,
+    "hash": "1a75541ce9df6751a98444a6a87686ea"
+  },
+  "C:/tech-grow/tools/dib/src/components/Tab.tsx": {
+    "mtime": 1782331573918.6,
+    "hash": "7ce9a33d531dbf207a45e74286dd8925"
+  },
+  "C:/tech-grow/tools/dib/src/components/TabBar.tsx": {
+    "mtime": 1782263652939.5117,
+    "hash": "a5449178a2de7a06f567a7c64f8aeff1"
+  },
+  "C:/tech-grow/tools/dib/src/components/TableBuilderGrid.tsx": {
+    "mtime": 1782342331273.7012,
+    "hash": "948f1c0ed4509824d95518f3ef95ca06"
+  },
+  "C:/tech-grow/tools/dib/src/components/TableNode.tsx": {
+    "mtime": 1782251617677.262,
+    "hash": "734213d8305865cc1fee1c6f399f103b"
+  },
+  "C:/tech-grow/tools/dib/src/components/Toast.tsx": {
+    "mtime": 1782308646208.48,
+    "hash": "7ee742f84bf3344313acfcc09577c9c7"
+  },
+  "C:/tech-grow/tools/dib/src/hooks/useContextMenu.ts": {
+    "mtime": 1782234302058.0745,
+    "hash": "da66be50fced7e69a97e5fc11b8f8f47"
+  },
+  "C:/tech-grow/tools/dib/src/hooks/useKeybindings.ts": {
+    "mtime": 1782320217479.646,
+    "hash": "8af6d6b41efa82a11417218c70af4004"
+  },
+  "C:/tech-grow/tools/dib/src/hooks/useSavedConnections.ts": {
+    "mtime": 1782342264141.0217,
+    "hash": "1e88ab6a1986cb30dd43041853b10733"
+  },
+  "C:/tech-grow/tools/dib/src/hooks/useToast.ts": {
+    "mtime": 1782308631174.5852,
+    "hash": "b733667d00c6d6e4874a4deacbf4eaf0"
+  },
+  "C:/tech-grow/tools/dib/src/hooks/useUiState.ts": {
+    "mtime": 1782342275229.7617,
+    "hash": "4da1e999b768dae67e869a932cdb0a2a"
+  },
+  "C:/tech-grow/tools/dib/src/main.tsx": {
+    "mtime": 1782228735249.1255,
+    "hash": "f0a1b24a4ec3eff26822fc64abe20148"
+  },
+  "C:/tech-grow/tools/dib/src/types/db.ts": {
+    "mtime": 1782331559700.703,
+    "hash": "7ac4ba90ddcffb588778344f9a9d9e16"
+  },
+  "C:/tech-grow/tools/dib/tools/generate-knowledge-graph.py": {
+    "mtime": 1782341459796.2412,
+    "hash": "4bef0b4091edd53e66cf1ddebe47bd2f"
+  },
+  "C:/tech-grow/tools/dib/vite.config.ts": {
+    "mtime": 1782228704734.9775,
+    "hash": "9a23145bfb058ca5b328448d219881fc"
+  },
+  "C:/tech-grow/tools/dib/AGENTS.md": {
+    "mtime": 1782300712134.2893,
+    "hash": "752aa83aa64361ac32860f882dcff932"
+  },
+  "C:/tech-grow/tools/dib/CLAUDE.md": {
+    "mtime": 1782300641180.2898,
+    "hash": "8a6643a420fdad6bfb583523bc6cef16"
+  },
+  "C:/tech-grow/tools/dib/docs/ARCHITECTURE.md": {
+    "mtime": 1782228805739.0352,
+    "hash": "184184598aeb2ba32bc5ed22e522b944"
+  },
+  "C:/tech-grow/tools/dib/graphify-out/GRAPH_REPORT.md": {
+    "mtime": 1782301837454.685,
+    "hash": "bec65917857a7d81bfeee290817eeb2d"
+  },
+  "C:/tech-grow/tools/dib/graphify-out/graph.html": {
+    "mtime": 1782301837457.9146,
+    "hash": "3642cf1a6ef92528dbc98b809dedd04a"
+  },
+  "C:/tech-grow/tools/dib/index.html": {
+    "mtime": 1782341416355.5276,
+    "hash": "fcaa183b1b6b2d62fdbf94eac067d3bd"
+  }
+}

@@ -1,0 +1,1 @@
+{"nodes":[{"id":"db_mod","label":"mod.rs","file_type":"code","source_file":"src-tauri/src/db/mod.rs","source_location":"L1"}],"edges":[{"source":"db_mod","target":"driver","relation":"imports_from","confidence":"EXTRACTED","source_file":"src-tauri/src/db/mod.rs","source_location":"L5","weight":1}]}
