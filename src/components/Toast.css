@@ -19,7 +19,6 @@
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-highlight);
   border-radius: var(--radius-md);
-  box-shadow: 2px 2px 0px var(--color-highlight);
   animation: toast-in 200ms ease;
   pointer-events: auto;
   position: relative;

@@ -191,7 +191,6 @@
   color: var(--color-text-primary);
   outline: none;
   border: 1px solid var(--color-highlight);
-  box-shadow: 2px 2px 0px var(--color-highlight);
   z-index: 10;
 }
 

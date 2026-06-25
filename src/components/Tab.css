@@ -27,7 +27,6 @@
   background: var(--color-bg);
   color: var(--color-highlight);
   border: 1px solid var(--color-highlight);
-  box-shadow: 2px 2px 0px var(--color-highlight);
   font-weight: var(--font-weight-medium);
 }
 
