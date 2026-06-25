@@ -36,6 +36,7 @@ import { SqlEditor } from "./SqlEditor";
 import { SchemaVisualizer } from "./SchemaVisualizer";
 import { EmptyWorkspaceState } from "./EmptyWorkspaceState";
 import { ContextMenu } from "./ContextMenu";
+import { DangerConfirmDialog } from "./DangerConfirmDialog";
 import { useContextMenu } from "../hooks/useContextMenu";
 import { ToastContext } from "../App";
 import "./QueryPanel.css";
@@ -68,13 +69,15 @@ interface QueryPanelProps {
   onDisconnect?: () => void;
   navigateTo?: { table: TableInfo; v: number } | null;
   openScript?: { sql: string; name: string; id: string; v: number } | null;
+  onDatabaseSwitch?: (dbName: string) => void;
 }
 
-export function QueryPanel({ connectionId, connectionName, engine, onDisconnect, navigateTo, openScript }: QueryPanelProps) {
+export function QueryPanel({ connectionId, connectionName, engine, onDisconnect, navigateTo, openScript, onDatabaseSwitch }: QueryPanelProps) {
   const toast = useContext(ToastContext);
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [tablesLoading, setTablesLoading] = useState(true);
   const [tablesError, setTablesError] = useState<string | null>(null);
+  const [databases, setDatabases] = useState<string[]>([]);
   const [columnMap, setColumnMap] = useState<Record<string, ColumnInfo[]>>({});
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
 
@@ -92,6 +95,19 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   const { menuState, openMenu, closeMenu } = useContextMenu();
   const [contextTable, setContextTable] = useState<TableInfo | null>(null);
   const [committing, setCommitting] = useState<string | null>(null);
+  const [isReloading, setIsReloading] = useState(false);
+
+  useEffect(() => {
+    if (!isReloading) {
+      requestAnimationFrame(() => {
+        const main = document.getElementById("dib-main-panel");
+        const grid = main?.querySelector<HTMLElement>(".dg-wrap");
+        const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+        (grid ?? editor ?? main)?.focus();
+      });
+    }
+  }, [isReloading]);
+  const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useKeybindings([
     {
@@ -225,16 +241,33 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     setColumnMap({});
     setExpandedTables(new Set());
     setTablesLoading(true);
-    setTablesError(null);
+    let mounted = true;
+    
+    // Fetch tables
     dbService.fetchTables(connectionId)
-      .then(setTables)
-      .catch(() => {
-        setTablesError("Error cargando tablas");
-        toast.error("Error cargando tablas");
+      .then((data) => {
+        if (!mounted) return;
+        setTables(data);
+        setTablesLoading(false);
       })
-      .finally(() => setTablesLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectionId, connectionName]);
+      .catch((e: unknown) => {
+        if (!mounted) return;
+        setTablesError(String(e));
+        setTablesLoading(false);
+      });
+
+    // Fetch databases
+    dbService.listDatabases(connectionId)
+      .then((dbs) => {
+        if (!mounted) return;
+        setDatabases(dbs);
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [connectionId]);
 
   const reloadHandlerRef = useRef<(() => void) | null>(null);
   useEffect(() => {
@@ -292,7 +325,13 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     const tab = tabs.find((t) => t.id === activeTabId) ?? null;
     if (tab?.type === "table" && tab.payload.table) {
       const ts = tableTabStates[tab.id];
-      if (ts) loadTablePage(tab.id, ts.table, ts.offset, ts.filters);
+      if (ts) {
+        setIsReloading(true);
+        loadTablePage(tab.id, ts.table, ts.offset, ts.filters).finally(() => setIsReloading(false));
+      }
+    } else {
+      setIsReloading(true);
+      setTimeout(() => setIsReloading(false), 50);
     }
   };
 
@@ -407,6 +446,10 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
         updateTableTabState(tabId, { error: fmtErr(e) });
       } finally {
         setCommitting(null);
+        requestAnimationFrame(() => {
+          const grid = document.querySelector<HTMLElement>('.dg-wrap');
+          grid?.focus();
+        });
       }
     },
     [tableTabStates, connectionId, updateTableTabState, markTabClean, loadTablePage],
@@ -505,6 +548,36 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     );
   }, []);
 
+  // Stable callback: syncs unsaved SQL content to global tabSql state so tab switches
+  // don't lose content that hasn't been explicitly saved yet.
+  const handleContentChange = useCallback((sql: string) => {
+    setTabSql((prev) => ({ ...prev, [activeTabIdRef.current]: sql }));
+  }, []);
+
+  // Listen for custom events dispatched by Monaco's addCommand handlers (Ctrl+W / Ctrl+T)
+  // so these shortcuts work even when Monaco has focus.
+  useEffect(() => {
+    const closeTab = () => {
+      const tab = activeTabRef.current;
+      const tabId = activeTabIdRef.current;
+      if (tab?.closeable) handleTabClose(tabId);
+    };
+    const newTab = () => {
+      dbService.getNextScriptNumber()
+        .then((count) => {
+          const n = count + 1;
+          openSqlTab("", n === 1 ? "Untitled.sql" : `Untitled-${n}.sql`);
+        })
+        .catch(() => openSqlTab("", "Untitled.sql"));
+    };
+    window.addEventListener("dib:close-tab", closeTab);
+    window.addEventListener("dib:new-tab", newTab);
+    return () => {
+      window.removeEventListener("dib:close-tab", closeTab);
+      window.removeEventListener("dib:new-tab", newTab);
+    };
+  }, [handleTabClose, openSqlTab]);
+
   const handleGridActiveCellChange = useCallback((cell: { row: number; col: number } | null) => {
     const tabId = activeTabIdRef.current;
     setTabs((prev) =>
@@ -584,7 +657,21 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     <div className="qp">
       <aside className="qp-tables" style={{ width: tablesWidth, minWidth: tablesWidth }}>
         <div className="qp-tables-header">
-          <span className="qp-db-name" title={connectionName}>{connectionName}</span>
+          {databases.length > 0 ? (
+            <select 
+              className="qp-db-select" 
+              value={connectionName}
+              onChange={(e) => onDatabaseSwitch?.(e.target.value)}
+              title="Cambiar Base de Datos"
+            >
+              <option value={connectionName} disabled hidden>{connectionName}</option>
+              {databases.map(db => (
+                <option key={db} value={db}>{db}</option>
+              ))}
+            </select>
+          ) : (
+            <span className="qp-db-name" title={connectionName}>{connectionName}</span>
+          )}
           {onDisconnect && (
             <button className="qp-disconnect-btn" onClick={onDisconnect} title="Disconnect">
               <LogOut size={14} />
@@ -608,7 +695,7 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
             return (
               <li key={label} className="qp-tree-node">
                 <div
-                  className={`qp-table-item${isActive ? " qp-table-item--active" : ""}`}
+                  className={`qp-table-item${isActive ? " qp-table-item--active bg-pattern-halftone" : ""}`}
                   onClick={() => openTableTab(t)}
                   onContextMenu={(e) => { e.preventDefault(); setContextTable(t); openMenu(e); }}
                   title={label}
@@ -673,12 +760,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                     ? `${activeTab.payload.table.schema}.${activeTab.payload.table.name}`
                     : activeTab.payload.table?.name}
                 </span>
-                {activeTableState?.result && (
-                  <span className="qp-sql">
-                    {totalRows.toLocaleString()} rows · page {currentPage + 1}
-                    {totalPages > 1 ? ` / ${totalPages}` : ""}
-                  </span>
-                )}
               </div>
             )}
             {!activeTableState?.loading && !activeTableState?.result && !activeTableState?.error && (
@@ -760,6 +841,7 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
             tabId={activeTabId}
             viewState={activeTab.payload.viewState}
             onSaveViewState={handleSaveViewState}
+            onContentChange={handleContentChange}
           />
         )}
 
@@ -798,6 +880,19 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
               if (t) {
                 dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "select")
                   .then((sql) => openSnippetTab(sql, `SELECT ${t.name}`))
+                  .catch((e) => toast.error(fmtErr(e)));
+              }
+            },
+          },
+          {
+            icon: <Table2 size={14} />,
+            label: "Generar DDL (CREATE TABLE)",
+            onClick: () => {
+              const t = contextTable;
+              setContextTable(null); closeMenu();
+              if (t) {
+                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "ddl")
+                  .then((sql) => openSnippetTab(sql, `DDL ${t.name}`))
                   .catch((e) => toast.error(fmtErr(e)));
               }
             },
@@ -847,20 +942,31 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
               setContextTable(null); closeMenu();
               if (!t) return;
               const label = t.schema ? `${t.schema}.${t.name}` : t.name;
-              if (!window.confirm(`¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`)) return;
-              dbService.dropTable(connectionId, t.name, t.schema ?? null)
-                .then(() => {
-                  toast.info(`Tabla "${label}" eliminada`);
-                  window.dispatchEvent(new CustomEvent("dib:reload"));
-                  // Reload table list
-                  dbService.fetchTables(connectionId).then(setTables).catch(() => {});
-                })
-                .catch((e) => toast.error(fmtErr(e)));
+              setDangerDialog({
+                message: `¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`,
+                onConfirm: () => {
+                  setDangerDialog(null);
+                  dbService.dropTable(connectionId, t.name, t.schema ?? null)
+                    .then(() => {
+                      toast.info(`Tabla "${label}" eliminada`);
+                      window.dispatchEvent(new CustomEvent("dib:reload"));
+                      dbService.fetchTables(connectionId).then(setTables).catch(() => {});
+                    })
+                    .catch((e) => toast.error(fmtErr(e)));
+                },
+              });
             },
           },
         ]}
         onClose={() => { setContextTable(null); closeMenu(); }}
       />
+      {dangerDialog && (
+        <DangerConfirmDialog
+          message={dangerDialog.message}
+          onConfirm={dangerDialog.onConfirm}
+          onCancel={() => setDangerDialog(null)}
+        />
+      )}
     </div>
   );
 }

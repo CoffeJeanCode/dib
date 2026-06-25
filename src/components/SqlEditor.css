@@ -52,18 +52,24 @@
   gap: var(--space-2);
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   padding: var(--space-1) var(--space-3);
-  border: none;
+  border: 1px solid var(--neon-green);
   border-radius: var(--radius-sm);
-  background: var(--brand-bright-blue);
-  color: white;
+  background: var(--neon-green);
+  color: #000;
   cursor: pointer;
-  transition: opacity var(--transition-fastest);
+  box-shadow: 2px 2px 0px rgba(0, 255, 102, 0.35);
+  transition: box-shadow 60ms ease, transform 60ms ease, opacity 80ms ease;
 }
 
 .sqleditor-run:hover {
-  opacity: 0.9;
+  opacity: 0.88;
+}
+
+.sqleditor-run:active {
+  box-shadow: none;
+  transform: translate(1px, 1px);
 }
 
 .sqleditor-file-btn {
@@ -112,7 +118,7 @@
 }
 
 .sqleditor-body {
-  height: 220px;
+  height: 500px;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -121,6 +127,20 @@
 .sqleditor-body .monaco-editor .overflow-guard {
   border-radius: 0;
 }
+
+.sqleditor-resizer {
+  height: 4px;
+  background: var(--color-border);
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.sqleditor-resizer:hover,
+.sqleditor-resizer:active {
+  background: var(--brand-magenta);
+}
+
 
 .sqleditor-error {
   padding: 6px var(--space-3);
@@ -150,6 +170,21 @@
   background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sqleditor-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-text-tertiary) 12%, transparent);
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  letter-spacing: 0.02em;
 }
 
 /* ── Explain button ────────────────────────────────────────────────── */

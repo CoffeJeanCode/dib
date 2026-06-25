@@ -1,91 +1,26 @@
+/* ═══════════════════════════════════════════════════════════════
+   theme.css  —  DiB Design Tokens
+   Dark mode is the default (Neon Dark-Dash).
+   Light mode overrides via @media (prefers-color-scheme: light)
+   AND via [data-theme="light"] for programmatic switching.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Invariant tokens (same in all themes) ──────────────────── */
 :root {
-  /* ── Typography ──────────────────────────────────────── */
+  /* Typography */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
   --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.25rem;
+  --font-size-2xl:  1.5rem;
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
   --font-weight-semibold: 600;
 
-  /* ── Subtle Comic ─────────────────────────────────────── */
-  --comic-yellow: #facc15;
-  --comic-red: #ef4444;
-  --color-focus: var(--comic-yellow);
-
-  /* ── Brand Palette (solid accents) ────────────────────── */
-  --brand-deep-blue: #333333;
-  --brand-bright-blue: #666666;
-  --brand-turquoise: #888888;
-  --brand-light-cyan: #aaaaaa;
-  --brand-pale-yellow: #facc15;
-
-  /* ── Dark Techno Palette ──────────────────────────────── */
-  --dt-dark: #191919;
-  --dt-light: #eaeaea;
-  --dt-turquoise: #888888;
-  --dt-orange: #facc15;
-
-  /* ── Backgrounds (solid, no transparency) ─────────────── */
-  --color-bg: #191919;
-  --color-bg-sidebar: #252525;
-  --color-bg-secondary: #252525;
-  --color-bg-hover: rgba(255, 255, 255, 0.08);
-  --color-bg-active: rgba(255, 255, 255, 0.12);
-  --color-bg-elevated: #252525;
-
-  /* ── Borders (solid 1px, no backdrop-filter) ──────────── */
-  --color-border: #333333;
-  --color-border-dark: #444444;
-  --color-border-focus: var(--comic-yellow);
-
-  /* ── Text (muted for readability on dark) ─────────────── */
-  --color-text-primary: #eaeaea;
-  --color-text-secondary: #888888;
-  --color-text-tertiary: #666666;
-
-  /* ── Database Colors ──────────────────────────────────── */
-  --color-db-postgres: #2a6fdb;
-  --color-db-postgres-light: #0f1d35;
-  --color-db-sqlite: #81e9e6;
-  --color-db-sqlite-light: #0c1a20;
-
-  /* ── Functional UI Colors ─────────────────────────────── */
-  --color-danger-bg: #1a0c0c;
-  --color-danger-border: #5c2e2e;
-  --color-danger-text: #f5a5a5;
-  --color-hover: rgba(42, 111, 219, 0.08);
-
-  /* ── Semantic Colors (muted for text, bright for icons) ── */
-  --color-red: #ef4444;
-  --color-red-light: #1a0c0c;
-  --color-red-dark: #fca5a5;
-
-  --color-orange: #f59e0b;
-  --color-orange-light: #1a1508;
-  --color-orange-dark: #fcd34d;
-
-  --color-green: #10b981;
-  --color-green-light: #0c1a14;
-  --color-green-dark: #6ee7b7;
-
-  --color-blue: #2a6fdb;
-  --color-blue-light: #0f1d35;
-  --color-blue-dark: #81e9e6;
-
-  --color-purple: #8b5cf6;
-  --color-purple-light: #15102a;
-  --color-purple-dark: #c4b5fd;
-
-  --color-teal: #48d6d2;
-  --color-teal-light: #0c1a20;
-  --color-teal-dark: #81e9e6;
-
-  /* ── Spacing ──────────────────────────────────────────── */
+  /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -96,32 +31,314 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* ── Border Radius ────────────────────────────────────── */
+  /* Border radius */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
 
-  /* ── Shadows (subtle, solid) ──────────────────────────── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-
-  /* ── Transitions ──────────────────────────────────────── */
-  --transition-fast: 120ms ease;
+  /* Transitions */
+  --transition-fast:    120ms ease;
   --transition-fastest: 80ms ease;
-  --transition-normal: 200ms ease;
+  --transition-normal:  200ms ease;
 
-  /* ── Focus ring ───────────────────────────────────────── */
+  /* Focus ring (disabled globally) */
   --focus-ring: none;
 
-  /* ── Sidebar ──────────────────────────────────────────── */
-  --sidebar-width: 260px;
+  /* Layout */
+  --sidebar-width:           260px;
   --sidebar-width-collapsed: 48px;
+
+  /* ── PASTEL ACCENT PALETTE (constant across themes) ────── */
+  --neon-magenta:     #C084FC;
+  --neon-green:       #6EE7B7;
+  --neon-purple:      #A78BFA;
+  --neon-cyan:        #67E8F9;
+  --neon-yellow:      #FDE68A;
+
+  /* Dimmed pastels for background tints */
+  --neon-magenta-dim: rgba(192, 132, 252, 0.12);
+  --neon-green-dim:   rgba(110, 231, 183, 0.10);
+  --neon-purple-dim:  rgba(167, 139, 250, 0.12);
+  --neon-cyan-dim:    rgba(103, 232, 249, 0.10);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK MODE TOKENS  (default — Neon Dark-Dash)
+   ═══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --color-bg:           #121215;
+  --color-bg-sidebar:   #1A1A1E;
+  --color-bg-secondary: #1A1A1E;
+  --color-bg-hover:     rgba(255, 255, 255, 0.05);
+  --color-bg-active:    rgba(255, 255, 255, 0.08);
+  --color-bg-elevated:  #1E1E22;
+
+  /* Monaco seamless background */
+  --color-monaco-bg:    #121215;
+
+  /* Borders */
+  --color-border:       #2A2A30;
+  --color-border-dark:  #333340;
+  --color-border-focus: var(--neon-cyan);
+
+  /* Text — strict hierarchy, no text-shadow */
+  --color-text-primary:   #FFFFFF;
+  --color-text-secondary: #888888;
+  --color-text-tertiary:  #555560;
+
+  /* Highlight / Focus */
+  --color-highlight: var(--neon-cyan);
+  --color-focus:     var(--neon-cyan);
+
+  /* Suggest widget surface (Monaco autocomplete) */
+  --color-suggest-bg:     #1A1A1E;
+  --color-suggest-border: #2A2A30;
+  --color-suggest-focus-bg: rgba(103, 232, 249, 0.08);
+  --color-suggest-focus-text: #FFFFFF;
+
+  /* Database engine colors */
+  --color-db-postgres:       #2a6fdb;
+  --color-db-postgres-light: #0f1d35;
+  --color-db-sqlite:         #6EE7B7;
+  --color-db-sqlite-light:   #0c1a14;
+
+  /* Functional */
+  --color-danger-bg:     #1a0c0c;
+  --color-danger-border: #5c2e2e;
+  --color-danger-text:   #f5a5a5;
+  --color-hover:         rgba(103, 232, 249, 0.05);
+
+  /* Semantic */
+  --color-red:          #ef4444;
+  --color-red-light:    #1a0c0c;
+  --color-red-dark:     #fca5a5;
+
+  --color-orange:       #f59e0b;
+  --color-orange-light: #1a1508;
+  --color-orange-dark:  #fcd34d;
+
+  --color-green:        var(--neon-green);
+  --color-green-light:  #0c1a14;
+  --color-green-dark:   #6ee7b7;
+
+  --color-blue:         #2a6fdb;
+  --color-blue-light:   #0f1d35;
+  --color-blue-dark:    #81e9e6;
+
+  --color-purple:       var(--neon-purple);
+  --color-purple-light: #15102a;
+  --color-purple-dark:  #c4b5fd;
+
+  --color-teal:         var(--neon-cyan);
+  --color-teal-light:   #0c1a20;
+  --color-teal-dark:    #81e9e6;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.7), 0 2px 4px -2px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
+
+  /* Legacy brand aliases */
+  --brand-deep-blue:   #1E1E22;
+  --brand-bright-blue: var(--neon-cyan);
+  --brand-turquoise:   var(--neon-cyan);
+  --brand-light-cyan:  var(--neon-cyan);
+  --brand-pale-yellow: var(--neon-yellow);
+  --dt-dark:      #121215;
+  --dt-light:     #FFFFFF;
+  --dt-turquoise: var(--neon-cyan);
+  --dt-orange:    var(--neon-yellow);
+  --comic-red:    #ef4444;
+  --comic-yellow: var(--neon-yellow);
+  --comic-cyan:   var(--neon-cyan);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT MODE TOKENS
+   Strategy:
+   - Backgrounds: clean warm whites / very light greys.
+   - Neon accents are preserved but used only for interactive
+     indicators; text-on-white uses deeper variants for WCAG AA.
+   - Yellows/greens that fail contrast on white are shifted to
+     deeper, more saturated variants (amber, forest green).
+   ═══════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Backgrounds */
+    --color-bg:           #FAFAFA;
+    --color-bg-sidebar:   #F4F4F6;
+    --color-bg-secondary: #F0F0F3;
+    --color-bg-hover:     rgba(0, 0, 0, 0.04);
+    --color-bg-active:    rgba(0, 0, 0, 0.07);
+    --color-bg-elevated:  #FFFFFF;
+
+    /* Monaco seamless background */
+    --color-monaco-bg:    #FAFAFA;
+
+    /* Borders */
+    --color-border:       #DCDCE0;
+    --color-border-dark:  #C8C8CE;
+    --color-border-focus: #0068C9;
+
+    /* Text */
+    --color-text-primary:   #111118;
+    --color-text-secondary: #5A5A6A;
+    --color-text-tertiary:  #9090A0;
+
+    /* Highlight / Focus — deep blue for AA on white */
+    --color-highlight: #0068C9;
+    --color-focus:     #0068C9;
+
+    /* Suggest widget surface */
+    --color-suggest-bg:       #FFFFFF;
+    --color-suggest-border:   #DCDCE0;
+    --color-suggest-focus-bg: rgba(0, 104, 201, 0.08);
+    --color-suggest-focus-text: #111118;
+
+    /* Database engine colors (deeper for light bg) */
+    --color-db-postgres:       #1a56a8;
+    --color-db-postgres-light: #dbeafe;
+    --color-db-sqlite:         #14803c;
+    --color-db-sqlite-light:   #dcfce7;
+
+    /* Functional */
+    --color-danger-bg:     #fff0f0;
+    --color-danger-border: #fca5a5;
+    --color-danger-text:   #b91c1c;
+    --color-hover:         rgba(0, 104, 201, 0.05);
+
+    /* Semantic — shifted for AA contrast on light bg */
+    --color-red:          #dc2626;   /* deeper red */
+    --color-red-light:    #fff0f0;
+    --color-red-dark:     #991b1b;
+
+    --color-orange:       #b45309;   /* amber — yellow was unreadable on white */
+    --color-orange-light: #fffbeb;
+    --color-orange-dark:  #92400e;
+
+    --color-green:        #15803d;   /* forest green — neon-green fails AA on white */
+    --color-green-light:  #f0fdf4;
+    --color-green-dark:   #14532d;
+
+    --color-blue:         #1d4ed8;
+    --color-blue-light:   #eff6ff;
+    --color-blue-dark:    #1e3a8a;
+
+    --color-purple:       #7c3aed;
+    --color-purple-light: #f5f3ff;
+    --color-purple-dark:  #4c1d95;
+
+    --color-teal:         #0e7490;
+    --color-teal-light:   #f0f9ff;
+    --color-teal-dark:    #164e63;
+
+    /* Shadows (subtle on light) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.10);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.10);
+
+    /* Legacy brand aliases — light mode */
+    --brand-deep-blue:   #FFFFFF;
+    --brand-bright-blue: #1d4ed8;
+    --brand-turquoise:   #0e7490;
+    --brand-light-cyan:  #0e7490;
+    --brand-pale-yellow: #b45309;
+    --dt-dark:      #FAFAFA;
+    --dt-light:     #111118;
+    --dt-turquoise: #0e7490;
+    --dt-orange:    #b45309;
+    --comic-red:    #dc2626;
+    --comic-yellow: #b45309;
+    --comic-cyan:   #0e7490;
+  }
+}
+
+/* Programmatic light theme (applied via data-theme="light" on <html>) */
+[data-theme="light"] {
+  /* Backgrounds */
+  --color-bg:           #FAFAFA;
+  --color-bg-sidebar:   #F4F4F6;
+  --color-bg-secondary: #F0F0F3;
+  --color-bg-hover:     rgba(0, 0, 0, 0.04);
+  --color-bg-active:    rgba(0, 0, 0, 0.07);
+  --color-bg-elevated:  #FFFFFF;
+
+  --color-monaco-bg:    #FAFAFA;
+
+  --color-border:       #DCDCE0;
+  --color-border-dark:  #C8C8CE;
+  --color-border-focus: #0068C9;
+
+  --color-text-primary:   #111118;
+  --color-text-secondary: #5A5A6A;
+  --color-text-tertiary:  #9090A0;
+
+  --color-highlight: #0068C9;
+  --color-focus:     #0068C9;
+
+  --color-suggest-bg:       #FFFFFF;
+  --color-suggest-border:   #DCDCE0;
+  --color-suggest-focus-bg: rgba(0, 104, 201, 0.08);
+  --color-suggest-focus-text: #111118;
+
+  --color-db-postgres:       #1a56a8;
+  --color-db-postgres-light: #dbeafe;
+  --color-db-sqlite:         #14803c;
+  --color-db-sqlite-light:   #dcfce7;
+
+  --color-danger-bg:     #fff0f0;
+  --color-danger-border: #fca5a5;
+  --color-danger-text:   #b91c1c;
+  --color-hover:         rgba(0, 104, 201, 0.05);
+
+  --color-red:          #dc2626;
+  --color-red-light:    #fff0f0;
+  --color-red-dark:     #991b1b;
+
+  --color-orange:       #b45309;
+  --color-orange-light: #fffbeb;
+  --color-orange-dark:  #92400e;
+
+  --color-green:        #15803d;
+  --color-green-light:  #f0fdf4;
+  --color-green-dark:   #14532d;
+
+  --color-blue:         #1d4ed8;
+  --color-blue-light:   #eff6ff;
+  --color-blue-dark:    #1e3a8a;
+
+  --color-purple:       #7c3aed;
+  --color-purple-light: #f5f3ff;
+  --color-purple-dark:  #4c1d95;
+
+  --color-teal:         #0e7490;
+  --color-teal-light:   #f0f9ff;
+  --color-teal-dark:    #164e63;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.10);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.10);
+
+  --brand-deep-blue:   #FFFFFF;
+  --brand-bright-blue: #1d4ed8;
+  --brand-turquoise:   #0e7490;
+  --brand-light-cyan:  #0e7490;
+  --brand-pale-yellow: #b45309;
+  --dt-dark:      #FAFAFA;
+  --dt-light:     #111118;
+  --dt-turquoise: #0e7490;
+  --dt-orange:    #b45309;
+  --comic-red:    #dc2626;
+  --comic-yellow: #b45309;
+  --comic-cyan:   #0e7490;
 }
 
 
-
-/* ── Global Reset ─────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL RESET
+   ═══════════════════════════════════════════════════════════════ */
 * {
   margin: 0;
   padding: 0;
@@ -142,41 +359,36 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 code, pre, .mono {
   font-family: var(--font-mono);
 }
 
-/* ── Focus visible — keyboard navigation ─────────────────── */
-:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
+/* ── Focus visible ───────────────────────────────────────────── */
+:focus-visible { outline: none; box-shadow: none; }
 
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: none;
   border-color: var(--color-focus);
-  box-shadow: 2px 2px 0px var(--color-focus);
 }
 
 button:focus-visible,
 [role="button"]:focus-visible {
   outline: none;
-  box-shadow: 2px 2px 0px var(--color-focus);
   border: 1px solid var(--color-focus);
 }
 
 a:focus-visible {
   outline: none;
-  box-shadow: 2px 2px 0px var(--color-focus);
   border: 1px solid var(--color-focus);
   border-radius: var(--radius-sm);
 }
 
-/* ── Notion-style Block ──────────────────────────────────── */
+/* ── Clean Card Block ────────────────────────────────────────── */
 .notion-block {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -189,20 +401,20 @@ a:focus-visible {
   border-color: var(--color-border-dark);
 }
 
-/* ── Semantic Color Classes ──────────────────────────────── */
-.color-red { color: var(--color-red); }
+/* ── Semantic Color Classes ──────────────────────────────────── */
+.color-red    { color: var(--color-red); }
 .color-orange { color: var(--color-orange); }
-.color-green { color: var(--color-green); }
-.color-blue { color: var(--color-blue); }
+.color-green  { color: var(--color-green); }
+.color-blue   { color: var(--color-blue); }
 .color-purple { color: var(--color-purple); }
-.color-teal { color: var(--color-teal); }
+.color-teal   { color: var(--color-teal); }
 
-.tag-red { background: var(--color-red-light); color: var(--color-red-dark); border: 1px solid var(--color-red); }
-.tag-orange { background: var(--color-orange-light); color: var(--color-orange-dark); border: 1px solid var(--color-orange); }
-.tag-green { background: var(--color-green-light); color: var(--color-green-dark); border: 1px solid var(--color-green); }
-.tag-blue { background: var(--color-blue-light); color: var(--color-blue-dark); border: 1px solid var(--color-blue); }
-.tag-purple { background: var(--color-purple-light); color: var(--color-purple-dark); border: 1px solid var(--color-purple); }
-.tag-teal { background: var(--color-teal-light); color: var(--color-teal-dark); border: 1px solid var(--color-teal); }
+.tag-red    { background: var(--color-red-light);    color: var(--color-red);    border: 1px solid var(--color-red); }
+.tag-orange { background: var(--color-orange-light); color: var(--color-orange); border: 1px solid var(--color-orange); }
+.tag-green  { background: var(--color-green-light);  color: var(--color-green);  border: 1px solid var(--color-green); }
+.tag-blue   { background: var(--color-blue-light);   color: var(--color-blue);   border: 1px solid var(--color-blue); }
+.tag-purple { background: var(--color-purple-light); color: var(--color-purple); border: 1px solid var(--color-purple); }
+.tag-teal   { background: var(--color-teal-light);   color: var(--color-teal);   border: 1px solid var(--color-teal); }
 
 .tag {
   display: inline-flex;
@@ -215,46 +427,80 @@ a:focus-visible {
   white-space: nowrap;
 }
 
-/* ── Comic Pattern Classes (SVG Masks) ────────────────────── */
+/* ── Neon Badge ──────────────────────────────────────────────── */
+.badge-neon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  background: var(--neon-magenta);
+  color: #000;
+  line-height: 1;
+}
+
+.badge-neon--green  { background: var(--neon-green);  color: #000; }
+.badge-neon--purple { background: var(--neon-purple); color: #fff; }
+
+/* ── Neon Button ─────────────────────────────────────────────── */
+.btn-neon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--neon-cyan);
+  background: transparent;
+  color: var(--neon-cyan);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-neon:hover            { background: var(--neon-cyan);    color: #000; }
+.btn-neon--primary         { background: var(--neon-magenta); border-color: var(--neon-magenta); color: #000; }
+.btn-neon--primary:hover   { background: #dd00dd;             border-color: #dd00dd;             color: #000; }
+
+/* ── Shortcut Hint Badge ─────────────────────────────────────── */
+.kbd-hint {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-focus);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* ── Pattern stubs (no visual patterns in Neon Dark-Dash) ────── */
 .pattern-halftone,
 .pattern-hatching,
-.pattern-grid {
+.pattern-grid,
+.bg-pattern-halftone,
+.bg-pattern-action,
+.bg-pattern-hatching {
+  /* intentionally empty */
+}
+
+/* ── Comic Tooltip ───────────────────────────────────────────── */
+.comic-tooltip {
   position: relative;
-  z-index: 1;
-}
-
-.pattern-halftone::before,
-.pattern-hatching::before,
-.pattern-grid::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: inherit;
-  background-color: var(--pattern-color, var(--brand-turquoise));
-}
-
-.pattern-halftone::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><circle cx='4' cy='4' r='1.5' fill='%23000'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><circle cx='4' cy='4' r='1.5' fill='%23000'/></svg>");
-  -webkit-mask-size: 8px 8px;
-  mask-size: 8px 8px;
-  opacity: 0.08;
-}
-
-.pattern-hatching::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><path d='M-2,10 L10,-2 M-2,2 L2,-2 M6,10 L10,6' stroke='%23000' stroke-width='1'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><path d='M-2,10 L10,-2 M-2,2 L2,-2 M6,10 L10,6' stroke='%23000' stroke-width='1'/></svg>");
-  -webkit-mask-size: 8px 8px;
-  mask-size: 8px 8px;
-  opacity: 0.08;
-}
-
-.pattern-grid::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M40,0 L0,0 L0,40' fill='none' stroke='%23000' stroke-width='1'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><path d='M40,0 L0,0 L0,40' fill='none' stroke='%23000' stroke-width='1'/></svg>");
-  -webkit-mask-size: 40px 40px;
-  mask-size: 40px 40px;
-  opacity: 0.03;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-size-sm);
+  z-index: 1000;
 }

@@ -49,7 +49,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
 
   return (
     <div
-      className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected pattern-hatching" : ""}`}
+      className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected bg-pattern-halftone" : ""}`}
       onClick={() => {
         if (!isEditing) {
           onSelect(navIdx, script);

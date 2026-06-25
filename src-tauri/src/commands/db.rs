@@ -388,6 +388,25 @@ pub async fn generate_crud_sql(
                 .unwrap_or_else(|| "WHERE id = -- value".to_string());
             format!("UPDATE {}\nSET\n{}\n{};", qualified, set_clause, where_clause)
         }
+        "ddl" => {
+            let col_defs = cols.iter().map(|c| {
+                let constraints = if c.is_primary_key {
+                    " PRIMARY KEY"
+                } else if !c.is_nullable {
+                    " NOT NULL"
+                } else {
+                    ""
+                };
+                format!("  \"{}\" {}{}", c.name, c.data_type, constraints)
+            }).collect::<Vec<_>>().join(",\n");
+            format!(
+                "-- DDL generado para {}\nCREATE TABLE IF NOT EXISTS {} (\n{}\n);",
+                qualified, qualified, col_defs
+            )
+        }
+        "create_table" => {
+            "-- Plantilla nueva tabla\nCREATE TABLE \"nueva_tabla\" (\n  \"id\" SERIAL PRIMARY KEY,\n  \"nombre\" TEXT NOT NULL,\n  \"creado_en\" TIMESTAMPTZ DEFAULT NOW()\n);".to_string()
+        }
         _ => return Err(QueryError::from(format!("Unknown action: {}", action))),
     };
 

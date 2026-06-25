@@ -5,6 +5,8 @@ import { dbService } from "../services/dbService";
 import { workspaceService } from "../services/workspaceService";
 import "./CommandPalette.css";
 
+let recentPaletteIds: string[] = [];
+
 export interface CommandAction {
   id: string;
   label: string;
@@ -122,7 +124,11 @@ export function CommandPalette({
     }));
 
     const q = query.trim();
-    if (!q) return [];
+    if (!q) {
+      const allItems = [...baseItems, ...actionItems];
+      const recent = recentPaletteIds.map((id) => allItems.find((i) => i.id === id)).filter(Boolean) as PaletteItem[];
+      return recent.length > 0 ? recent : [...actionItems, ...baseItems.filter(i => i.kind === "script")].slice(0, 5);
+    }
 
     const symbol = q[0];
     const rest = q.slice(1).toLowerCase().trim();
@@ -148,6 +154,7 @@ export function CommandPalette({
 
   const execute = useCallback(
     async (item: PaletteItem) => {
+      recentPaletteIds = [item.id, ...recentPaletteIds.filter((id) => id !== item.id)].slice(0, 5);
       if (item.kind === "table") {
         onTableSelect?.(item.table);
       } else if (item.kind === "script") {
@@ -206,53 +213,47 @@ export function CommandPalette({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <span className="palette-input-hint">↑↓ · Enter</span>
         </div>
 
-        {isEmpty ? (
-          <div className="palette-hints">
-            <div className="palette-hint-row">
-              <span className="palette-hint"><kbd className="palette-hint-key">texto</kbd><span className="palette-hint-desc">Buscar tablas</span></span>
-              <span className="palette-hint"><kbd className="palette-hint-key">&gt;</kbd><span className="palette-hint-desc">Acciones del sistema</span></span>
-            </div>
-            <div className="palette-hint-row">
-              <span className="palette-hint"><kbd className="palette-hint-key">@</kbd><span className="palette-hint-desc">Cambiar conexión / BD</span></span>
-              <span className="palette-hint"><kbd className="palette-hint-key">#</kbd><span className="palette-hint-desc">Scripts guardados</span></span>
-            </div>
-          </div>
-        ) : (
-          <div className="palette-results" ref={resultsRef}>
-            {filtered.length === 0 ? (
-              <div className="palette-empty">Sin resultados</div>
-            ) : (
-              filtered.map((item, i) => {
-                const prevItem = i > 0 ? filtered[i - 1] : null;
-                const showHeader = !prevItem || prevItem.kind !== item.kind;
-                const headerText = ITEM_CATEGORY[item.kind].toUpperCase();
-                
-                return (
-                  <React.Fragment key={item.id}>
-                    {showHeader && (
-                      <div className="palette-group-header">{headerText}</div>
-                    )}
-                    <div
-                      data-palette-index={i}
-                      className={`palette-item${i === selectedIndex ? " palette-item--selected pattern-halftone" : ""}${item.kind === "drop" ? " palette-item--danger" : ""}`}
-                      onClick={() => execute(item)}
-                      onMouseEnter={() => setSelectedIndex(i)}
-                    >
-                      <span className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}>
-                        {ITEM_ICON[item.kind]}
-                      </span>
-                      <span className="palette-item-label">{item.label}</span>
-                      <span className="palette-item-shortcut"><kbd>↵</kbd></span>
-                    </div>
-                  </React.Fragment>
-                );
-              })
-            )}
-          </div>
-        )}
+        <div className="palette-results" ref={resultsRef}>
+          {filtered.length === 0 ? (
+            <div className="palette-empty">Sin resultados</div>
+          ) : (
+            filtered.map((item, i) => {
+              const isRecentView = isEmpty && recentPaletteIds.length > 0;
+              const prevItem = i > 0 ? filtered[i - 1] : null;
+              const showHeader = isRecentView ? (i === 0) : (!prevItem || prevItem.kind !== item.kind);
+              const headerText = isRecentView ? "RECENT" : (isEmpty ? "SUGGESTIONS" : ITEM_CATEGORY[item.kind].toUpperCase());
+              
+              let hintText = "↵ Seleccionar";
+              if (item.kind === "table") hintText = "↵ Abrir Tabla";
+              if (item.kind === "script") hintText = "↵ Ejecutar Script";
+              if (item.kind === "database") hintText = "↵ Cambiar BD";
+              if (item.kind === "drop") hintText = "↵ Eliminar";
+              if (item.kind === "action") hintText = "↵ Ejecutar";
+              
+              return (
+                <React.Fragment key={item.id}>
+                  {showHeader && (
+                    <div className="palette-group-header">{headerText}</div>
+                  )}
+                  <div
+                    data-palette-index={i}
+                    className={`palette-item${i === selectedIndex ? " palette-item--selected bg-pattern-halftone" : ""}${item.kind === "drop" ? " palette-item--danger" : ""}`}
+                    onClick={() => execute(item)}
+                    onMouseEnter={() => setSelectedIndex(i)}
+                  >
+                    <span className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}>
+                      {ITEM_ICON[item.kind]}
+                    </span>
+                    <span className="palette-item-label">{item.label}</span>
+                    <span className="palette-item-shortcut">{hintText}</span>
+                  </div>
+                </React.Fragment>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );

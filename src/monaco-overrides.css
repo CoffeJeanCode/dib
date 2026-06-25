@@ -1,0 +1,279 @@
+/*
+ * monaco-overrides.css
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Hijacks Monaco Editor's injected DOM classes to make the autocomplete
+ * widget (suggest widget), hover widget, and other overlays inherit the
+ * application's design system instead of VS Code's default theme.
+ *
+ * Uses CSS custom properties so it automatically respects both
+ * dark mode (default) and light mode (via @media or [data-theme="light"]).
+ *
+ * Class reference (Monaco injects these into document.body):
+ *   .monaco-editor .suggest-widget          — autocomplete dropdown
+ *   .monaco-editor .suggest-details         — detail/docs pane
+ *   .monaco-editor .monaco-hover            — hover info widget
+ *   .monaco-list .monaco-list-row           — list item
+ *   .monaco-list .monaco-list-row.focused   — selected/active item
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── Base variables (re-stated here for specificity when body has no theme) */
+.monaco-editor {
+  --suggest-bg:          var(--color-suggest-bg,       #1A1A1E);
+  --suggest-border:      var(--color-suggest-border,   #2A2A30);
+  --suggest-focus-bg:    var(--color-suggest-focus-bg, rgba(0, 238, 255, 0.08));
+  --suggest-focus-text:  var(--color-suggest-focus-text, #FFFFFF);
+  --suggest-radius:      var(--radius-md, 6px);
+  --suggest-shadow:      var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.8));
+  --suggest-font-sans:   var(--font-sans, "Inter", sans-serif);
+  --suggest-font-mono:   var(--font-mono, "JetBrains Mono", monospace);
+  --suggest-font-size:   13px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUGGEST WIDGET  (autocomplete dropdown)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Container */
+.monaco-editor .suggest-widget {
+  background: var(--suggest-bg) !important;
+  border: 1px solid var(--suggest-border) !important;
+  border-radius: var(--suggest-radius) !important;
+  box-shadow: var(--suggest-shadow) !important;
+  font-family: var(--suggest-font-sans) !important;
+  overflow: hidden !important;
+  /* Clip children to rounded corners */
+  contain: layout;
+}
+
+/* Inner scrollable list */
+.monaco-editor .suggest-widget .monaco-list {
+  background: transparent !important;
+}
+
+/* Every list row */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row {
+  background: transparent !important;
+  color: var(--color-text-primary, #FFFFFF) !important;
+  font-size: var(--suggest-font-size) !important;
+  font-family: var(--suggest-font-sans) !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  transition: background var(--transition-fastest, 80ms ease) !important;
+}
+
+/* ── Hover state */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row:hover {
+  background: var(--suggest-focus-bg) !important;
+  color: var(--suggest-focus-text) !important;
+}
+
+/* ── Focused / keyboard-selected row
+   Monaco uses .focused AND .selected classes interchangeably */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row.focused,
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row.selected {
+  background: var(--suggest-focus-bg) !important;
+  color: var(--suggest-focus-text) !important;
+  /* Subtle left accent border using box-shadow (no layout shift) */
+  box-shadow: inset 3px 0 0 0 var(--color-focus, var(--neon-cyan, #00EEFF)) !important;
+  outline: none !important;
+}
+
+/* ── Suggestion label (the completion text itself) */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .monaco-highlighted-label {
+  color: var(--color-text-primary, #FFFFFF) !important;
+}
+
+/* Highlighted characters within the label */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .monaco-highlighted-label .highlight {
+  color: var(--color-focus, #00EEFF) !important;
+  font-weight: 600 !important;
+}
+
+/* ── Type/detail label (right side, e.g. "VARCHAR(255)") */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .type-label {
+  color: var(--color-text-tertiary, #555560) !important;
+  font-family: var(--suggest-font-mono) !important;
+  font-size: 11px !important;
+}
+
+/* ── Icon column (completion kind icon) */
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row .suggest-icon {
+  opacity: 0.75 !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row.focused .suggest-icon,
+.monaco-editor .suggest-widget .monaco-list .monaco-list-row.selected .suggest-icon {
+  opacity: 1 !important;
+}
+
+/* ── Status bar at the bottom of the widget */
+.monaco-editor .suggest-widget .suggest-status-bar {
+  background: var(--suggest-bg) !important;
+  border-top: 1px solid var(--suggest-border) !important;
+  color: var(--color-text-tertiary, #555560) !important;
+  font-size: 11px !important;
+  font-family: var(--suggest-font-sans) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUGGEST DETAILS PANE  (docs / signature panel)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.monaco-editor .suggest-details {
+  background: var(--color-bg-elevated, #1E1E22) !important;
+  border: 1px solid var(--suggest-border) !important;
+  border-radius: var(--suggest-radius) !important;
+  box-shadow: var(--suggest-shadow) !important;
+  color: var(--color-text-primary, #FFFFFF) !important;
+  font-family: var(--suggest-font-sans) !important;
+  font-size: var(--suggest-font-size) !important;
+  overflow: hidden !important;
+}
+
+.monaco-editor .suggest-details > .monaco-scrollable-element {
+  background: transparent !important;
+}
+
+.monaco-editor .suggest-details .detail-title {
+  color: var(--color-text-secondary, #888888) !important;
+  font-size: 11px !important;
+  font-family: var(--suggest-font-mono) !important;
+  border-bottom: 1px solid var(--suggest-border) !important;
+  padding-bottom: 4px !important;
+  margin-bottom: 4px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOVER WIDGET  (column/table info on hover)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.monaco-editor .monaco-hover {
+  background: var(--color-bg-elevated, #1E1E22) !important;
+  border: 1px solid var(--suggest-border) !important;
+  border-radius: var(--suggest-radius) !important;
+  box-shadow: var(--suggest-shadow) !important;
+  color: var(--color-text-primary, #FFFFFF) !important;
+  font-family: var(--suggest-font-sans) !important;
+  font-size: var(--suggest-font-size) !important;
+}
+
+.monaco-editor .monaco-hover .hover-row {
+  color: var(--color-text-primary, #FFFFFF) !important;
+}
+
+.monaco-editor .monaco-hover p,
+.monaco-editor .monaco-hover code {
+  color: var(--color-text-primary, #FFFFFF) !important;
+}
+
+.monaco-editor .monaco-hover code {
+  font-family: var(--suggest-font-mono) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-radius: 2px !important;
+  padding: 0 3px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PARAMETER HINTS WIDGET  (function signature)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.monaco-editor .parameter-hints-widget {
+  background: var(--color-bg-elevated, #1E1E22) !important;
+  border: 1px solid var(--suggest-border) !important;
+  border-radius: var(--suggest-radius) !important;
+  box-shadow: var(--suggest-shadow) !important;
+  color: var(--color-text-primary, #FFFFFF) !important;
+  font-family: var(--suggest-font-sans) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONTEXT MENU  (right-click inside Monaco)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.monaco-editor .context-view .monaco-menu {
+  background: var(--color-bg-elevated, #1E1E22) !important;
+  border: 1px solid var(--suggest-border) !important;
+  border-radius: var(--suggest-radius) !important;
+  box-shadow: var(--suggest-shadow) !important;
+  overflow: hidden !important;
+}
+
+.monaco-editor .context-view .monaco-menu .action-item {
+  color: var(--color-text-primary, #FFFFFF) !important;
+}
+
+.monaco-editor .context-view .monaco-menu .action-item.focused,
+.monaco-editor .context-view .monaco-menu .action-item:hover {
+  background: var(--suggest-focus-bg) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR OVERRIDES (inside Monaco overlays)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.monaco-editor .suggest-widget .monaco-scrollable-element > .scrollbar > .slider {
+  background: var(--color-border-dark, #333340) !important;
+  border-radius: 4px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDITOR CONTAINER SEAMLESS BG  (ensure no white flash on load)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The host container loaded by @monaco-editor/react */
+.sqleditor-body .monaco-editor,
+.sqleditor-body .monaco-editor-background,
+.sqleditor-body .monaco-editor .margin {
+  background-color: var(--color-monaco-bg, #121215) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIGHT MODE overrides
+   These override the neon-specific rules when the system is in light mode
+   or when [data-theme="light"] is applied to <html>.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: light) {
+  .monaco-editor {
+    --suggest-bg:         var(--color-suggest-bg,       #FFFFFF);
+    --suggest-border:     var(--color-suggest-border,   #DCDCE0);
+    --suggest-focus-bg:   var(--color-suggest-focus-bg, rgba(0, 104, 201, 0.08));
+    --suggest-focus-text: var(--color-suggest-focus-text, #111118);
+    --suggest-shadow:     0 10px 15px -3px rgba(0,0,0,0.15);
+  }
+
+  .monaco-editor .suggest-widget .monaco-list .monaco-list-row.focused,
+  .monaco-editor .suggest-widget .monaco-list .monaco-list-row.selected {
+    box-shadow: inset 3px 0 0 0 #0068C9 !important;
+  }
+
+  .monaco-editor .monaco-hover code {
+    background: rgba(0, 0, 0, 0.05) !important;
+  }
+
+  .sqleditor-body .monaco-editor,
+  .sqleditor-body .monaco-editor-background,
+  .sqleditor-body .monaco-editor .margin {
+    background-color: #FAFAFA !important;
+  }
+}
+
+[data-theme="light"] .monaco-editor {
+  --suggest-bg:         #FFFFFF;
+  --suggest-border:     #DCDCE0;
+  --suggest-focus-bg:   rgba(0, 104, 201, 0.08);
+  --suggest-focus-text: #111118;
+  --suggest-shadow:     0 10px 15px -3px rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .monaco-editor .suggest-widget .monaco-list .monaco-list-row.focused,
+[data-theme="light"] .monaco-editor .suggest-widget .monaco-list .monaco-list-row.selected {
+  box-shadow: inset 3px 0 0 0 #0068C9 !important;
+}
+
+[data-theme="light"] .sqleditor-body .monaco-editor,
+[data-theme="light"] .sqleditor-body .monaco-editor-background,
+[data-theme="light"] .sqleditor-body .monaco-editor .margin {
+  background-color: #FAFAFA !important;
+}

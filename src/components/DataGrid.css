@@ -25,8 +25,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
+  border-bottom: 2px solid var(--color-border-dark);
   min-width: 100%;
   width: max-content;
   flex-shrink: 0;
@@ -70,8 +70,8 @@
 }
 
 .dg-cell--active {
-  border: 1px solid var(--comic-yellow);
-  box-shadow: 2px 2px 0px var(--comic-yellow);
+  border: 1px solid var(--color-focus);
+  background: rgba(var(--color-focus-rgb, 103, 232, 249), 0.06);
   z-index: 1;
 }
 
@@ -163,7 +163,8 @@
 
 /* ── Dirty cell — pending change indicator ───────────────── */
 .dg-cell--changed {
-  background: rgba(254, 252, 191, 0.08);
+  background-color: rgba(239, 68, 68, 0.06);
+  --pattern-color: var(--comic-red);
 }
 
 .dg-cell--changed::before {
@@ -181,14 +182,17 @@
 
 /* ── Edit input ──────────────────────────────────────────── */
 .dg-cell-input {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: -1px;
   padding: 0 8px;
   background: var(--color-bg);
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   outline: none;
+  border: 1px solid var(--color-highlight);
+  box-shadow: 2px 2px 0px var(--color-highlight);
+  z-index: 10;
 }
 
 /* ── Footer ──────────────────────────────────────────────── */

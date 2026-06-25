@@ -1,0 +1,86 @@
+.dcd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dcd {
+  background-color: var(--color-bg-elevated);
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(239, 68, 68, 0.06) 0px,
+      rgba(239, 68, 68, 0.06) 1px,
+      transparent 1px,
+      transparent 10px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(239, 68, 68, 0.04) 0px,
+      rgba(239, 68, 68, 0.04) 1px,
+      transparent 1px,
+      transparent 10px
+    );
+  border: 3px solid var(--comic-red);
+  box-shadow: 4px 4px 0px var(--comic-red);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  max-width: 380px;
+  width: calc(100% - 48px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.dcd-message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
+
+.dcd-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.dcd-btn {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 60ms ease, opacity 80ms ease;
+}
+
+.dcd-btn--cancel {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-dark);
+}
+
+.dcd-btn--cancel:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.dcd-btn--confirm {
+  background: var(--comic-red);
+  color: #fff;
+  border: 2px solid #991b1b;
+  box-shadow: 3px 3px 0px #7f1d1d;
+}
+
+.dcd-btn--confirm:hover {
+  opacity: 0.9;
+}
+
+.dcd-btn--confirm:active {
+  box-shadow: 1px 1px 0px #7f1d1d;
+  transform: translate(2px, 2px);
+}

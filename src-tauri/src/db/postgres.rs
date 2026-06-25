@@ -292,15 +292,91 @@ impl DatabaseDriver for PostgresDriver {
 
     async fn execute_query(&self, sql: &str) -> Result<QueryResult, QueryError> {
         if is_select(sql) {
+            use std::collections::HashSet;
+            use super::driver::ColumnMetadata;
+
             let rows = sqlx::query(sql)
                 .fetch_all(&self.pool)
                 .await
                 .map_err(|e| QueryError::from(e.to_string()))?;
 
-            let columns = rows
+            let columns: Vec<String> = rows
                 .first()
                 .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
                 .unwrap_or_default();
+
+            // ── Updatability analysis via PgColumn provenance ─────────────────
+            let (column_metadata, is_updatable) = if let Some(first_row) = rows.first() {
+                let pg_cols = first_row.columns();
+
+                // Unique source table OIDs (None = computed / expression column)
+                let unique_oids: HashSet<u32> = pg_cols
+                    .iter()
+                    .filter_map(|c| c.relation_id().map(|o| o.0))
+                    .collect();
+
+                if unique_oids.len() != 1 {
+                    // Multiple or zero source tables (JOIN, computed) → read-only
+                    let meta = pg_cols.iter().map(|c| ColumnMetadata {
+                        table_name: None,
+                        column_name: c.name().to_string(),
+                        is_primary_key: false,
+                    }).collect();
+                    (meta, false)
+                } else {
+                    let table_oid = *unique_oids.iter().next().unwrap() as i64;
+
+                    // Resolve OID → schema-qualified table name
+                    let table_name_opt: Option<String> = sqlx::query(
+                        "SELECT n.nspname AS schema, c.relname AS table_name \
+                         FROM pg_catalog.pg_class c \
+                         JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
+                         WHERE c.oid = $1::oid"
+                    )
+                    .bind(table_oid)
+                    .fetch_optional(&self.pool)
+                    .await
+                    .ok()
+                    .flatten()
+                    .map(|r| {
+                        let schema: String = r.try_get("schema").unwrap_or_default();
+                        let name: String = r.try_get("table_name").unwrap_or_default();
+                        if schema == "public" { name } else { format!("{}.{}", schema, name) }
+                    });
+
+                    // Collect PK attnum values for this table
+                    let pk_attnums: HashSet<i16> = sqlx::query(
+                        "SELECT a.attnum \
+                         FROM pg_catalog.pg_constraint con \
+                         JOIN pg_catalog.pg_attribute a \
+                           ON a.attrelid = con.conrelid AND a.attnum = ANY(con.conkey) \
+                         WHERE con.conrelid = $1::oid AND con.contype = 'p'"
+                    )
+                    .bind(table_oid)
+                    .fetch_all(&self.pool)
+                    .await
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|r| r.try_get::<i16, _>("attnum").ok())
+                    .collect();
+
+                    let meta: Vec<ColumnMetadata> = pg_cols.iter().map(|c| {
+                        let is_pk = c.relation_attribute_no()
+                            .map(|n| pk_attnums.contains(&n))
+                            .unwrap_or(false);
+                        ColumnMetadata {
+                            table_name: table_name_opt.clone(),
+                            column_name: c.name().to_string(),
+                            is_primary_key: is_pk,
+                        }
+                    }).collect();
+
+                    let has_pk = meta.iter().any(|m| m.is_primary_key);
+                    (meta, has_pk)
+                }
+            } else {
+                (vec![], false)
+            };
 
             Ok(QueryResult {
                 rows: rows
@@ -309,18 +385,55 @@ impl DatabaseDriver for PostgresDriver {
                     .collect(),
                 columns,
                 rows_affected: 0,
+                column_metadata,
+                is_updatable,
             })
         } else {
-            let result = sqlx::query(sql)
-                .execute(&self.pool)
-                .await
-                .map_err(|e| QueryError::from(e.to_string()))?;
+            // Split on ';' to detect multi-statement scripts (DDL, migrations, etc.).
+            // sqlx prepared statements cannot execute multiple commands in one string
+            // ("cannot insert multiple commands into a prepared statement").
+            let stmts: Vec<&str> = sql
+                .split(';')
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .collect();
 
-            Ok(QueryResult {
-                columns: vec![],
-                rows: vec![],
-                rows_affected: result.rows_affected(),
-            })
+            if stmts.len() <= 1 {
+                let result = sqlx::query(sql)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                Ok(QueryResult {
+                    columns: vec![],
+                    rows: vec![],
+                    rows_affected: result.rows_affected(),
+                    column_metadata: vec![],
+                    is_updatable: false,
+                })
+            } else {
+                // Execute each statement inside a single transaction for atomicity
+                let mut tx = self.pool.begin()
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                let mut total_affected = 0u64;
+                for stmt in &stmts {
+                    let result = sqlx::query(stmt)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(|e| QueryError::from(e.to_string()))?;
+                    total_affected += result.rows_affected();
+                }
+                tx.commit()
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                Ok(QueryResult {
+                    columns: vec![],
+                    rows: vec![],
+                    rows_affected: total_affected,
+                    column_metadata: vec![],
+                    is_updatable: false,
+                })
+            }
         }
     }
 

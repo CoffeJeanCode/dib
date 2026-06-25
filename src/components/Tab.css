@@ -5,9 +5,9 @@
   height: 32px;
   padding: 0 var(--space-3);
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   border-bottom: 2px solid transparent;
-  border-radius: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
@@ -25,8 +25,10 @@
 
 .tab--active {
   background: var(--color-bg);
-  color: var(--comic-yellow);
-  border-bottom-color: var(--comic-yellow);
+  color: var(--color-highlight);
+  border: 1px solid var(--color-highlight);
+  box-shadow: 2px 2px 0px var(--color-highlight);
+  font-weight: var(--font-weight-medium);
 }
 
 .tab-icon {
@@ -37,7 +39,7 @@
 }
 
 .tab--active .tab-icon {
-  color: var(--comic-yellow);
+  color: var(--color-highlight);
 }
 
 .tab-label {
@@ -71,7 +73,7 @@
 }
 
 .tab-close--dirty {
-  color: var(--comic-yellow);
+  color: var(--color-highlight);
   opacity: 1;
   display: flex;
   align-items: center;

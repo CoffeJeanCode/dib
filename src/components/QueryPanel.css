@@ -88,19 +88,20 @@
 }
 
 .qp-table-item:hover {
-  background: var(--color-bg-hover);
-  border-left-color: var(--brand-turquoise);
+  background-color: rgba(25, 177, 180, 0.05);
+  border-left-color: var(--comic-cyan, #19b1b4);
 }
 
 .qp-table-item--active {
-  background: var(--color-bg-hover);
+  background-color: color-mix(in srgb, var(--color-highlight) 6%, transparent);
   font-weight: var(--font-weight-medium);
-  border-left-color: var(--brand-bright-blue);
+  border-left-color: var(--color-highlight);
+  color: var(--color-text-primary);
 }
 
 .qp-table-icon {
   font-size: 11px;
-  color: var(--brand-bright-blue);
+  color: var(--neon-green);
   flex-shrink: 0;
 }
 
@@ -235,6 +236,33 @@
   white-space: nowrap;
 }
 
+.qp-db-select {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--brand-turquoise);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: transparent;
+  border: 1px solid transparent;
+  outline: none;
+  cursor: pointer;
+  max-width: 140px;
+  text-overflow: ellipsis;
+  border-radius: var(--radius-sm);
+}
+
+.qp-db-select:hover, .qp-db-select:focus {
+  border-color: var(--color-border);
+  background: var(--color-bg-hover);
+}
+
+.qp-db-select option {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  text-transform: none;
+}
+
 .qp-grid-header {
   display: flex;
   align-items: center;
@@ -250,12 +278,6 @@
   font-weight: var(--font-weight-medium);
   font-family: var(--font-mono);
   color: var(--color-text-primary);
-}
-
-.qp-sql {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  font-family: var(--font-mono);
 }
 
 .qp-grid-wrap {

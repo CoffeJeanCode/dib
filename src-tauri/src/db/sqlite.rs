@@ -179,6 +179,8 @@ impl DatabaseDriver for SqliteDriver {
                     .collect(),
                 columns,
                 rows_affected: 0,
+                column_metadata: vec![],
+                is_updatable: false,
             })
         } else {
             let result = sqlx::query(sql)
@@ -190,6 +192,8 @@ impl DatabaseDriver for SqliteDriver {
                 columns: vec![],
                 rows: vec![],
                 rows_affected: result.rows_affected(),
+                column_metadata: vec![],
+                is_updatable: false,
             })
         }
     }

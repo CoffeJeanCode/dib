@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Copy, X } from "lucide-react";
+import { Copy, X, AlertTriangle, Info } from "lucide-react";
 import type { Toast as ToastType } from "../hooks/useToast";
 import "./Toast.css";
 
@@ -13,8 +14,20 @@ function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: str
     navigator.clipboard.writeText(toast.message).catch(() => {});
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onDismiss(toast.id);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [toast.id, onDismiss]);
+
+  const Icon = toast.type === "error" || toast.type === "warning" ? AlertTriangle : Info;
+
   return (
-    <div className={`toast pattern-halftone toast--${toast.type}`}>
+    <div className={`toast bg-pattern-halftone toast--${toast.type}`}>
+      <div className={`toast-badge toast-badge--${toast.type}`}>
+        <Icon size={14} strokeWidth={3} />
+      </div>
       <span className="toast-message">{toast.message}</span>
       <button className="toast-copy-btn" onClick={handleCopy} title="Copiar mensaje">
         <Copy size={14} />

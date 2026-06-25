@@ -8,7 +8,7 @@ interface SidebarHeaderProps {
 
 export function SidebarHeader({ onToggle, onSettingsOpen, collapsed }: SidebarHeaderProps) {
   return (
-    <div className="sidebar-header">
+    <div className="sidebar-header bg-pattern-halftone">
       <span className="sidebar-logo">DIB</span>
       <div className="sidebar-header-actions">
         {onSettingsOpen && (

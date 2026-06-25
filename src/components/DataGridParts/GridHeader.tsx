@@ -2,12 +2,9 @@ import { memo } from "react";
 import { Filter } from "lucide-react";
 import { useDataGridContext } from "./DataGridContext";
 
-const DEFAULT_COL_W = 150;
-
 export const GridHeader = memo(function GridHeader() {
   const {
     columns,
-    columnWidths,
     colInfoMap,
     fkMap,
     headerRef,
@@ -21,7 +18,7 @@ export const GridHeader = memo(function GridHeader() {
     <div ref={headerRef} className="dg-header" role="row">
       {columns.map((col, ci) => {
         const info = colInfoMap[col];
-        const w = columnWidths[col] ?? DEFAULT_COL_W;
+        const cssW = `var(--dg-cw-${ci})`;
         const activeFilter = filters?.find((f) => f.column === col);
         return (
           <div
@@ -29,9 +26,9 @@ export const GridHeader = memo(function GridHeader() {
             className="dg-cell dg-th"
             role="columnheader"
             style={{
-              width: w,
-              minWidth: w,
-              maxWidth: w,
+              width: cssW,
+              minWidth: cssW,
+              maxWidth: cssW,
             }}
             title={info ? `${col} (${info.data_type})` : col}
           >

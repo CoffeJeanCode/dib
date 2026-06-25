@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from "react";
+import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 import type { PendingChange, ColumnInfo, GridFilter, FilterOperator, TableRelation } from "../types/db";
 
 const ROW_H = 38;
@@ -63,6 +63,7 @@ export interface UseDataGridStateOptions {
   filters?: GridFilter[];
   activeCell: { row: number; col: number } | null;
   relations?: TableRelation[];
+  disableAutoFocus?: boolean;
   onPendingChanges?: (changes: PendingChange[]) => void;
   onFiltersChange?: (filters: GridFilter[]) => void;
   onSave?: (changes: PendingChange[]) => Promise<void>;
@@ -82,6 +83,7 @@ export function useDataGridState({
   filters,
   activeCell: activeCellProp,
   relations,
+  disableAutoFocus = false,
   onPendingChanges,
   onFiltersChange,
   onSave,
@@ -117,6 +119,9 @@ export function useDataGridState({
   const gridRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollLeftRef = useRef(0);
+  const columnWidthsRef = useRef<Record<string, number>>({});
+  const liveDragWidthRef = useRef<{ col: string; colIdx: number; w: number } | null>(null);
 
   // Scroll / view
   const [scrollTop, setScrollTop] = useState(0);
@@ -124,17 +129,28 @@ export function useDataGridState({
 
   const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     setScrollTop(e.currentTarget.scrollTop);
-    // Sync header horizontal scroll without going through React state (zero lag)
+    scrollLeftRef.current = e.currentTarget.scrollLeft;
     if (headerRef.current) headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
   }, []);
 
   // Edit state (undo/redo history)
   const [editState, setEditState] = useState<EditState>(() => makeEditState(rows));
 
-  // Active cell is hoisted to parent; no local useState
-  const activeCell = activeCellProp ?? null;
+  // Freeze controlled mode on mount — never switch between controlled/uncontrolled
+  const isControlledRef = useRef(onActiveCellChange !== undefined);
+
+  // Internal fallback state for uncontrolled mode (e.g. SqlEditor results grid)
+  const [internalActiveCell, setInternalActiveCell] = useState<{ row: number; col: number } | null>(null);
+
+  const activeCell = isControlledRef.current ? (activeCellProp ?? null) : internalActiveCell;
   const setActiveCell = useCallback(
-    (next: { row: number; col: number } | null) => onActiveCellChangeRef.current?.(next),
+    (next: { row: number; col: number } | null) => {
+      if (isControlledRef.current) {
+        onActiveCellChangeRef.current?.(next);
+      } else {
+        setInternalActiveCell(next);
+      }
+    },
     [],
   );
   const [anchorCell, setAnchorCell] = useState<{ row: number; col: number } | null>(null);
@@ -144,6 +160,7 @@ export function useDataGridState({
 
   // Column widths / resize
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  columnWidthsRef.current = columnWidths;
   const [resizing, setResizing] = useState<{ col: string; startX: number; startW: number } | null>(null);
 
   // Save indicator
@@ -210,6 +227,17 @@ export function useDataGridState({
     });
   }, [columns]);
 
+  // Sync committed column widths to CSS variables on the grid container, then restore
+  // horizontal scroll position so a mouseup-commit never jumps the viewport.
+  useLayoutEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    for (let i = 0; i < columns.length; i++) {
+      el.style.setProperty(`--dg-cw-${i}`, `${columnWidths[columns[i]] ?? DEFAULT_COL_W}px`);
+    }
+    if (containerRef.current) containerRef.current.scrollLeft = scrollLeftRef.current;
+  }, [columns, columnWidths]);
+
   useEffect(() => {
     setEditState(makeEditState(rows));
     setSelectedCells(new Set());
@@ -217,12 +245,13 @@ export function useDataGridState({
   }, [rows]);
 
   useEffect(() => {
+    if (disableAutoFocus || rows.length === 0) return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         gridRef.current?.focus();
       });
     });
-  }, []);
+  }, [disableAutoFocus, rows.length]);
 
   useEffect(() => {
     onPendingChangesRef.current?.(Array.from(editState.changes.values()));
@@ -243,6 +272,7 @@ export function useDataGridState({
   useEffect(() => {
     if (!activeCell || !containerRef.current) return;
     const el = containerRef.current;
+    const cw = columnWidthsRef.current;
     const top = activeCell.row * ROW_H;
     const bottom = top + ROW_H;
     if (top < el.scrollTop + ROW_H) {
@@ -251,27 +281,39 @@ export function useDataGridState({
       el.scrollTop = bottom - viewH + ROW_H;
     }
     const colLeft = columns.slice(0, activeCell.col).reduce(
-      (sum, col) => sum + (columnWidths[col] ?? DEFAULT_COL_W), 0,
+      (sum, col) => sum + (cw[col] ?? DEFAULT_COL_W), 0,
     );
-    const colRight = colLeft + (columnWidths[columns[activeCell.col]] ?? DEFAULT_COL_W);
+    const colRight = colLeft + (cw[columns[activeCell.col]] ?? DEFAULT_COL_W);
     if (colLeft < el.scrollLeft) el.scrollLeft = colLeft;
     else if (colRight > el.scrollLeft + el.clientWidth) el.scrollLeft = colRight - el.clientWidth;
-  }, [activeCell, viewH, columns, columnWidths]);
+    scrollLeftRef.current = el.scrollLeft;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCell, viewH, columns]);
 
   useEffect(() => {
     if (!resizing) return;
+    const colIdx = columns.indexOf(resizing.col);
     const onMove = (e: MouseEvent) => {
       const w = Math.max(MIN_COL_W, resizing.startW + e.clientX - resizing.startX);
-      setColumnWidths((prev) => ({ ...prev, [resizing.col]: w }));
+      liveDragWidthRef.current = { col: resizing.col, colIdx, w };
+      // Zero React renders during drag — update CSS var directly on the container
+      gridRef.current?.style.setProperty(`--dg-cw-${colIdx}`, `${w}px`);
     };
-    const onUp = () => setResizing(null);
+    const onUp = () => {
+      if (liveDragWidthRef.current) {
+        const { col, w } = liveDragWidthRef.current;
+        setColumnWidths((prev) => ({ ...prev, [col]: w }));
+        liveDragWidthRef.current = null;
+      }
+      setResizing(null);
+    };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [resizing]);
+  }, [resizing, columns]);
 
   // History mutations
   const mutate = useCallback((patch: Partial<Snapshot>) => {
@@ -752,7 +794,7 @@ export function useDataGridState({
         }
       }
 
-      const ideal = Math.max(MIN_COL_W, Math.min(headerW, maxContentW + 20));
+      const ideal = Math.max(MIN_COL_W, Math.max(headerW, maxContentW + 20));
       setColumnWidths((prev) => ({ ...prev, [col]: Math.ceil(ideal) }));
     },
     [editState.rows],

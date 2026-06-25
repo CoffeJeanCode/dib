@@ -26,6 +26,7 @@ export interface DataGridProps {
   relations?: TableRelation[];
   onFkNavigate?: (targetTable: string, targetColumn: string, value: unknown) => void;
   onSaveError?: (msg: string) => void;
+  disableAutoFocus?: boolean;
 }
 
 export const DataGrid = memo(function DataGrid({
@@ -46,6 +47,7 @@ export const DataGrid = memo(function DataGrid({
   relations,
   onFkNavigate,
   onSaveError,
+  disableAutoFocus,
 }: DataGridProps) {
   const state = useDataGridState({
     columns,
@@ -56,6 +58,7 @@ export const DataGrid = memo(function DataGrid({
     filters,
     activeCell: activeCellProp ?? null,
     relations,
+    disableAutoFocus,
     onPendingChanges,
     onFiltersChange,
     onSave,

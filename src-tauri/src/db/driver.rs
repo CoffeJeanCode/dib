@@ -53,11 +53,25 @@ pub struct SchemaObjects {
     pub procedures: Vec<TableInfo>,
 }
 
+/// Per-column provenance metadata returned alongside SELECT results.
+/// Allows the frontend to determine whether a result set is safely editable.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ColumnMetadata {
+    /// Source table (schema-qualified when not public), or None for computed cols
+    pub table_name: Option<String>,
+    pub column_name: String,
+    pub is_primary_key: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryResult {
     pub columns: Vec<String>,
     pub rows: Vec<Vec<serde_json::Value>>,
     pub rows_affected: u64,
+    /// One entry per column in `columns`; empty for non-SELECT or when unsupported.
+    pub column_metadata: Vec<ColumnMetadata>,
+    /// True only when all columns come from a single table and a PK column is present.
+    pub is_updatable: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

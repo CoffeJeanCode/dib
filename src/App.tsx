@@ -10,6 +10,7 @@ import { HomeView } from "./components/HomeView";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { ToastContainer } from "./components/Toast";
 import { KeyboardCheatSheet } from "./components/KeyboardCheatSheet";
+import { DangerConfirmDialog } from "./components/DangerConfirmDialog";
 import { useSavedConnections } from "./hooks/useSavedConnections";
 import { useUiState } from "./hooks/useUiState";
 import { useKeybindings } from "./hooks/useKeybindings";
@@ -49,17 +50,19 @@ function App() {
   const [showNewConnection, setShowNewConnection] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cheatSheetOpen, setCheatSheetOpen] = useState(false);
+  const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [passwordPrompt, setPasswordPrompt] = useState<{ savedId: string; name: string } | null>(null);
 
   useEffect(() => {
-    const handler = () => setPaletteOpen(true);
+    const handler = () => { if (active) setPaletteOpen(true); };
     window.addEventListener("dib:open-palette", handler);
     return () => window.removeEventListener("dib:open-palette", handler);
-  }, []);
+  }, [active]);
 
   useKeybindings([
-    { combo: "ctrl+p", handler: () => setPaletteOpen((p) => !p) },
-    { combo: "ctrl+k", handler: () => setPaletteOpen((p) => !p) },
+    { combo: "ctrl+p",       handler: () => { if (active) setPaletteOpen((p) => !p) } },
+    { combo: "ctrl+shift+p", handler: () => { if (active) setPaletteOpen((p) => !p) } },
+    { combo: "ctrl+k",       handler: () => { if (active) setPaletteOpen((p) => !p) } },
     {
       combo: "ctrl+1",
       handler: () => (document.getElementById("dib-sidebar-nav") as HTMLElement | null)?.focus(),
@@ -157,18 +160,24 @@ function App() {
     }
   }, [active, info, error]);
 
-  const handleDropTable = useCallback(async (table: TableInfo) => {
+  const handleDropTable = useCallback((table: TableInfo) => {
     if (!active) return;
     const label = table.schema ? `${table.schema}.${table.name}` : table.name;
-    if (!window.confirm(`¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`)) return;
-    try {
-      await dbService.dropTable(active.activeId, table.name, table.schema ?? null);
-      info(`Tabla "${label}" eliminada`);
-      window.dispatchEvent(new CustomEvent("dib:reload"));
-    } catch (e: unknown) {
-      const msg = e && typeof e === "object" && "message" in e ? String((e as { message: unknown }).message) : String(e);
-      error(msg);
-    }
+    const connId = active.activeId;
+    setDangerDialog({
+      message: `¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`,
+      onConfirm: async () => {
+        setDangerDialog(null);
+        try {
+          await dbService.dropTable(connId, table.name, table.schema ?? null);
+          info(`Tabla "${label}" eliminada`);
+          window.dispatchEvent(new CustomEvent("dib:reload"));
+        } catch (e: unknown) {
+          const msg = e && typeof e === "object" && "message" in e ? String((e as { message: unknown }).message) : String(e);
+          error(msg);
+        }
+      },
+    });
   }, [active, info, error]);
 
   const handlePasswordSubmit = useCallback(
@@ -189,6 +198,7 @@ function App() {
     <Layout
       activeConnectionId={active?.activeId ?? null}
       onConnectionSelect={handleConnectionSelect}
+      onScriptOpen={handleScriptOpen}
       onEditConnection={handleEditConnection}
       onSettingsOpen={() => setSettingsOpen(true)}
     >
@@ -201,7 +211,44 @@ function App() {
         onDatabaseSwitch={handleDatabaseSwitch}
         onDropTable={handleDropTable}
         actions={[
-          ...(active ? [{ id: "disconnect", label: "Desconectar", onAction: handleDisconnect }] : []),
+          ...(active ? [
+            { id: "disconnect", label: "Desconectar", onAction: handleDisconnect },
+            {
+              id: "nueva-plantilla-ddl",
+              label: "Nueva Plantilla DDL",
+              onAction: () => {
+                setPaletteOpen(false);
+                // Open a generic DDL boilerplate in a new SQL editor tab
+                const ddlTemplate = [
+                  "-- ╔══════════════════════════════════════════════════╗",
+                  "-- ║         PLANTILLA DDL — Nueva Tabla             ║",
+                  "-- ╚══════════════════════════════════════════════════╝",
+                  "",
+                  "-- Ajusta el nombre, columnas y restricciones según tu esquema.",
+                  "",
+                  "CREATE TABLE IF NOT EXISTS mi_tabla (",
+                  "    id          BIGSERIAL      PRIMARY KEY,",
+                  "    nombre      VARCHAR(255)   NOT NULL,",
+                  "    descripcion TEXT,",
+                  "    activo      BOOLEAN        NOT NULL DEFAULT TRUE,",
+                  "    creado_en   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),",
+                  "    actualizado TIMESTAMPTZ    NOT NULL DEFAULT NOW()",
+                  ");",
+                  "",
+                  "-- Índice en columnas de búsqueda frecuente",
+                  "CREATE INDEX IF NOT EXISTS idx_mi_tabla_nombre",
+                  "    ON mi_tabla (nombre);",
+                  "",
+                  "-- Trigger para actualizar 'actualizado' automáticamente",
+                  "-- (requiere función update_timestamp() en tu schema)",
+                  "-- CREATE TRIGGER trg_mi_tabla_updated",
+                  "--     BEFORE UPDATE ON mi_tabla",
+                  "--     FOR EACH ROW EXECUTE FUNCTION update_timestamp();",
+                ].join("\n");
+                handleScriptOpen(ddlTemplate, "Nueva Plantilla DDL.sql");
+              },
+            },
+          ] : []),
           { id: "new-connection", label: "Nueva Conexión", onAction: () => { setPaletteOpen(false); setShowNewConnection(true); } },
           { id: "cheat-sheet", label: "Atajos de teclado (Ctrl+/)", onAction: () => { setPaletteOpen(false); setCheatSheetOpen(true); } },
         ]}
@@ -233,6 +280,7 @@ function App() {
           onDisconnect={handleDisconnect}
           navigateTo={navigateTo}
           openScript={openScript}
+          onDatabaseSwitch={handleDatabaseSwitch}
         />
       ) : (
         !connecting && (
@@ -255,6 +303,13 @@ function App() {
         onClose={() => setSettingsOpen(false)}
       />
       {cheatSheetOpen && <KeyboardCheatSheet onClose={() => setCheatSheetOpen(false)} />}
+      {dangerDialog && (
+        <DangerConfirmDialog
+          message={dangerDialog.message}
+          onConfirm={dangerDialog.onConfirm}
+          onCancel={() => setDangerDialog(null)}
+        />
+      )}
       <ToastContainer toasts={toasts} onDismiss={remove} />
     </ToastContext.Provider>
   );

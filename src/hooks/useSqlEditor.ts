@@ -45,80 +45,122 @@ function getSystemTheme(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-const THEME_LIGHT = "dib-light";
-const THEME_DARK = "dib-dark";
+export const THEME_LIGHT = "dib-light";
+export const THEME_DARK  = "dib-dark";
+
 
 export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
+  // ── LIGHT THEME ──────────────────────────────────────────────
   monaco.editor.defineTheme(THEME_LIGHT, {
     base: "vs",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "b4b4b0", fontStyle: "italic" },
-      { token: "keyword", foreground: "7ba7e2", fontStyle: "bold" },
-      { token: "string", foreground: "72c08a" },
-      { token: "number", foreground: "e8a87c" },
-      { token: "operator", foreground: "9b9a97" },
-      { token: "identifier", foreground: "37352f" },
-      { token: "type", foreground: "b89ad8" },
-      { token: "predefined", foreground: "7cc5d8" },
+      // Comments: medium grey, italic
+      { token: "comment",    foreground: "8a8a96", fontStyle: "italic" },
+      // Keywords: deep blue (AA on #FAFAFA)
+      { token: "keyword",    foreground: "1a56a8", fontStyle: "bold" },
+      // Strings: forest green
+      { token: "string",     foreground: "15803d" },
+      // Numbers: amber-orange
+      { token: "number",     foreground: "b45309" },
+      // Operators: mid grey
+      { token: "operator",   foreground: "6b7280" },
+      // Identifiers: near black
+      { token: "identifier", foreground: "111118" },
+      // Types: deep purple
+      { token: "type",       foreground: "7c3aed" },
+      // Predefined (funcs): teal
+      { token: "predefined", foreground: "0e7490" },
     ],
     colors: {
-      "editor.background": "#fdfcfb",
-      "editor.foreground": "#37352f",
-      "editor.lineHighlightBackground": "#f8f7f6",
-      "editor.selectionBackground": "#e8f0fe88",
-      "editor.inactiveSelectionBackground": "#e8f0fe44",
-      "editorCursor.foreground": "#7ba7e2",
-      "editorWhitespace.foreground": "#e8e8e6",
-      "editorIndentGuide.background": "#e8e8e6",
-      "editorIndentGuide.activeBackground": "#d3d3d0",
-      "editorLineNumber.foreground": "#b4b4b0",
-      "editorLineNumber.activeForeground": "#787774",
-      "editor.selectionHighlightBackground": "#e8f0fe44",
-      "editorBracketMatch.background": "#e8f0fe66",
-      "editorBracketMatch.border": "#7ba7e2",
-      "scrollbarSlider.background": "#d3d3d080",
-      "scrollbarSlider.hoverBackground": "#d3d3d0aa",
-      "scrollbarSlider.activeBackground": "#b4b4b0",
+      // Seamless with app background
+      "editor.background":                  "#FAFAFA",
+      "editor.foreground":                  "#111118",
+      "editor.lineHighlightBackground":     "#F0F0F3",
+      "editor.selectionBackground":         "#BFDBFE88",
+      "editor.inactiveSelectionBackground": "#BFDBFE44",
+      "editorCursor.foreground":            "#1a56a8",
+      "editorWhitespace.foreground":        "#DCDCE0",
+      "editorIndentGuide.background":       "#DCDCE0",
+      "editorIndentGuide.activeBackground": "#C8C8CE",
+      "editorLineNumber.foreground":        "#9090A0",
+      "editorLineNumber.activeForeground":  "#5A5A6A",
+      "editor.selectionHighlightBackground": "#BFDBFE44",
+      "editorBracketMatch.background":      "#BFDBFE66",
+      "editorBracketMatch.border":          "#1a56a8",
+      // Scrollbar
+      "scrollbarSlider.background":         "#DCDCE080",
+      "scrollbarSlider.hoverBackground":    "#C8C8CEAA",
+      "scrollbarSlider.activeBackground":   "#9090A0",
+      // Suggest / autocomplete — seamless via CSS overrides in monaco-overrides.css
+      "editorSuggestWidget.background":     "#FFFFFF",
+      "editorSuggestWidget.border":         "#DCDCE0",
+      "editorSuggestWidget.foreground":     "#111118",
+      "editorSuggestWidget.selectedBackground": "#0068C914",
+      "editorSuggestWidget.highlightForeground": "#1a56a8",
+      // Hover widget
+      "editorHoverWidget.background":       "#FFFFFF",
+      "editorHoverWidget.border":           "#DCDCE0",
     },
   });
 
+  // ── DARK THEME ───────────────────────────────────────────────
   monaco.editor.defineTheme(THEME_DARK, {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "4a5568", fontStyle: "italic" },
-      { token: "keyword", foreground: "19b1b4", fontStyle: "bold" },
-      { token: "string", foreground: "a83900" },
-      { token: "number", foreground: "48d6d2" },
-      { token: "operator", foreground: "9b9a97" },
-      { token: "identifier", foreground: "e6f4f1" },
-      { token: "type", foreground: "48d6d2" },
-      { token: "predefined", foreground: "19b1b4" },
+      // Comments: dim grey, italic
+      { token: "comment",    foreground: "4a5568", fontStyle: "italic" },
+      // Keywords: neon cyan
+      { token: "keyword",    foreground: "00EEFF", fontStyle: "bold" },
+      // Strings: neon green
+      { token: "string",     foreground: "00FF66" },
+      // Numbers: neon magenta
+      { token: "number",     foreground: "FF00FF" },
+      // Operators: medium grey
+      { token: "operator",   foreground: "888888" },
+      // Identifiers: near white
+      { token: "identifier", foreground: "FFFFFF" },
+      // Types: neon purple
+      { token: "type",       foreground: "9D00FF" },
+      // Predefined (functions): neon cyan variant
+      { token: "predefined", foreground: "00EEFF" },
     ],
     colors: {
-      "editor.background": "#003439",
-      "editor.foreground": "#e6f4f1",
-      "editor.lineHighlightBackground": "#0a4247",
-      "editor.selectionBackground": "#19b1b433",
-      "editor.inactiveSelectionBackground": "#19b1b41a",
-      "editorCursor.foreground": "#19b1b4",
-      "editorWhitespace.foreground": "#0a4247",
-      "editorIndentGuide.background": "#0a4247",
-      "editorIndentGuide.activeBackground": "#19b1b444",
-      "editorLineNumber.foreground": "#4a5568",
-      "editorLineNumber.activeForeground": "#19b1b4",
-      "editor.selectionHighlightBackground": "#19b1b422",
-      "editorBracketMatch.background": "#19b1b433",
-      "editorBracketMatch.border": "#19b1b4",
-      "scrollbarSlider.background": "#19b1b433",
-      "scrollbarSlider.hoverBackground": "#19b1b455",
-      "scrollbarSlider.activeBackground": "#19b1b477",
+      // Seamless with app background  (#121215)
+      "editor.background":                  "#121215",
+      "editor.foreground":                  "#FFFFFF",
+      "editor.lineHighlightBackground":     "#1A1A1E",
+      "editor.selectionBackground":         "#00EEFF22",
+      "editor.inactiveSelectionBackground": "#00EEFF11",
+      "editorCursor.foreground":            "#00EEFF",
+      "editorWhitespace.foreground":        "#2A2A30",
+      "editorIndentGuide.background":       "#2A2A30",
+      "editorIndentGuide.activeBackground": "#00EEFF33",
+      "editorLineNumber.foreground":        "#555560",
+      "editorLineNumber.activeForeground":  "#888888",
+      "editor.selectionHighlightBackground": "#00EEFF18",
+      "editorBracketMatch.background":      "#00EEFF22",
+      "editorBracketMatch.border":          "#00EEFF",
+      // Scrollbar
+      "scrollbarSlider.background":         "#2A2A3080",
+      "scrollbarSlider.hoverBackground":    "#00EEFF33",
+      "scrollbarSlider.activeBackground":   "#00EEFF55",
+      // Suggest / autocomplete — further styled via CSS overrides
+      "editorSuggestWidget.background":     "#1A1A1E",
+      "editorSuggestWidget.border":         "#2A2A30",
+      "editorSuggestWidget.foreground":     "#FFFFFF",
+      "editorSuggestWidget.selectedBackground": "#00EEFF14",
+      "editorSuggestWidget.highlightForeground": "#00EEFF",
+      // Hover widget
+      "editorHoverWidget.background":       "#1A1A1E",
+      "editorHoverWidget.border":           "#2A2A30",
     },
   });
 }
 
-export { THEME_LIGHT, THEME_DARK, getSystemTheme };
+export { getSystemTheme };
+
 
 interface UseSqlEditorOptions {
   connectionId: string;
@@ -129,6 +171,7 @@ interface UseSqlEditorOptions {
   onDirty?: () => void;
   onSaveScript?: (sql: string) => void;
   onSaveViewState?: (tabId: string, viewState: unknown) => void;
+  onContentChange?: (sql: string) => void;
 }
 
 export function useSqlEditor({
@@ -140,6 +183,7 @@ export function useSqlEditor({
   onDirty,
   onSaveScript,
   onSaveViewState,
+  onContentChange,
 }: UseSqlEditorOptions) {
   const toast = useContext(ToastContext);
   const DEFAULT_SQL = "SELECT * FROM ";
@@ -200,16 +244,31 @@ export function useSqlEditor({
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (e: MediaQueryListEvent) => setEditorTheme(e.matches ? "dark" : "light");
+    const handler = (e: MediaQueryListEvent) => {
+      const next = e.matches ? "dark" : "light";
+      setEditorTheme(next);
+      // Synchronise the live Monaco instance via the editor API
+      // We use editorRef so we don't need to import monaco-editor directly
+      editorRef.current?.updateOptions({});
+      // Monaco exposes a global monaco object at window.monaco in some bundles;
+      // @monaco-editor/react also calls monaco.editor.setTheme internally when
+      // the `theme` prop changes — we trigger a re-render via setEditorTheme above.
+      // Synchronise the HTML data-theme attribute
+      document.documentElement.setAttribute("data-theme", next);
+    };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
+
 
   const schemaRef = useRef<Record<string, ColumnInfo[]>>({});
   const completionDisposable = useRef<{ dispose(): void } | null>(null);
   const runQueryRef = useRef<((sqlText: string) => void) | null>(null);
   const onSaveScriptRef = useRef(onSaveScript);
   onSaveScriptRef.current = onSaveScript;
+  const onContentChangeRef = useRef(onContentChange);
+  onContentChangeRef.current = onContentChange;
+  const contentChangeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sqlRef = useRef(sql);
   sqlRef.current = sql;
 
@@ -333,23 +392,24 @@ export function useSqlEditor({
     const currentTheme = getSystemTheme();
     editor.updateOptions({ theme: currentTheme === "dark" ? THEME_DARK : THEME_LIGHT });
 
+    const executeQuery = () => {
+      const selectionObj = editor.getSelection();
+      const selectionText = selectionObj ? editor.getModel()?.getValueInRange(selectionObj) : "";
+      const textToRun = selectionText?.trim() ? selectionText : editor.getValue();
+      runQueryRef.current?.(textToRun);
+      editor.focus();
+    };
+
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter,
-      () => {
-        runQueryRef.current?.(editor.getValue());
-        // Immediately reclaim focus so cursor stays in Monaco
-        editor.focus();
-      },
+      executeQuery,
     );
 
     editor.addCommand(
       monacoInstance.KeyCode.F5,
-      () => {
-        runQueryRef.current?.(editor.getValue());
-        // Immediately reclaim focus so cursor stays in Monaco
-        editor.focus();
-      },
+      executeQuery,
     );
+
 
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
@@ -359,6 +419,18 @@ export function useSqlEditor({
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyP,
       () => { window.dispatchEvent(new CustomEvent("dib:open-palette")); },
+    );
+
+    // Global tab shortcuts — dispatch custom events so QueryPanel can handle them
+    // even when Monaco has focus (belt-and-suspenders alongside the useKeybindings fix)
+    editor.addCommand(
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyW,
+      () => { window.dispatchEvent(new CustomEvent("dib:close-tab")); },
+    );
+
+    editor.addCommand(
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyT,
+      () => { window.dispatchEvent(new CustomEvent("dib:new-tab")); },
     );
 
     // Ctrl+Shift+E — run Visual EXPLAIN for the current query
@@ -471,6 +543,11 @@ export function useSqlEditor({
       wasDirtyRef.current = true;
       onDirty?.();
     }
+    // Debounce sync to global tab state so unsaved content survives tab switches
+    if (contentChangeTimerRef.current) clearTimeout(contentChangeTimerRef.current);
+    contentChangeTimerRef.current = setTimeout(() => {
+      onContentChangeRef.current?.(value);
+    }, 300);
   }, [onDirty]);
 
   return {

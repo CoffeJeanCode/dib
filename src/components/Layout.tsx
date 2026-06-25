@@ -36,63 +36,61 @@ export function Layout({ children, activeConnectionId, onConnectionSelect, onScr
       resizingRef.current = true;
       resizeStartXRef.current = e.clientX;
       resizeStartWRef.current = state.sidebar_width ?? 260;
+      
       document.body.style.cursor = "col-resize";
+      document.body.style.pointerEvents = "none";
       document.body.style.userSelect = "none";
-      // Overlay blocks Monaco pointer capture during drag
-      const overlay = document.createElement("div");
-      overlay.id = "dib-drag-overlay";
-      overlay.style.cssText = "position:fixed;inset:0;z-index:9999;cursor:col-resize;";
-      document.body.appendChild(overlay);
+
+      const onMove = (moveEvt: MouseEvent) => {
+        if (!resizingRef.current) return;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+        rafRef.current = requestAnimationFrame(() => {
+          const delta = moveEvt.clientX - resizeStartXRef.current;
+          const newW = resizeStartWRef.current + delta;
+
+          if (newW < SIDEBAR_SNAP) {
+            cleanup();
+            updateState({ is_sidebar_open: false });
+            return;
+          }
+
+          const clamped = Math.max(SIDEBAR_MIN, newW);
+          document.documentElement.style.setProperty("--sidebar-width-dynamic", `${clamped}px`);
+        });
+      };
+
+      const cleanup = () => {
+        resizingRef.current = false;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        document.body.style.cursor = "";
+        document.body.style.pointerEvents = "";
+        document.body.style.userSelect = "";
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+
+      const onUp = (upEvt: MouseEvent) => {
+        if (!resizingRef.current) return;
+        const delta = upEvt.clientX - resizeStartXRef.current;
+        const finalW = Math.max(SIDEBAR_MIN, resizeStartWRef.current + delta);
+        cleanup();
+        document.documentElement.style.removeProperty("--sidebar-width-dynamic");
+        updateState({ sidebar_width: finalW });
+      };
+
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
     },
-    [state.sidebar_width],
+    [state.sidebar_width, updateState],
   );
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!resizingRef.current) return;
-
-      // Cancel any pending frame to avoid stacking
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-
-      rafRef.current = requestAnimationFrame(() => {
-        const delta = e.clientX - resizeStartXRef.current;
-        const newW = resizeStartWRef.current + delta;
-
-        if (newW < SIDEBAR_SNAP) {
-          resizingRef.current = false;
-          document.body.style.cursor = "";
-          document.body.style.userSelect = "";
-          updateState({ is_sidebar_open: false });
-          return;
-        }
-
-        const clamped = Math.max(SIDEBAR_MIN, newW);
-        document.documentElement.style.setProperty("--sidebar-width-dynamic", `${clamped}px`);
-      });
-    };
-
-    const onUp = (e: MouseEvent) => {
-      if (!resizingRef.current) return;
-      resizingRef.current = false;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      document.getElementById("dib-drag-overlay")?.remove();
-
-      const delta = e.clientX - resizeStartXRef.current;
-      const finalW = Math.max(SIDEBAR_MIN, resizeStartWRef.current + delta);
-      document.documentElement.style.removeProperty("--sidebar-width-dynamic");
-      updateState({ sidebar_width: finalW });
-    };
-
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
     return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [updateState]);
+  }, []);
+
 
   if (!loaded) {
     return (

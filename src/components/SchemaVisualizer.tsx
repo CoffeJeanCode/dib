@@ -1,9 +1,10 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
+  Controls,
   Panel,
   useNodesState,
   useEdgesState,
@@ -26,54 +27,173 @@ export interface SchemaVisualizerProps {
   focusTable?: TableInfo;
 }
 
-// ── Full-schema mode (existing behaviour) ────────────────────────────────────
+// ── Layout helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Simple force-free grid layout:
+ * organises tables into N columns, with extra vertical spacing for taller nodes.
+ */
+function gridLayout(count: number): { x: number; y: number }[] {
+  const cols = Math.max(1, Math.min(5, Math.ceil(Math.sqrt(count))));
+  const nodeW = 230;
+  const nodeH = 220;
+  const gapX = 60;
+  const gapY = 60;
+  return Array.from({ length: count }, (_, i) => ({
+    x: (i % cols) * (nodeW + gapX),
+    y: Math.floor(i / cols) * (nodeH + gapY),
+  }));
+}
+
+// ── Full-schema / Global ER view ───────────────────────────────────────────────
 
 function FullSchemaView({
   engine,
   tables,
   columnMap,
-}: Pick<SchemaVisualizerProps, "engine" | "tables" | "columnMap">) {
-  const cols = 3;
-  const nodeW = 220;
-  const nodeH = 180;
-  const gapX = 40;
-  const gapY = 40;
+  connectionId,
+}: Pick<SchemaVisualizerProps, "engine" | "tables" | "columnMap" | "connectionId">) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<TableNodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [loading, setLoading] = useState(false);
+  const [allRelations, setAllRelations] = useState<TableRelation[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const initialNodes = useMemo<Node<TableNodeData>[]>(
-    () =>
-      tables.map((t, i) => ({
-        id: t.name,
-        type: "tableNode",
-        position: {
-          x: (i % cols) * (nodeW + gapX),
-          y: Math.floor(i / cols) * (nodeH + gapY),
-        },
-        data: {
-          tableName: t.schema ? `${t.schema}.${t.name}` : t.name,
-          engine,
-          columns: columnMap[t.name] ?? [],
-        },
-      })),
-    [tables, columnMap, engine],
-  );
+  // Build nodes from known tables + columns
+  const positions = useMemo(() => gridLayout(tables.length), [tables.length]);
 
-  const [nodes] = useNodesState(initialNodes);
+  const buildNodes = useCallback((): Node<TableNodeData>[] =>
+    tables.map((t, i) => ({
+      id: t.name,
+      type: "tableNode",
+      position: positions[i] ?? { x: 0, y: 0 },
+      data: {
+        tableName: t.schema ? `${t.schema}.${t.name}` : t.name,
+        engine,
+        columns: columnMap[t.name] ?? [],
+      },
+    })),
+  [tables, positions, engine, columnMap]);
+
+  // Fetch FK relations for ALL tables in parallel
+  useEffect(() => {
+    if (!connectionId || tables.length === 0) {
+      setNodes(buildNodes());
+      setEdges([]);
+      setAllRelations([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    Promise.all(
+      tables.map((t) =>
+        invoke<TableRelation[]>("fetch_table_relations", {
+          connectionId,
+          tableName: t.name,
+          schema: t.schema ?? null,
+        }).catch(() => [] as TableRelation[]),
+      ),
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const merged: TableRelation[] = results.flat();
+        setAllRelations(merged);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionId, tables.map(t => t.name).join(",")]);
+
+  // Re-build nodes + edges whenever data changes
+  useEffect(() => {
+    setNodes(buildNodes());
+
+    // Build edges from allRelations — deduplicate by id
+    const seen = new Set<string>();
+    const builtEdges: Edge[] = [];
+    allRelations.forEach((r, i) => {
+      const id = `e-${r.source_table}-${r.source_column}-${r.target_table}-${r.target_column}`;
+      if (seen.has(id)) return;
+      seen.add(id);
+      // Only draw if both endpoints are in the table list
+      const srcExists = tables.some((t) => t.name === r.source_table);
+      const tgtExists = tables.some((t) => t.name === r.target_table);
+      if (!srcExists || !tgtExists) return;
+      builtEdges.push({
+        id: `${id}-${i}`,
+        source: r.source_table,
+        target: r.target_table,
+        label: `${r.source_column} → ${r.target_column}`,
+        animated: false,
+        style: { stroke: "var(--neon-cyan)", strokeWidth: 1.5, opacity: 0.85 },
+        labelStyle: { fill: "#888", fontSize: 9, fontFamily: "JetBrains Mono, monospace" },
+        labelBgStyle: { fill: "#1A1A1E", fillOpacity: 0.9 },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: "var(--neon-cyan)",
+          width: 14,
+          height: 14,
+        },
+      });
+    });
+    setEdges(builtEdges);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRelations, tables, columnMap, engine]);
+
+  if (loading && nodes.length === 0) {
+    return (
+      <div className="sv">
+        <div className="sv-loading">Cargando diagrama global…</div>
+      </div>
+    );
+  }
 
   return (
     <div className="sv">
       <ReactFlow
         nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.2}
-        maxZoom={2}
+        fitViewOptions={{ padding: 0.18 }}
+        minZoom={0.08}
+        maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
         nodesDraggable
         nodesConnectable={false}
-        elementsSelectable={false}
+        elementsSelectable
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(128,128,128,0.15)" />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={24}
+          size={1}
+          color="rgba(0,238,255,0.07)"
+        />
+        <Controls
+          showInteractive={false}
+          className="sv-controls"
+        />
+        {error && (
+          <Panel position="bottom-center">
+            <span className="sv-warning">⚠ {error}</span>
+          </Panel>
+        )}
+        {!loading && allRelations.length === 0 && tables.length > 0 && (
+          <Panel position="bottom-center">
+            <span className="sv-no-relations">Sin relaciones FK detectadas — mostrando todas las tablas</span>
+          </Panel>
+        )}
       </ReactFlow>
     </div>
   );
@@ -122,7 +242,7 @@ function RelationView({
           id: focusTable.name,
           type: "tableNode",
           position: { x: 300, y: 80 },
-          data: { tableName: centerLabel, engine, columns: cols },
+          data: { tableName: centerLabel, engine, columns: cols, isFocus: true },
         };
 
         const uniqueTargets = [...new Set(relations.map((r) => r.target_table))];
@@ -131,7 +251,7 @@ function RelationView({
         const relatedNodes: Node<TableNodeData>[] = uniqueTargets.map((tgt, i) => ({
           id: tgt,
           type: "tableNode",
-          position: { x: i * 280, y: 400 },
+          position: { x: i * 290, y: 400 },
           data: { tableName: tgt, engine, columns: [] },
         }));
 
@@ -140,7 +260,16 @@ function RelationView({
           source: r.source_table,
           target: r.target_table,
           label: `${r.source_column} → ${r.target_column}`,
-          markerEnd: { type: MarkerType.ArrowClosed },
+          animated: false,
+          style: { stroke: "var(--neon-cyan)", strokeWidth: 1.5, opacity: 0.85 },
+          labelStyle: { fill: "#888", fontSize: 9, fontFamily: "JetBrains Mono, monospace" },
+          labelBgStyle: { fill: "#1A1A1E", fillOpacity: 0.9 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: "var(--neon-cyan)",
+            width: 14,
+            height: 14,
+          },
         }));
 
         setNodes([centerNode, ...relatedNodes]);
@@ -179,13 +308,19 @@ function RelationView({
         fitView
         fitViewOptions={{ padding: 0.3 }}
         minZoom={0.2}
-        maxZoom={2}
+        maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
         nodesDraggable
         nodesConnectable={false}
-        elementsSelectable={false}
+        elementsSelectable
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="rgba(128,128,128,0.15)" />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={24}
+          size={1}
+          color="rgba(0,238,255,0.07)"
+        />
+        <Controls showInteractive={false} className="sv-controls" />
         {!hasRelations && (
           <Panel position="bottom-center">
             <span className="sv-no-relations">No hay relaciones detectadas para esta tabla</span>
@@ -202,5 +337,12 @@ export function SchemaVisualizer({ engine, tables, columnMap, connectionId, focu
   if (focusTable && connectionId) {
     return <RelationView connectionId={connectionId} focusTable={focusTable} engine={engine} />;
   }
-  return <FullSchemaView engine={engine} tables={tables} columnMap={columnMap} />;
+  return (
+    <FullSchemaView
+      engine={engine}
+      tables={tables}
+      columnMap={columnMap}
+      connectionId={connectionId}
+    />
+  );
 }

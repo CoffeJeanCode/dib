@@ -5,6 +5,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type Modifier,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -17,6 +18,13 @@ import { Network } from "lucide-react";
 import { Tab } from "./Tab";
 import type { TabData } from "./Tab";
 import "./TabBar.css";
+
+const restrictToHorizontalAxis: Modifier = ({ transform }) => {
+  return {
+    ...transform,
+    y: 0,
+  };
+};
 
 interface TabBarProps {
   tabs: TabData[];
@@ -78,7 +86,7 @@ export function TabBar({ tabs, activeId, onSelect, onClose, onReorder, onSchemaO
 
   return (
     <div className="tabbar">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]}>
         <SortableContext items={tabs.map((t) => t.id)} strategy={horizontalListSortingStrategy}>
           <div className="tabbar-tabs">
             {tabs.map((tab) => (

@@ -55,7 +55,7 @@ export function DatabaseSelector({ connections, activeConnectionId, onConnection
           {connections.map((conn) => (
             <button
               key={conn.id}
-              className={`sidebar-db-option${conn.id === activeConnectionId ? " sidebar-db-option--active pattern-hatching" : ""}`}
+              className={`sidebar-db-option${conn.id === activeConnectionId ? " sidebar-db-option--active bg-pattern-halftone" : ""}`}
               onClick={() => handleDbSelect(conn.id)}
               role="option"
               aria-selected={conn.id === activeConnectionId}

@@ -130,6 +130,7 @@
   background: var(--brand-bright-blue);
   color: #fff;
   border-color: var(--brand-bright-blue);
+  box-shadow: 2px 2px 0px var(--brand-bright-blue);
 }
 
 .cm-button--primary:hover:not(:disabled) {

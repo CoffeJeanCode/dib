@@ -4,10 +4,10 @@
   --ve-cost-high: #ef4444;
   --ve-cost-med:  #f59e0b;
   --ve-cost-low:  #10b981;
-  --ve-bg:        var(--color-surface, #0f1a1c);
-  --ve-border:    var(--color-border, #1e3035);
-  --ve-text:      var(--color-text, #e6f4f1);
-  --ve-muted:     var(--color-text-muted, #4a7a85);
+  --ve-bg:        var(--color-bg-secondary, #252525);
+  --ve-border:    var(--color-border, #333333);
+  --ve-text:      var(--color-text-primary, #eaeaea);
+  --ve-muted:     var(--color-text-secondary, #888888);
 }
 
 .ve-root {
@@ -99,18 +99,17 @@
 .ve-node {
   border: 1px solid var(--ve-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--ve-bg) 85%, #fff 15%);
+  background: var(--color-bg, #191919);
   padding: 10px 12px 8px;
   margin-bottom: 6px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition-fastest), box-shadow var(--transition-fastest);
 }
 .ve-node:hover {
-  border-color: rgba(25, 177, 180, 0.4);
-  box-shadow: 0 0 0 1px rgba(25, 177, 180, 0.12);
+  border-color: var(--color-highlight);
 }
 .ve-node--seqscan {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: color-mix(in srgb, var(--ve-bg) 85%, #ef4444 4%);
+  border-color: var(--ve-cost-high);
+  box-shadow: 2px 2px 0px var(--ve-cost-high);
 }
 .ve-node--d1 { margin-left: 20px; }
 .ve-node--d2 { margin-left: 40px; }
@@ -151,7 +150,7 @@
 .ve-node-type {
   font-weight: 600;
   font-size: 12px;
-  color: #e6f4f1;
+  color: var(--ve-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -159,13 +158,14 @@
 .ve-seq-badge {
   font-size: 10px;
   font-weight: 700;
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
+  color: var(--ve-cost-high);
+  border: 1px solid var(--ve-cost-high);
+  background: transparent;
   border-radius: 3px;
   padding: 1px 5px;
   white-space: nowrap;
 }
-.ve-node-time { color: #19b1b4; }
+.ve-node-time { color: var(--color-highlight); }
 .ve-node-cost { color: var(--ve-muted); }
 
 /* ── Cost Bar ──────────────────────────────────────────────────────── */

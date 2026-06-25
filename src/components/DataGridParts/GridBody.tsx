@@ -2,7 +2,6 @@ import { memo } from "react";
 import { useDataGridContext } from "./DataGridContext";
 import { cellStr, cellId, makeKey } from "../../hooks/useDataGridState";
 
-const DEFAULT_COL_W = 150;
 const ROW_H = 38;
 
 interface GridRowProps {
@@ -12,7 +11,6 @@ interface GridRowProps {
 const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
   const {
     columns,
-    columnWidths,
     editState,
     pkColIdx,
     fkMap,
@@ -51,7 +49,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
         const value = (row as unknown[])?.[j];
         const isChanged = editState.changes.has(makeKey(pkStr, col));
         const isFk = !!fkMap[col] && value != null;
-        const w = columnWidths[col] ?? DEFAULT_COL_W;
+        const cssW = `var(--dg-cw-${j})`;
 
         return (
           <div
@@ -60,14 +58,14 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
               "dg-cell",
               isActive ? " dg-cell--active" : "",
               isSelected ? " dg-cell--selected" : "",
-              isChanged ? " dg-cell--changed" : "",
+              isChanged ? " dg-cell--changed bg-pattern-hatching" : "",
               isFk ? " dg-cell--fk" : "",
             ].join("")}
             role="cell"
             style={{
-              width: w,
-              minWidth: w,
-              maxWidth: w,
+              width: cssW,
+              minWidth: cssW,
+              maxWidth: cssW,
             }}
             title={isFk ? `Ctrl+Click → ${fkMap[col].targetTable} (${cellStr(value)})` : cellStr(value)}
             onClick={(e) => handleCellClick(absIdx, j, e)}

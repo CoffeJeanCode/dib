@@ -30,7 +30,15 @@ function _isPlainInput(el: HTMLElement | null): boolean {
 }
 
 // Browser shortcuts we must always suppress (even when no handler is registered)
-const _BLOCKED = new Set(["ctrl+p", "ctrl+s", "ctrl+n", "ctrl+t", "ctrl+w", "ctrl+o"]);
+// ctrl+shift+p is explicitly blocked: prevents Webview from opening the print dialog.
+const _BLOCKED = new Set([
+  "ctrl+p", "ctrl+shift+p",
+  "ctrl+s",
+  "ctrl+n",
+  "ctrl+t",
+  "ctrl+w",
+  "ctrl+o",
+]);
 
 function _initListener() {
   if (_listening) return;
@@ -48,14 +56,19 @@ function _initListener() {
       const entry = _reg.get(key);
       if (!entry) return;
 
-      // Strict guard: native inputs always win (covers DataGrid cell editor, filter inputs, etc.)
-      const activeTag = (document.activeElement as HTMLElement | null)?.tagName;
-      if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
-
       const el = e.target as HTMLElement | null;
 
-      if (_isPlainInput(el)) return;                    // never intercept real text inputs
-      if (_isMonaco(el) && !entry.allowInMonaco) return; // respect Monaco unless explicitly allowed
+      // Monaco check MUST come before the generic textarea guard — Monaco uses a hidden
+      // <textarea> as its input surface, so `activeElement.tagName === "TEXTAREA"` when
+      // the editor has focus, which would otherwise short-circuit `allowInMonaco`.
+      if (_isMonaco(el)) {
+        if (!entry.allowInMonaco) return;
+      } else {
+        // Generic guard: native inputs always win (DataGrid cell editor, filter inputs, etc.)
+        const activeTag = (document.activeElement as HTMLElement | null)?.tagName;
+        if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+        if (_isPlainInput(el)) return;
+      }
 
       e.preventDefault();
       e.stopPropagation();

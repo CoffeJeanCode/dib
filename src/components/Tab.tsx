@@ -55,7 +55,7 @@ export function Tab({ tab, active, onSelect, onClose, dragListeners, dragAttribu
       {...dragListeners}
     >
       <span className="tab-icon">{ICON_MAP[tab.type]}</span>
-      <span className="tab-label">
+      <span className={`tab-label`}>
         {tab.confirmClose ? `${tab.title} ·?` : tab.title}
       </span>
       {tab.closeable && (

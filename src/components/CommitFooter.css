@@ -62,11 +62,18 @@
 }
 
 .commit-footer-btn--solid {
-  background: var(--brand-bright-blue);
-  color: white;
-  border: none;
+  background: var(--neon-green);
+  color: #000;
+  border: 1px solid var(--neon-green);
+  box-shadow: 2px 2px 0px rgba(0, 255, 102, 0.35);
+  transition: box-shadow 60ms ease, transform 60ms ease, opacity 80ms ease;
 }
 
 .commit-footer-btn--solid:hover:not(:disabled) {
-  opacity: 0.9;
+  opacity: 0.88;
+}
+
+.commit-footer-btn--solid:active:not(:disabled) {
+  box-shadow: none;
+  transform: translate(1px, 1px);
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Database, Pencil, Trash2 } from "lucide-react";
+import { Database, Pencil, Trash2, FileCode2 } from "lucide-react";
 import { useSavedConnections } from "../hooks/useSavedConnections";
 import { useSidebarScripts } from "../hooks/useSidebarScripts";
 import { useContextMenu } from "../hooks/useContextMenu";
@@ -60,11 +60,20 @@ export function Sidebar({
   }, [closeMenu]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, connId: string) => {
+    if (!activeConnectionId) return; // Restricción para el Home/Empty State
     setContextConnId(connId);
     openMenu(e);
-  }, [openMenu]);
+  }, [openMenu, activeConnectionId]);
 
   const menuItems = [
+    ...(activeConnectionId ? [{
+      icon: <FileCode2 size={14} />,
+      label: "Nueva Consulta SQL",
+      onClick: () => {
+        handleClose();
+        onScriptOpen?.("", "Nueva Consulta", `new-${Date.now()}`);
+      },
+    }] : []),
     {
       icon: <Pencil size={14} />,
       label: "Editar Conexión",

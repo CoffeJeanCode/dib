@@ -35,7 +35,7 @@ function Keys({ groups }: { groups: string[][] }) {
 
 export function EmptyWorkspaceState() {
   return (
-    <div className="ews pattern-grid">
+    <div className="ews bg-pattern-action">
       <div className="ews-content">
         <div className="ews-logo">
           <Database size={32} className="ews-logo-icon" />

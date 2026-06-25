@@ -41,10 +41,18 @@ export interface ColumnInfo {
   is_nullable: boolean;
 }
 
+export interface ColumnMetadata {
+  table_name: string | null;
+  column_name: string;
+  is_primary_key: boolean;
+}
+
 export interface QueryResult {
   columns: string[];
   rows: (string | number | boolean | null)[][];
   rows_affected: number;
+  column_metadata: ColumnMetadata[];
+  is_updatable: boolean;
 }
 
 export interface PagedResult {
