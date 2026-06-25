@@ -1,5 +1,6 @@
 import { useState, useCallback, createContext, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { connectionService } from "./services/connectionService";
+import { dbService } from "./services/dbService";
 import { Layout } from "./components/Layout";
 import { ConnectionManager } from "./components/ConnectionManager";
 import { QueryPanel } from "./components/QueryPanel";
@@ -8,6 +9,7 @@ import { PasswordPrompt } from "./components/PasswordPrompt";
 import { HomeView } from "./components/HomeView";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { ToastContainer } from "./components/Toast";
+import { KeyboardCheatSheet } from "./components/KeyboardCheatSheet";
 import { useSavedConnections } from "./hooks/useSavedConnections";
 import { useUiState } from "./hooks/useUiState";
 import { useKeybindings } from "./hooks/useKeybindings";
@@ -27,10 +29,11 @@ interface OpenScript { sql: string; name: string; id: string; v: number }
 export interface ToastCtx {
   info: (msg: string) => void;
   error: (msg: string) => void;
+  warn: (msg: string) => void;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const ToastContext = createContext<ToastCtx>({ info: () => {}, error: () => {} });
+export const ToastContext = createContext<ToastCtx>({ info: () => {}, error: () => {}, warn: () => {} });
 
 function App() {
   const { connections } = useSavedConnections();
@@ -38,16 +41,16 @@ function App() {
   const [active, setActive] = useState<ActiveConn | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const { toasts, info, error, remove } = useToast();
+  const { toasts, info, error, warn, remove } = useToast();
 
   const [navigateTo, setNavigateTo] = useState<NavTable | null>(null);
   const [openScript, setOpenScript] = useState<OpenScript | null>(null);
   const [editingConn, setEditingConn] = useState<SavedConnection | null>(null);
   const [showNewConnection, setShowNewConnection] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [cheatSheetOpen, setCheatSheetOpen] = useState(false);
   const [passwordPrompt, setPasswordPrompt] = useState<{ savedId: string; name: string } | null>(null);
 
-  // Monaco fires this when Ctrl+P is pressed inside the editor
   useEffect(() => {
     const handler = () => setPaletteOpen(true);
     window.addEventListener("dib:open-palette", handler);
@@ -77,22 +80,23 @@ function App() {
       handler: () => window.location.reload(),
       allowInMonaco: true,
     },
+    {
+      combo: "ctrl+/",
+      handler: () => setCheatSheetOpen((v) => !v),
+      allowInMonaco: true,
+    },
   ]);
 
   const handleConnectionSelect = useCallback(
     async (savedId: string, password?: string) => {
       setConnecting(true);
       try {
-        const info = await invoke<ConnectionInfo>("connect_saved", {
-          savedId,
-          password: password ?? null,
-          savePassword: uiState.save_password,
-        });
+        const connInfo = await connectionService.connectSaved(savedId, password ?? null, uiState.save_password);
         const saved = connections.find((c) => c.id === savedId);
         setActive({
-          activeId: info.id,
-          name: saved?.name || info.config.database || info.config.path || info.id,
-          engine: info.config.db_type,
+          activeId: connInfo.id,
+          name: saved?.name || connInfo.config.database || connInfo.config.path || connInfo.id,
+          engine: connInfo.config.db_type,
         });
       } catch (e: unknown) {
         const err = e as { code?: string; message?: string };
@@ -110,18 +114,18 @@ function App() {
     [connections, uiState.save_password, error],
   );
 
-  const handleNewConnection = useCallback((info: ConnectionInfo) => {
+  const handleNewConnection = useCallback((connInfo: ConnectionInfo) => {
     setActive({
-      activeId: info.id,
-      name: info.config.database || info.config.path || info.id,
-      engine: info.config.db_type,
+      activeId: connInfo.id,
+      name: connInfo.config.database || connInfo.config.path || connInfo.id,
+      engine: connInfo.config.db_type,
     });
     setShowNewConnection(false);
   }, []);
 
   const handleDisconnect = useCallback(async () => {
     if (active) {
-      await invoke("disconnect", { connectionId: active.activeId }).catch(() => {});
+      await connectionService.disconnect(active.activeId).catch(() => {});
     }
     setActive(null);
     setNavigateTo(null);
@@ -143,10 +147,24 @@ function App() {
   const handleDatabaseSwitch = useCallback(async (dbName: string) => {
     if (!active) return;
     try {
-      await invoke("switch_database", { connectionId: active.activeId, dbName });
+      await connectionService.switchDatabase(active.activeId, dbName);
       setActive((prev) => prev ? { ...prev, name: dbName } : prev);
       window.dispatchEvent(new CustomEvent("dib:reload"));
       info(`Conectado a "${dbName}"`);
+    } catch (e: unknown) {
+      const msg = e && typeof e === "object" && "message" in e ? String((e as { message: unknown }).message) : String(e);
+      error(msg);
+    }
+  }, [active, info, error]);
+
+  const handleDropTable = useCallback(async (table: TableInfo) => {
+    if (!active) return;
+    const label = table.schema ? `${table.schema}.${table.name}` : table.name;
+    if (!window.confirm(`¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await dbService.dropTable(active.activeId, table.name, table.schema ?? null);
+      info(`Tabla "${label}" eliminada`);
+      window.dispatchEvent(new CustomEvent("dib:reload"));
     } catch (e: unknown) {
       const msg = e && typeof e === "object" && "message" in e ? String((e as { message: unknown }).message) : String(e);
       error(msg);
@@ -167,7 +185,7 @@ function App() {
   }, []);
 
   return (
-    <ToastContext.Provider value={{ info, error }}>
+    <ToastContext.Provider value={{ info, error, warn }}>
     <Layout
       activeConnectionId={active?.activeId ?? null}
       onConnectionSelect={handleConnectionSelect}
@@ -181,9 +199,11 @@ function App() {
         onTableSelect={handleTableSelect}
         onScriptOpen={handleScriptOpen}
         onDatabaseSwitch={handleDatabaseSwitch}
+        onDropTable={handleDropTable}
         actions={[
           ...(active ? [{ id: "disconnect", label: "Desconectar", onAction: handleDisconnect }] : []),
           { id: "new-connection", label: "Nueva Conexión", onAction: () => { setPaletteOpen(false); setShowNewConnection(true); } },
+          { id: "cheat-sheet", label: "Atajos de teclado (Ctrl+/)", onAction: () => { setPaletteOpen(false); setCheatSheetOpen(true); } },
         ]}
       />
 
@@ -234,6 +254,7 @@ function App() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+      {cheatSheetOpen && <KeyboardCheatSheet onClose={() => setCheatSheetOpen(false)} />}
       <ToastContainer toasts={toasts} onDismiss={remove} />
     </ToastContext.Provider>
   );

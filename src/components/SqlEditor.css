@@ -151,3 +151,38 @@
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
+
+/* ── Explain button ────────────────────────────────────────────────── */
+.sqleditor-explain-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+  cursor: pointer;
+  transition: background var(--transition-fastest), border-color var(--transition-fastest);
+}
+.sqleditor-explain-btn:hover {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: #f59e0b;
+}
+.sqleditor-explain-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Visual EXPLAIN panel ──────────────────────────────────────────── */
+.sqleditor-explain-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  min-height: 0;
+}

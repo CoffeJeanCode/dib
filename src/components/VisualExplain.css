@@ -1,0 +1,214 @@
+/* VisualExplain.css — Visual EXPLAIN Plan Renderer */
+
+:root {
+  --ve-cost-high: #ef4444;
+  --ve-cost-med:  #f59e0b;
+  --ve-cost-low:  #10b981;
+  --ve-bg:        var(--color-surface, #0f1a1c);
+  --ve-border:    var(--color-border, #1e3035);
+  --ve-text:      var(--color-text, #e6f4f1);
+  --ve-muted:     var(--color-text-muted, #4a7a85);
+}
+
+.ve-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ve-bg);
+  color: var(--ve-text);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* ── Header ────────────────────────────────────────────────────────── */
+.ve-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--ve-border);
+  background: color-mix(in srgb, var(--ve-bg) 70%, #000 30%);
+  flex-shrink: 0;
+  gap: 12px;
+}
+.ve-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ve-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ve-title {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #19b1b4;
+}
+.ve-warn-badge {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  animation: ve-pulse 2s ease-in-out infinite;
+}
+@keyframes ve-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.ve-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ve-meta-item {
+  color: var(--ve-muted);
+  font-size: 11px;
+}
+.ve-raw-btn,
+.ve-close-btn {
+  background: none;
+  border: 1px solid var(--ve-border);
+  border-radius: 5px;
+  color: var(--ve-muted);
+  padding: 3px 9px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ve-raw-btn:hover { border-color: #19b1b4; color: #19b1b4; }
+.ve-close-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+/* ── Canvas ────────────────────────────────────────────────────────── */
+.ve-canvas {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+.ve-canvas::-webkit-scrollbar { width: 6px; }
+.ve-canvas::-webkit-scrollbar-track { background: transparent; }
+.ve-canvas::-webkit-scrollbar-thumb { background: var(--ve-border); border-radius: 3px; }
+
+/* ── Node ──────────────────────────────────────────────────────────── */
+.ve-node {
+  border: 1px solid var(--ve-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ve-bg) 85%, #fff 15%);
+  padding: 10px 12px 8px;
+  margin-bottom: 6px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ve-node:hover {
+  border-color: rgba(25, 177, 180, 0.4);
+  box-shadow: 0 0 0 1px rgba(25, 177, 180, 0.12);
+}
+.ve-node--seqscan {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: color-mix(in srgb, var(--ve-bg) 85%, #ef4444 4%);
+}
+.ve-node--d1 { margin-left: 20px; }
+.ve-node--d2 { margin-left: 40px; }
+.ve-node--d3 { margin-left: 60px; }
+.ve-node--d4 { margin-left: 80px; }
+
+.ve-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+  user-select: none;
+  gap: 8px;
+}
+.ve-node-header:has(.ve-node-chevron) { cursor: pointer; }
+.ve-node-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.ve-node-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--ve-muted);
+}
+.ve-node-chevron {
+  font-size: 9px;
+  color: var(--ve-muted);
+  transition: transform 0.18s;
+  display: inline-block;
+  line-height: 1;
+}
+.ve-node-chevron--open { transform: rotate(90deg); }
+.ve-node-type {
+  font-weight: 600;
+  font-size: 12px;
+  color: #e6f4f1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ve-seq-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+.ve-node-time { color: #19b1b4; }
+.ve-node-cost { color: var(--ve-muted); }
+
+/* ── Cost Bar ──────────────────────────────────────────────────────── */
+.ve-cost-bar-track {
+  height: 3px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 2px;
+  margin: 6px 0 2px;
+  overflow: hidden;
+}
+.ve-cost-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.ve-cost-pct {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+/* ── Node Detail ───────────────────────────────────────────────────── */
+.ve-node-detail {
+  font-size: 11px;
+  color: var(--ve-muted);
+  margin-top: 2px;
+}
+
+/* ── Children ──────────────────────────────────────────────────────── */
+.ve-children {
+  margin-top: 8px;
+}
+
+/* ── Raw JSON ──────────────────────────────────────────────────────── */
+.ve-raw {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 16px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a3c5c9;
+  white-space: pre;
+}

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 
-export type ToastType = "info" | "error";
+export type ToastType = "info" | "error" | "warning";
 
 export interface Toast {
   id: string;
@@ -27,8 +27,8 @@ export function useToast() {
       const toast: Toast = { id, message, type, dismissible: type === "error" };
       setToasts((prev) => [...prev, toast]);
 
-      if (type === "info") {
-        const t = setTimeout(() => remove(id), 5000);
+      if (type === "info" || type === "warning") {
+        const t = setTimeout(() => remove(id), 6000);
         timers.current.set(id, t);
       }
 
@@ -39,6 +39,7 @@ export function useToast() {
 
   const info = useCallback((message: string) => addToast(message, "info"), [addToast]);
   const error = useCallback((message: string) => addToast(message, "error"), [addToast]);
+  const warn = useCallback((message: string) => addToast(message, "warning"), [addToast]);
 
-  return { toasts, info, error, remove };
+  return { toasts, info, error, warn, remove };
 }

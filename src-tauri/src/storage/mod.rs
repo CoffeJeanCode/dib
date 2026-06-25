@@ -287,6 +287,16 @@ impl AppDb {
         Ok(())
     }
 
+    /// Returns the current count of saved scripts, used to assign sequential
+    /// Untitled-N numbers without an ever-growing in-memory counter.
+    pub fn get_script_count(&self) -> Result<u64, String> {
+        let db = self.0.lock().map_err(|e| e.to_string())?;
+        let count: i64 = db
+            .query_row("SELECT COUNT(*) FROM saved_scripts", [], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        Ok(count.max(0) as u64)
+    }
+
     // ── Query history ───────────────────────────────────────
 
     pub fn save_query_history_internal(&self, connection_id: &str, query_text: &str, success: bool, execution_time_ms: i64) -> Result<(), String> {

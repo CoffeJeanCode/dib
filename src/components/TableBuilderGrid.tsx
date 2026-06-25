@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { dbService } from "../services/dbService";
 import { Plus, Trash2, Check, RotateCcw } from "lucide-react";
 import type { ColumnInfo, SchemaChange } from "../types/db";
 import { useKeybindings } from "../hooks/useKeybindings";
@@ -121,12 +121,7 @@ export function TableBuilderGrid({ tableName, schema, connectionId, columnInfos,
     setCommitting(true);
     setError(null);
     try {
-      await invoke("apply_schema_changes", {
-        connectionId,
-        tableName,
-        schema: schema ?? null,
-        changes,
-      });
+      await dbService.applySchemaChanges(connectionId, tableName, schema ?? null, changes);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       onSchemaChanged?.();

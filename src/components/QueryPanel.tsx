@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, useContext } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { dbService } from "../services/dbService";
+import { workspaceService } from "../services/workspaceService";
 
 function fmtErr(e: unknown): string {
   if (typeof e === "string") return e;
@@ -15,7 +16,7 @@ import {
   Key, Hash, Type, Calendar,
   Table2, Pencil, Trash2,
 } from "lucide-react";
-import type { TableInfo, ColumnInfo, PagedResult, PendingChange, GridFilter } from "../types/db";
+import type { TableInfo, ColumnInfo, PagedResult, PendingChange, GridFilter, TableRelation } from "../types/db";
 import type { TabData, TabPayload } from "./Tab";
 
 function colIcon(col: ColumnInfo) {
@@ -27,7 +28,6 @@ function colIcon(col: ColumnInfo) {
     return <Calendar size={12} className="qp-col-icon qp-col-icon--date" />;
   return <Type size={12} className="qp-col-icon qp-col-icon--text" />;
 }
-
 
 import { DataGrid } from "./DataGrid";
 import { CommitFooter } from "./CommitFooter";
@@ -80,24 +80,19 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
 
   const [tabs, setTabs] = useState<TabData[]>([]);
   const [activeTabId, setActiveTabId] = useState("");
-  const untitledCounterRef = useRef(0);
-  // Stack of closed tabs for Ctrl+Shift+T resurrection
   const closedTabsHistoryRef = useRef<Array<{ tab: TabData; sql?: string }>>([]);
-  // Stable ref to tabSql so handleTabClose can read it without capturing stale closure
-  const tabSqlRef = useRef<Record<string, string>>({});
+  const tabSqlRef = useRef<Record<string, string>>({}); 
 
-  // Per-table-tab state
   const [tableTabStates, setTableTabStates] = useState<Record<string, TableTabState>>({});
-
-  // SQL tab content
   const [tabSql, setTabSql] = useState<Record<string, string>>({});
   tabSqlRef.current = tabSql;
 
+  const [tableRelations, setTableRelations] = useState<Record<string, TableRelation[]>>({});
+  const [tablesWidth, setTablesWidth] = useState(220);
   const { menuState, openMenu, closeMenu } = useContextMenu();
   const [contextTable, setContextTable] = useState<TableInfo | null>(null);
-  const [committing, setCommitting] = useState<string | null>(null); // tabId being committed
+  const [committing, setCommitting] = useState<string | null>(null);
 
-  // ── Tab navigation shortcuts ──────────────────────────────
   useKeybindings([
     {
       combo: "ctrl+w",
@@ -126,22 +121,24 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
       allowInMonaco: true,
     },
     {
-      // Force-close active tab, ignoring dirty state
       combo: "ctrl+shift+w",
-      handler: () => handleTabClose(activeTabId),
+      handler: () => {
+        setTabs([]);
+        setActiveTabId("");
+        setTableTabStates({});
+        setTabSql({});
+      },
       allowInMonaco: true,
     },
     {
-      // Import SQL file → save to internal DB then open tab
       combo: "ctrl+o",
       handler: () => {
-        invoke<{ name: string; content: string } | null>("import_script_dialog")
+        workspaceService.importScriptDialog()
           .then((result) => {
             if (result) {
               const newId = crypto.randomUUID();
               openSqlTab(result.content, result.name, newId);
-              invoke("save_internal_script", { id: newId, title: result.name, content: result.content })
-                .catch(console.error);
+              workspaceService.saveInternalScript(newId, result.name, result.content).catch(console.error);
             }
           })
           .catch(() => {});
@@ -149,7 +146,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
       allowInMonaco: true,
     },
     {
-      // Focus the active content panel (Monaco editor or DataGrid)
       combo: "ctrl+l",
       handler: () => {
         const main = document.getElementById("dib-main-panel");
@@ -160,18 +156,32 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
       allowInMonaco: true,
     },
     {
-      // New untitled SQL editor tab
+      combo: "ctrl+n",
+      handler: () => {
+        if (activeTabRef.current?.type === "table") {
+          window.dispatchEvent(new CustomEvent("dib:insert-row"));
+        }
+      },
+      allowInMonaco: false,
+    },
+    {
       combo: "ctrl+t",
       handler: () => {
-        untitledCounterRef.current += 1;
-        const count = untitledCounterRef.current;
-        const name = count === 1 ? "Untitled.sql" : `Untitled-${count}.sql`;
-        openSqlTab("", name);
+        // CRITERIO 3: Use real COUNT(*) from saved_scripts for correct sequential numbering.
+        dbService.getNextScriptNumber()
+          .then((count) => {
+            const n = count + 1;
+            const name = n === 1 ? "Untitled.sql" : `Untitled-${n}.sql`;
+            openSqlTab("", name);
+          })
+          .catch(() => {
+            // Fallback: if the command fails, still open a tab
+            openSqlTab("", "Untitled.sql");
+          });
       },
       allowInMonaco: true,
     },
     {
-      // Reopen last closed tab
       combo: "ctrl+shift+t",
       handler: () => {
         const history = closedTabsHistoryRef.current;
@@ -194,7 +204,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     },
   ]);
 
-  // ── Helpers ────────────────────────────────────────────
   const markTabDirty = useCallback((tabId: string) => {
     setTabs((prev) => prev.map((t) => t.id === tabId ? { ...t, isDirty: true } : t));
   }, []);
@@ -211,28 +220,22 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     });
   }, []);
 
-  // ── Load table list (no schemas — lazy) ────────────────
-  // Depends on connectionName too: switching the active database (same connection,
-  // different db) keeps connectionId but changes the db name, so this re-runs and
-  // repopulates the tree. Clear stale entities + cached columns first.
   useEffect(() => {
     setTables([]);
     setColumnMap({});
     setExpandedTables(new Set());
     setTablesLoading(true);
     setTablesError(null);
-    invoke<TableInfo[]>("fetch_tables", { connectionId })
+    dbService.fetchTables(connectionId)
       .then(setTables)
       .catch(() => {
         setTablesError("Error cargando tablas");
         toast.error("Error cargando tablas");
       })
       .finally(() => setTablesLoading(false));
-    // toast is a stable context value; excluding it keeps this from refetching every render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionId, connectionName]);
 
-  // ── Ctrl+R reload listener — registered once, handler updated via ref ──
   const reloadHandlerRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     const dispatch = () => reloadHandlerRef.current?.();
@@ -240,35 +243,28 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     return () => window.removeEventListener("dib:reload", dispatch);
   }, []);
 
-  // ── Lazy column load on expand ──────────────────────────
   const loadColumnsIfNeeded = useCallback(
     (table: TableInfo) => {
       if (columnMap[table.name] !== undefined) return;
-      invoke<ColumnInfo[]>("fetch_table_schema", {
-        connectionId,
-        tableName: table.name,
-        schema: table.schema ?? null,
-      })
+      dbService.fetchTableSchema(connectionId, table.name, table.schema ?? null)
         .then((cols) => setColumnMap((prev) => ({ ...prev, [table.name]: cols })))
         .catch(() => setColumnMap((prev) => ({ ...prev, [table.name]: [] })));
     },
     [connectionId, columnMap],
   );
 
-  // ── Load table data for a tab ────────────────────────────
   const loadTablePage = useCallback(
     async (tabId: string, table: TableInfo, pageOffset: number, filters: GridFilter[] = []) => {
       updateTableTabState(tabId, { loading: true, error: null });
       try {
-        const r = await invoke<PagedResult>("fetch_table_data", {
+        const r = await dbService.fetchTableData(
           connectionId,
-          tableName: table.name,
-          schema: table.schema ?? null,
-          offset: pageOffset,
-          limit: PAGE_SIZE,
-          filters: filters.length > 0 ? filters : null,
-        });
-        // Auto-detect PK
+          table.name,
+          table.schema ?? null,
+          pageOffset,
+          PAGE_SIZE,
+          filters.length > 0 ? filters : null,
+        );
         let pkCol = "";
         if (pageOffset === 0) {
           const cols = r.columns;
@@ -292,7 +288,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     [connectionId, updateTableTabState, toast],
   );
 
-  // Update reload handler every render so it always has fresh closures
   reloadHandlerRef.current = () => {
     const tab = tabs.find((t) => t.id === activeTabId) ?? null;
     if (tab?.type === "table" && tab.payload.table) {
@@ -301,13 +296,13 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     }
   };
 
-  // ── Open / activate a table tab ──────────────────────────
   const openTableTab = useCallback(
-    (table: TableInfo) => {
+    (table: TableInfo, initialFilters?: GridFilter[]) => {
       const tid = tableTabId(table);
       const exists = tabs.some((t) => t.id === tid);
       if (exists) {
         setActiveTabId(tid);
+        if (initialFilters?.length) loadTablePage(tid, table, 0, initialFilters);
         return;
       }
       const newTab: TabData = {
@@ -324,12 +319,17 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
         [tid]: defaultTableTabState(table),
       }));
       setActiveTabId(tid);
-      loadTablePage(tid, table, 0, []);
+      loadTablePage(tid, table, 0, initialFilters ?? []);
+      // Fetch relations for FK navigation (best-effort)
+      if (!tableRelations[table.name]) {
+        dbService.fetchTableRelations(connectionId, table.name, table.schema ?? null)
+          .then((rels) => setTableRelations((prev) => ({ ...prev, [table.name]: rels })))
+          .catch(() => {});
+      }
     },
-    [tabs, loadTablePage],
+    [tabs, loadTablePage, tableRelations, connectionId],
   );
 
-  // ── Open SQL editor tab ──────────────────────────────────
   const openSqlTab = useCallback((sql: string, name: string, scriptId?: string) => {
     const tabId = scriptId ?? crypto.randomUUID();
     setTabs((prev) => {
@@ -351,26 +351,23 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     });
   }, []);
 
-  // ── External navigation ──────────────────────────────────
   useEffect(() => {
     if (!navigateTo) return;
     openTableTab(navigateTo.table);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigateTo]);
 
   useEffect(() => {
     if (!openScript) return;
     openSqlTab(openScript.sql, openScript.name, openScript.id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openScript]);
 
-  // ── Tab select — clears any pending confirmClose on other tabs ──
   const handleTabSelect = useCallback((id: string) => {
     setActiveTabId(id);
     setTabs((prev) => prev.map((t) => t.confirmClose ? { ...t, confirmClose: false } : t));
   }, []);
 
-  // ── Tab close — first click on dirty tab prompts, second actually closes ──
   const handleTabClose = useCallback((id: string) => {
     setTabs((prev) => {
       const tab = prev.find((t) => t.id === id);
@@ -378,7 +375,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
       if (tab.isDirty && !tab.confirmClose) {
         return prev.map((t) => t.id === id ? { ...t, confirmClose: true } : t);
       }
-      // Push to closed-tabs history before removing (enables Ctrl+Shift+T)
       if (tab.closeable) {
         closedTabsHistoryRef.current = [
           ...closedTabsHistoryRef.current.slice(-9),
@@ -397,19 +393,13 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     setTabs(newTabs);
   }, []);
 
-  // ── Commit pending changes ───────────────────────────────
   const handleCommit = useCallback(
     async (tabId: string) => {
       const ts = tableTabStates[tabId];
       if (!ts || ts.pendingChanges.length === 0) return;
       setCommitting(tabId);
       try {
-        await invoke("apply_changes", {
-          connectionId,
-          table: ts.table.name,
-          primaryKeyColumn: ts.primaryKeyColumn,
-          changes: ts.pendingChanges,
-        });
+        await dbService.applyChanges(connectionId, ts.table.name, ts.primaryKeyColumn, ts.pendingChanges);
         updateTableTabState(tabId, { pendingChanges: [] });
         markTabClean(tabId);
         loadTablePage(tabId, ts.table, ts.offset, ts.filters);
@@ -422,14 +412,13 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     [tableTabStates, connectionId, updateTableTabState, markTabClean, loadTablePage],
   );
 
-  // ── Save SQL tab → always persists to internal SQLite ───────
   const saveSqlTab = useCallback(
     async (tabId: string, sql: string) => {
       const tab = tabs.find((t) => t.id === tabId);
       if (!tab) return;
       const title = tab.title;
       try {
-        await invoke("save_internal_script", { id: tabId, title, content: sql });
+        await workspaceService.saveInternalScript(tabId, title, sql);
         markTabClean(tabId);
         setTabSql((prev) => ({ ...prev, [tabId]: sql }));
         setTabs((prev) => prev.map((t) =>
@@ -443,18 +432,23 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     [tabs, markTabClean],
   );
 
-  // ── Auto-focus content when switching tabs ───────────────
   useEffect(() => {
     if (!activeTabId) return;
     requestAnimationFrame(() => {
       const main = document.getElementById("dib-main-panel");
-      const grid = main?.querySelector<HTMLElement>(".dg-wrap");
-      const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
-      (grid ?? editor)?.focus();
+      const tab = tabs.find((t) => t.id === activeTabId);
+      if (tab?.type === "sql_editor") {
+        // CRITERIO 2: For sql_editor tabs, always focus Monaco — never the result grid.
+        const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+        editor?.focus();
+      } else {
+        const grid = main?.querySelector<HTMLElement>(".dg-wrap");
+        const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+        (grid ?? editor)?.focus();
+      }
     });
-  }, [activeTabId]);
+  }, [activeTabId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Schema / relation tab ────────────────────────────────
   const openRelationTab = useCallback((table: TableInfo) => {
     const tabId = `tab-rel-${table.name}-${crypto.randomUUID()}`;
     const newTab: TabData = {
@@ -469,19 +463,16 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     setActiveTabId(tabId);
   }, []);
 
-  // ── SQL snippet open ─────────────────────────────────────
   const openSnippetTab = useCallback((sql: string, label: string) => {
     openSqlTab(sql, label);
   }, [openSqlTab]);
 
-  // ── Import from file: open tab + persist to internal DB ──
   const handleImportScriptAndSave = useCallback((sql: string, name: string) => {
     const newId = crypto.randomUUID();
     openSqlTab(sql, name, newId);
-    invoke("save_internal_script", { id: newId, title: name, content: sql }).catch(console.error);
+    workspaceService.saveInternalScript(newId, name, sql).catch(console.error);
   }, [openSqlTab]);
 
-  // ── Column tree toggle (lazy-load columns on first expand) ─
   const toggleExpand = useCallback((table: TableInfo) => {
     setExpandedTables((prev) => {
       const next = new Set(prev);
@@ -495,21 +486,17 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     });
   }, [loadColumnsIfNeeded]);
 
-  // ── Active tab info ──────────────────────────────────────
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
   const activeTableState = activeTabId ? tableTabStates[activeTabId] ?? null : null;
 
   const gridRows = useMemo(() => activeTableState?.result?.rows ?? [], [activeTableState]);
   const gridCols = useMemo(() => activeTableState?.result?.columns ?? [], [activeTableState]);
 
-  // ── Stable DataGrid callbacks (prevents infinite loop) ───
-  // DO NOT inline these in JSX — new references cause onPendingChanges
-  // effect to fire every render even with the ref guard in DataGrid.
   const activeTabIdRef = useRef(activeTabId);
   activeTabIdRef.current = activeTabId;
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
-  // Hoisted Monaco view state: persist onto the tab's global payload (zero amnesia)
+
   const handleSaveViewState = useCallback((tabId: string, viewState: unknown) => {
     setTabs((prev) =>
       prev.map((t) =>
@@ -518,8 +505,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     );
   }, []);
 
-  // Hoisted DataGrid cursor: persist active cell onto the tab's global payload
-  // so it survives unmount / tab switch (criterion: state lives in tab.payload).
   const handleGridActiveCellChange = useCallback((cell: { row: number; col: number } | null) => {
     const tabId = activeTabIdRef.current;
     setTabs((prev) =>
@@ -558,14 +543,46 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     (editor ?? grid ?? main)?.focus();
   }, []);
 
+  const handleFkNavigate = useCallback(
+    (targetTable: string, targetColumn: string, value: unknown) => {
+      const table = tables.find((t) => t.name === targetTable) ?? { name: targetTable, schema: null };
+      const filter: GridFilter = { column: targetColumn, operator: "=", value: String(value) };
+      openTableTab(table, [filter]);
+    },
+    [tables, openTableTab],
+  );
+
+  const handleGridSaveError = useCallback((msg: string) => {
+    toast.warn(`Rollback: ${msg}`);
+  }, [toast]);
+
+  const handleTablesResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = tablesWidth;
+    let rafId: number;
+    const onMove = (ev: MouseEvent) => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const w = Math.max(140, Math.min(420, startW + ev.clientX - startX));
+        setTablesWidth(w);
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [tablesWidth]);
+
   const totalRows = activeTableState?.result?.total ?? 0;
   const currentPage = Math.floor((activeTableState?.offset ?? 0) / PAGE_SIZE);
   const totalPages = Math.ceil(totalRows / PAGE_SIZE);
 
   return (
     <div className="qp">
-      {/* ── Left: table navigator ─────────────────────── */}
-      <aside className="qp-tables">
+      <aside className="qp-tables" style={{ width: tablesWidth, minWidth: tablesWidth }}>
         <div className="qp-tables-header">
           <span className="qp-db-name" title={connectionName}>{connectionName}</span>
           {onDisconnect && (
@@ -629,7 +646,12 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
         </ul>
       </aside>
 
-      {/* ── Right: tabbed content ─────────────────────── */}
+      <div
+        className="qp-resize-handle"
+        onMouseDown={handleTablesResizeStart}
+        title="Drag to resize"
+      />
+
       <div className="qp-data">
         {tabs.length > 0 && (
           <TabBar
@@ -641,7 +663,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
           />
         )}
 
-        {/* ── Table view ─────────────────────────────── */}
         {activeTab?.type === "table" && (
           <>
             {activeTableState?.error && <div className="qp-data-error">{activeTableState.error}</div>}
@@ -673,11 +694,14 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                   primaryKeyColumn={activeTableState?.primaryKeyColumn}
                   columnInfos={activeTab.payload.table ? columnMap[activeTab.payload.table.name] : undefined}
                   filters={activeTableState?.filters}
+                  relations={activeTab.payload.table ? tableRelations[activeTab.payload.table.name] : undefined}
                   onPendingChanges={handleGridPendingChanges}
                   onFiltersChange={handleGridFiltersChange}
                   onSave={handleGridSave}
                   onForceClose={handleGridForceClose}
                   onFocusEditor={handleGridFocusEditor}
+                  onFkNavigate={handleFkNavigate}
+                  onSaveError={handleGridSaveError}
                   activeCell={activeTab.payload.activeCell ?? null}
                   onActiveCellChange={handleGridActiveCellChange}
                 />
@@ -725,7 +749,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
           </>
         )}
 
-        {/* ── SQL Editor ─────────────────────────────── */}
         {activeTab?.type === "sql_editor" && (
           <SqlEditor
             connectionId={connectionId}
@@ -740,7 +763,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
           />
         )}
 
-        {/* ── Schema Visualizer ──────────────────────── */}
         {activeTab?.type === "schema" && (
           <SchemaVisualizer
             engine={engine ?? "postgres"}
@@ -751,7 +773,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
           />
         )}
 
-        {/* ── Empty workspace ─────────────────────────── */}
         {!activeTab && <EmptyWorkspaceState />}
       </div>
 
@@ -775,7 +796,7 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
               const t = contextTable;
               setContextTable(null); closeMenu();
               if (t) {
-                invoke<string>("generate_crud_sql", { connectionId, tableName: t.name, schema: t.schema ?? null, action: "select" })
+                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "select")
                   .then((sql) => openSnippetTab(sql, `SELECT ${t.name}`))
                   .catch((e) => toast.error(fmtErr(e)));
               }
@@ -788,7 +809,7 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
               const t = contextTable;
               setContextTable(null); closeMenu();
               if (t) {
-                invoke<string>("generate_crud_sql", { connectionId, tableName: t.name, schema: t.schema ?? null, action: "insert" })
+                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "insert")
                   .then((sql) => openSnippetTab(sql, `INSERT ${t.name}`))
                   .catch((e) => toast.error(fmtErr(e)));
               }
@@ -801,7 +822,7 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
               const t = contextTable;
               setContextTable(null); closeMenu();
               if (t) {
-                invoke<string>("generate_crud_sql", { connectionId, tableName: t.name, schema: t.schema ?? null, action: "update" })
+                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "update")
                   .then((sql) => openSnippetTab(sql, `UPDATE ${t.name}`))
                   .catch((e) => toast.error(fmtErr(e)));
               }
@@ -815,6 +836,26 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
               if (contextTable)
                 openSnippetTab(`TRUNCATE TABLE ${contextTable.name};`, `TRUNCATE ${contextTable.name}`);
               setContextTable(null); closeMenu();
+            },
+          },
+          {
+            icon: <Trash2 size={14} />,
+            label: "DROP TABLE",
+            danger: true,
+            onClick: () => {
+              const t = contextTable;
+              setContextTable(null); closeMenu();
+              if (!t) return;
+              const label = t.schema ? `${t.schema}.${t.name}` : t.name;
+              if (!window.confirm(`¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`)) return;
+              dbService.dropTable(connectionId, t.name, t.schema ?? null)
+                .then(() => {
+                  toast.info(`Tabla "${label}" eliminada`);
+                  window.dispatchEvent(new CustomEvent("dib:reload"));
+                  // Reload table list
+                  dbService.fetchTables(connectionId).then(setTables).catch(() => {});
+                })
+                .catch((e) => toast.error(fmtErr(e)));
             },
           },
         ]}

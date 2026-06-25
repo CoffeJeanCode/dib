@@ -6,12 +6,22 @@
 
 /* ── Table list sidebar ────────────────────────────────── */
 .qp-tables {
-  width: 220px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-border);
   overflow: hidden;
+}
+
+.qp-resize-handle {
+  width: 4px;
+  flex-shrink: 0;
+  background: var(--color-border);
+  cursor: col-resize;
+  transition: background var(--transition-fastest);
+}
+
+.qp-resize-handle:hover {
+  background: var(--brand-turquoise);
 }
 
 .qp-tables-header {

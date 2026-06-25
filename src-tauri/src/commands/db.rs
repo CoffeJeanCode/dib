@@ -4,7 +4,8 @@ use tokio::sync::Mutex;
 
 use crate::db::{
     ChangeRow, ColumnInfo, create_driver, ConnectionInfo, ConnectionStatus, DatabaseDriver,
-    DbConfig, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation,
+    DbConfig, ExplainPlan, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange,
+    SchemaObjects, TableInfo, TableRelation,
 };
 use crate::storage::AppDb;
 
@@ -391,4 +392,46 @@ pub async fn generate_crud_sql(
     };
 
     Ok(sql)
+}
+
+/// Execute EXPLAIN (ANALYZE, FORMAT JSON) and return structured plan data
+/// for the Visual EXPLAIN renderer.
+#[tauri::command]
+pub async fn explain_query(
+    connection_id: String,
+    sql: String,
+    state: State<'_, DbState>,
+) -> Result<ExplainPlan, QueryError> {
+    let connections = state.connections.lock().await;
+    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?;
+    driver.explain_query(&sql).await
+}
+
+/// Drop a table transactionally. Backend sanitises the identifier.
+#[tauri::command]
+pub async fn drop_table(
+    connection_id: String,
+    table_name: String,
+    schema: Option<String>,
+    state: State<'_, DbState>,
+) -> Result<(), QueryError> {
+    let connections = state.connections.lock().await;
+    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?;
+    driver.drop_table(&table_name, schema.as_deref()).await
+}
+
+/// Returns the next sequential number for Untitled-N.sql naming.
+/// Queries the real count of saved_scripts so the number never grows
+/// without bound across sessions.
+#[tauri::command]
+pub fn get_next_script_number(app_db: State<'_, AppDb>) -> Result<u64, String> {
+    app_db.get_script_count()
 }

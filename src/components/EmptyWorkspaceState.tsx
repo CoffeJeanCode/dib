@@ -35,7 +35,7 @@ function Keys({ groups }: { groups: string[][] }) {
 
 export function EmptyWorkspaceState() {
   return (
-    <div className="ews">
+    <div className="ews pattern-grid">
       <div className="ews-content">
         <div className="ews-logo">
           <Database size={32} className="ews-logo-icon" />
@@ -51,7 +51,7 @@ export function EmptyWorkspaceState() {
           ))}
         </ul>
 
-        <p className="ews-hint">Selecciona una tabla del panel izquierdo para comenzar</p>
+
       </div>
     </div>
   );

@@ -92,7 +92,7 @@ pub fn list_scripts(app: tauri::AppHandle) -> Result<Vec<ScriptMeta>, String> {
         .collect();
 
     // Newest first
-    scripts.sort_by(|a, b| b.modified_ms.cmp(&a.modified_ms));
+    scripts.sort_by_key(|b| std::cmp::Reverse(b.modified_ms));
     Ok(scripts)
 }
 

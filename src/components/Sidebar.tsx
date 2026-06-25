@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useState, useCallback } from "react";
 import { Database, Pencil, Trash2 } from "lucide-react";
 import { useSavedConnections } from "../hooks/useSavedConnections";
+import { useSidebarScripts } from "../hooks/useSidebarScripts";
 import { useContextMenu } from "../hooks/useContextMenu";
 import { ContextMenu } from "./ContextMenu";
 import { SidebarHeader, DatabaseSelector, SidebarNav } from "./SidebarParts";
 import { ENGINE_COLORS } from "./SidebarParts";
-import type { InternalScript, SavedConnection } from "../types/db";
+import type { SavedConnection } from "../types/db";
 import "./Sidebar.css";
 
 interface SidebarProps {
@@ -33,29 +33,10 @@ export function Sidebar({
   onSettingsOpen,
 }: SidebarProps) {
   const { connections, remove, save } = useSavedConnections();
+  const { scripts, scriptsLoading, refreshScripts } = useSidebarScripts();
   const { menuState, openMenu, closeMenu } = useContextMenu();
   const [contextConnId, setContextConnId] = useState<string | null>(null);
-
-  const [scripts, setScripts] = useState<InternalScript[]>([]);
-  const [scriptsLoading, setScriptsLoading] = useState(false);
-
   const [undoStack, setUndoStack] = useState<SavedConnection[]>([]);
-
-  const refreshScripts = useCallback(() => {
-    setScriptsLoading(true);
-    invoke<InternalScript[]>("get_internal_scripts")
-      .then(setScripts)
-      .catch(() => setScripts([]))
-      .finally(() => setScriptsLoading(false));
-  }, []);
-
-  useEffect(() => { refreshScripts(); }, [refreshScripts]);
-
-  useEffect(() => {
-    const handler = () => refreshScripts();
-    window.addEventListener("dib:script-saved", handler);
-    return () => window.removeEventListener("dib:script-saved", handler);
-  }, [refreshScripts]);
 
   const deleteConn = useCallback(
     (conn: SavedConnection) => {
@@ -73,15 +54,15 @@ export function Sidebar({
     }
   }, [undoStack, save]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     closeMenu();
     setContextConnId(null);
-  };
+  }, [closeMenu]);
 
-  const handleContextMenu = (e: React.MouseEvent, connId: string) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, connId: string) => {
     setContextConnId(connId);
     openMenu(e);
-  };
+  }, [openMenu]);
 
   const menuItems = [
     {

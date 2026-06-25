@@ -25,8 +25,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-4);
 }
 
 .palette-input-icon {
@@ -40,7 +39,7 @@
   outline: none;
   background: transparent;
   font-family: var(--font-sans);
-  font-size: var(--font-size-base);
+  font-size: 24px;
   color: var(--color-text-primary);
 }
 
@@ -76,18 +75,40 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   margin: 0 var(--space-1);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   cursor: pointer;
   transition: background var(--transition-fastest);
-  border-left: 2px solid transparent;
 }
 
 .palette-item:hover,
 .palette-item--selected {
-  background: var(--color-bg-hover);
-  border-left-color: var(--brand-turquoise);
+  background-color: #2a2a2a;
+  --pattern-color: var(--brand-turquoise);
+}
+
+.palette-group-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 8px 16px 4px;
+  letter-spacing: 0.05em;
+}
+
+.palette-item-shortcut {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.palette-item-shortcut kbd {
+  background: var(--color-bg-active);
+  border: 1px solid var(--color-border-dark);
+  color: var(--color-text-secondary);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
 }
 
 .palette-item-icon {
@@ -139,4 +160,63 @@
 .palette-item-category--action {
   color: #a83900;
   background: rgba(168, 57, 0, 0.1);
+}
+
+/* ── DROP TABLE danger variant ─────────────────────────────────────── */
+.palette-item--danger .palette-item-icon {
+  color: #ef4444;
+}
+.palette-item--danger .palette-item-category {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+.palette-item--danger:hover .palette-item-label,
+.palette-item--danger.palette-item--selected .palette-item-label {
+  color: #fca5a5;
+}
+
+/* ── Symbol hints (empty state) ────────────────────────── */
+.palette-hints {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.palette-hint-row {
+  display: flex;
+  gap: 12px;
+}
+
+.palette-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.palette-hint-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  padding: 3px 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in srgb, #19b1b4 12%, var(--color-bg-elevated));
+  border: 1px solid #19b1b4;
+  border-radius: 4px;
+  color: #19b1b4;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.palette-hint-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

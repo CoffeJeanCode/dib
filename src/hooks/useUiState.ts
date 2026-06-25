@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { persistenceService } from "../services/persistenceService";
 
 interface UiState {
   is_sidebar_open: boolean;
@@ -18,7 +18,7 @@ export function useUiState() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    invoke<UiState>("load_ui_state")
+    persistenceService.loadUiState()
       .then((saved) => {
         setState({ ...DEFAULT_STATE, ...saved });
         setLoaded(true);
@@ -32,7 +32,7 @@ export function useUiState() {
     (patch: Partial<UiState>) => {
       const next = { ...state, ...patch };
       setState(next);
-      invoke("save_ui_state", { state: next }).catch(() => {});
+      persistenceService.saveUiState(next).catch(() => {});
     },
     [state],
   );

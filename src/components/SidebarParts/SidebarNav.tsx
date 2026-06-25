@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Database, FileCode2 } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
+import { workspaceService } from "../../services/workspaceService";
 import { ConnectionItem } from "./ConnectionItem";
 import { ScriptItem } from "./ScriptItem";
 import type { InternalScript, SavedConnection } from "../../types/db";
@@ -100,7 +100,7 @@ export function SidebarNav({
           const item = navItems[selectedIdx];
           if (item?.kind === "conn") onDeleteConnection(item.data);
           else if (item?.kind === "script") {
-            invoke("delete_internal_script", { id: item.data.id })
+            workspaceService.deleteInternalScript(item.data.id)
               .then(() => onRefreshScripts())
               .catch(console.error);
           }

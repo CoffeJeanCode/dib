@@ -5,6 +5,7 @@
   width: 100%;
   height: 100%;
   background: var(--color-bg);
+  --pattern-color: #0c1a20;
   overflow: hidden;
 }
 
@@ -113,11 +114,3 @@ kbd {
   user-select: none;
 }
 
-/* ── Bottom hint ───────────────────────────────────── */
-.ews-hint {
-  font-size: var(--font-size-xs, 11px);
-  color: var(--color-text-tertiary);
-  opacity: 0.5;
-  text-align: center;
-  margin: 0;
-}

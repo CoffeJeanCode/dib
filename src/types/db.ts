@@ -128,6 +128,14 @@ export interface SchemaChange {
   default_value?: string;
 }
 
+export interface ExplainPlan {
+  node_type: string;
+  total_cost: number;
+  actual_rows?: number;
+  plans?: ExplainPlan[];
+  [key: string]: unknown;
+}
+
 /** @deprecated use InternalScript */
 export interface ScriptInfo {
   name: string;
@@ -139,4 +147,29 @@ export interface ScriptMeta {
   name: string;
   modified_ms: number;
   size_bytes: number;
+}
+
+// ── Visual EXPLAIN ──────────────────────────────────────────────────────────
+
+export interface ExplainNode {
+  node_type: string;
+  relation: string | null;
+  alias: string | null;
+  startup_cost: number;
+  total_cost: number;
+  /** Relative cost percentage 0-100 vs. plan root */
+  cost_pct: number;
+  actual_rows: number | null;
+  actual_loops: number | null;
+  actual_time_ms: number | null;
+  is_seq_scan: boolean;
+  children: ExplainNode[];
+}
+
+export interface ExplainPlan {
+  root: ExplainNode;
+  raw_json: string;
+  total_cost: number;
+  planning_time_ms: number | null;
+  execution_time_ms: number | null;
 }

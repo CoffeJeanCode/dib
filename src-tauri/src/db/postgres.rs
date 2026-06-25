@@ -3,8 +3,8 @@ use serde_json::{json, Value};
 use sqlx::{Column, PgPool, Row, TypeInfo};
 
 use super::driver::{
-    ChangeRow, ColumnInfo, DatabaseDriver, DbConfig, GridFilter, PagedResult, QueryError,
-    QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation,
+    ChangeRow, ColumnInfo, DatabaseDriver, DbConfig, ExplainPlan, GridFilter,
+    PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation,
 };
 
 /// Try to coerce a filter string to a numeric JSON value so Postgres
@@ -52,6 +52,42 @@ fn build_where_pg(filters: &[GridFilter]) -> (String, Vec<Value>) {
         format!(" WHERE {}", clauses.join(" AND "))
     };
     (sql, values)
+}
+
+/// Recursively parse a JSON plan node produced by EXPLAIN (FORMAT JSON).
+/// `root_cost` is the total_cost of the plan root, used to calculate cost_pct.
+fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> super::driver::ExplainNode {
+    let node_type = node.get("Node Type").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
+    let relation = node.get("Relation Name").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let alias = node.get("Alias").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let startup_cost = node.get("Startup Cost").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let total_cost = node.get("Total Cost").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let cost_pct = if root_cost > 0.0 { (total_cost / root_cost * 100.0).min(100.0) } else { 0.0 };
+    let actual_rows = node.get("Actual Rows").and_then(|v| v.as_i64());
+    let actual_loops = node.get("Actual Loops").and_then(|v| v.as_i64());
+    // Actual Total Time is per-loop; multiply by loops to get total wall time.
+    let actual_time_ms = node.get("Actual Total Time").and_then(|v| v.as_f64())
+        .map(|t| t * actual_loops.unwrap_or(1) as f64);
+    let is_seq_scan = node_type.contains("Seq Scan");
+
+    let children = node.get("Plans")
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().map(|child| parse_explain_node(child, root_cost)).collect())
+        .unwrap_or_default();
+
+    super::driver::ExplainNode {
+        node_type,
+        relation,
+        alias,
+        startup_cost,
+        total_cost,
+        cost_pct,
+        actual_rows,
+        actual_loops,
+        actual_time_ms,
+        is_seq_scan,
+        children,
+    }
 }
 
 pub struct PostgresDriver {
@@ -116,7 +152,7 @@ impl PostgresDriver {
 
 fn is_select(sql: &str) -> bool {
     matches!(
-        sql.trim().split_whitespace().next().unwrap_or("").to_uppercase().as_str(),
+        sql.split_whitespace().next().unwrap_or("").to_uppercase().as_str(),
         "SELECT" | "WITH" | "EXPLAIN" | "SHOW" | "TABLE"
     )
 }
@@ -363,7 +399,7 @@ impl DatabaseDriver for PostgresDriver {
                 .unwrap_or_default();
             row_map.entry(key).or_default().push(c);
         }
-        for (_key, row_changes) in &row_map {
+        for row_changes in row_map.values() {
             let pk_val = row_changes[0].row_pk_value.as_ref().ok_or_else(|| QueryError {
                 message: "row_pk_value is required for UPDATE".into(),
                 code: None, severity: Some("ERROR".into()),
@@ -520,6 +556,67 @@ impl DatabaseDriver for PostgresDriver {
             .await
             .map_err(|e| QueryError::from(e.to_string()))?;
         Ok(rows.iter().map(|r| r.get::<String, _>(0)).collect())
+    }
+
+    async fn explain_query(&self, sql: &str) -> Result<ExplainPlan, QueryError> {
+        // Sanitise: only allow SELECT/WITH queries for EXPLAIN.
+        let trimmed = sql.trim();
+        let first_token = trimmed.split_whitespace().next().unwrap_or("").to_uppercase();
+        if !matches!(first_token.as_str(), "SELECT" | "WITH") {
+            return Err(QueryError {
+                message: "EXPLAIN solo está disponible para consultas SELECT o WITH".into(),
+                code: Some("EXPLAIN_UNSUPPORTED".into()),
+                severity: Some("WARNING".into()),
+            });
+        }
+
+        let explain_sql = format!("EXPLAIN (ANALYZE, FORMAT JSON) {}", trimmed);
+        let row = sqlx::query(&explain_sql)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        // Postgres returns a single column of type jsonb[]
+        let raw: serde_json::Value = row.try_get(0)
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let raw_json = serde_json::to_string_pretty(&raw).unwrap_or_default();
+
+        // Top-level is [{"Plan": {...}, "Planning Time": ..., "Execution Time": ...}]
+        let top = raw.as_array()
+            .and_then(|a| a.first())
+            .cloned()
+            .unwrap_or(raw.clone());
+
+        let plan_obj = top.get("Plan").cloned().unwrap_or(serde_json::Value::Null);
+        let planning_time_ms = top.get("Planning Time").and_then(|v| v.as_f64());
+        let execution_time_ms = top.get("Execution Time").and_then(|v| v.as_f64());
+
+        // Parse root cost first so children can compute relative percentages.
+        let root_cost = plan_obj.get("Total Cost").and_then(|v| v.as_f64()).unwrap_or(1.0);
+        let root = parse_explain_node(&plan_obj, root_cost);
+
+        Ok(ExplainPlan {
+            total_cost: root.total_cost,
+            root,
+            raw_json,
+            planning_time_ms,
+            execution_time_ms,
+        })
+    }
+
+    async fn drop_table(&self, table_name: &str, schema: Option<&str>) -> Result<(), QueryError> {
+        // Validate: only allow simple identifiers (no quotes, no semicolons)
+        let safe_name = table_name.replace(['"', ';'], "");
+        if safe_name.is_empty() {
+            return Err(QueryError::from("Invalid table name".to_string()));
+        }
+        let q = qualified(&safe_name, schema);
+        let sql = format!("DROP TABLE IF EXISTS {q} CASCADE");
+        let mut tx = self.pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
+        sqlx::query(&sql).execute(&mut *tx).await.map_err(|e| QueryError::from(e.to_string()))?;
+        tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(())
     }
 
     fn driver_name(&self) -> &'static str {

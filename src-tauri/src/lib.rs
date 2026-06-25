@@ -2,7 +2,7 @@ mod commands;
 mod db;
 mod storage;
 
-use commands::db::{apply_changes, apply_schema_changes, connect_saved, connect_to_db, disconnect, fetch_schema_objects, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, generate_crud_sql, list_databases, run_query, switch_database, test_connection, DbState};
+use commands::db::{apply_changes, apply_schema_changes, connect_saved, connect_to_db, disconnect, drop_table, explain_query, fetch_schema_objects, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, generate_crud_sql, get_next_script_number, list_databases, run_query, switch_database, test_connection, DbState};
 use commands::persistence::{
     delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state,
 };
@@ -17,7 +17,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let db = AppDb::init(app.handle()).map_err(|e| {
-                Box::new(std::io::Error::new(std::io::ErrorKind::Other, e))
+                Box::new(std::io::Error::other(e))
                     as Box<dyn std::error::Error>
             })?;
             app.manage(db);
@@ -55,7 +55,10 @@ pub fn run() {
             apply_schema_changes,
             list_databases,
             switch_database,
-            generate_crud_sql
+            generate_crud_sql,
+            explain_query,
+            drop_table,
+            get_next_script_number
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

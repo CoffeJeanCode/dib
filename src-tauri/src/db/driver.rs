@@ -123,6 +123,48 @@ pub struct PagedResult {
     pub limit: u64,
 }
 
+/// A single node in the Visual EXPLAIN plan tree.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExplainNode {
+    /// e.g. "Seq Scan", "Index Scan", "Hash Join"
+    pub node_type: String,
+    /// Qualified relation name if applicable
+    pub relation: Option<String>,
+    /// Alias used in the query
+    pub alias: Option<String>,
+    /// Estimated startup cost
+    pub startup_cost: f64,
+    /// Estimated total cost
+    pub total_cost: f64,
+    /// Relative cost percentage (0..100) vs. root node
+    pub cost_pct: f64,
+    /// Actual rows returned (from ANALYZE)
+    pub actual_rows: Option<i64>,
+    /// Actual loops executed
+    pub actual_loops: Option<i64>,
+    /// Actual total time ms (loops-normalised)
+    pub actual_time_ms: Option<f64>,
+    /// true when node_type contains "Seq Scan" (potential perf issue)
+    pub is_seq_scan: bool,
+    /// Children sub-plans
+    pub children: Vec<ExplainNode>,
+}
+
+/// Top-level payload returned by explain_query.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExplainPlan {
+    /// Root node of the plan tree
+    pub root: ExplainNode,
+    /// Raw JSON from EXPLAIN for debugging / tooltips
+    pub raw_json: String,
+    /// Total estimated cost of the plan
+    pub total_cost: f64,
+    /// Planning time in ms (if available)
+    pub planning_time_ms: Option<f64>,
+    /// Execution time in ms (if available)
+    pub execution_time_ms: Option<f64>,
+}
+
 /// One structural change to apply to an existing table.
 /// kind: "add_column" | "drop_column" | "rename_column" | "alter_type" | "set_nullable"
 #[derive(Debug, Serialize, Deserialize)]
@@ -184,6 +226,11 @@ pub trait DatabaseDriver: Send + Sync {
         changes: &[SchemaChange],
     ) -> Result<(), QueryError>;
     async fn list_databases(&self) -> Result<Vec<String>, QueryError>;
+    /// Run EXPLAIN (ANALYZE, FORMAT JSON) and return a structured plan.
+    /// Falls back gracefully to a "not supported" error for SQLite (no JSON format).
+    async fn explain_query(&self, sql: &str) -> Result<ExplainPlan, QueryError>;
+    /// Drop a table transactionally. Backend validates the identifier.
+    async fn drop_table(&self, table_name: &str, schema: Option<&str>) -> Result<(), QueryError>;
     #[allow(dead_code)]
     fn driver_name(&self) -> &'static str;
 }

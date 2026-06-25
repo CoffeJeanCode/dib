@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FileCode2, FileText, Pencil, Download, Trash2 } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
+import { workspaceService } from "../../services/workspaceService";
 import type { InternalScript } from "../../types/db";
 
 interface ScriptItemProps {
@@ -29,10 +29,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
 
   const commitRename = useCallback(() => {
     if (editTitle.trim()) {
-      invoke("update_internal_script", {
-        id: script.id,
-        title: editTitle.trim(),
-      })
+      workspaceService.updateInternalScript(script.id, editTitle.trim())
         .then(() => onRefreshScripts())
         .catch(console.error);
     }
@@ -52,7 +49,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
 
   return (
     <div
-      className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected" : ""}`}
+      className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected pattern-hatching" : ""}`}
       onClick={() => {
         if (!isEditing) {
           onSelect(navIdx, script);
@@ -98,7 +95,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
             title="Exportar como .sql"
             onClick={(e) => {
               e.stopPropagation();
-              invoke("export_script_dialog", { content: script.content }).catch(console.error);
+              workspaceService.exportScriptDialog(script.content).catch(console.error);
             }}
           >
             <Download size={12} />
@@ -108,7 +105,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
             title="Eliminar script (Delete)"
             onClick={(e) => {
               e.stopPropagation();
-              invoke("delete_internal_script", { id: script.id })
+              workspaceService.deleteInternalScript(script.id)
                 .then(() => onRefreshScripts())
                 .catch(console.error);
             }}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { connectionService } from "../services/connectionService";
 import type { SavedConnection } from "../types/db";
 
 export function useSavedConnections() {
@@ -7,7 +7,7 @@ export function useSavedConnections() {
   const [loaded, setLoaded] = useState(false);
 
   const refresh = useCallback(() => {
-    invoke<SavedConnection[]>("get_saved_connections")
+    connectionService.getSavedConnections()
       .then(setConnections)
       .catch(() => setConnections([]))
       .finally(() => setLoaded(true));
@@ -19,7 +19,7 @@ export function useSavedConnections() {
 
   const save = useCallback(
     (connection: SavedConnection) => {
-      invoke("save_connection", { connection })
+      connectionService.saveConnection(connection)
         .then(() => refresh())
         .catch(() => {});
     },
@@ -28,7 +28,7 @@ export function useSavedConnections() {
 
   const remove = useCallback(
     (connectionId: string) => {
-      invoke("delete_connection", { connectionId })
+      connectionService.deleteConnection(connectionId)
         .then(() => refresh())
         .catch(() => {});
     },

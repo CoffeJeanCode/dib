@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, Row, SqlitePool, TypeInfo};
 
-use super::driver::{ChangeRow, ColumnInfo, DatabaseDriver, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation};
+use super::driver::{ChangeRow, ColumnInfo, DatabaseDriver, ExplainNode, ExplainPlan, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation};
 
 /// Builds ` WHERE ...` clause with ? placeholders for SQLite.
 fn build_where_sqlite(filters: &[GridFilter]) -> (String, Vec<String>) {
@@ -74,7 +74,7 @@ impl SqliteDriver {
 
 fn is_select(sql: &str) -> bool {
     matches!(
-        sql.trim().split_whitespace().next().unwrap_or("").to_uppercase().as_str(),
+        sql.split_whitespace().next().unwrap_or("").to_uppercase().as_str(),
         "SELECT" | "WITH" | "EXPLAIN"
     )
 }
@@ -221,7 +221,7 @@ impl DatabaseDriver for SqliteDriver {
                 .unwrap_or_default();
             row_map.entry(key).or_default().push(c);
         }
-        for (_key, row_changes) in &row_map {
+        for row_changes in row_map.values() {
             let pk_val = row_changes[0].row_pk_value.as_ref().ok_or_else(|| QueryError {
                 message: "row_pk_value is required for UPDATE".into(),
                 code: None, severity: Some("ERROR".into()),
@@ -384,6 +384,82 @@ impl DatabaseDriver for SqliteDriver {
 
     async fn list_databases(&self) -> Result<Vec<String>, QueryError> {
         Ok(vec![])
+    }
+
+    /// SQLite does not support EXPLAIN FORMAT JSON — returns a simple text-based node
+    /// wrapping the EXPLAIN QUERY PLAN output.
+    async fn explain_query(&self, sql: &str) -> Result<ExplainPlan, QueryError> {
+        let trimmed = sql.trim();
+        let first_token = trimmed.split_whitespace().next().unwrap_or("").to_uppercase();
+        if !matches!(first_token.as_str(), "SELECT" | "WITH") {
+            return Err(QueryError {
+                message: "EXPLAIN solo está disponible para consultas SELECT o WITH".into(),
+                code: Some("EXPLAIN_UNSUPPORTED".into()),
+                severity: Some("WARNING".into()),
+            });
+        }
+
+        let explain_sql = format!("EXPLAIN QUERY PLAN {}", trimmed);
+        let rows = sqlx::query(&explain_sql)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        // Build a flat tree: root + children per EXPLAIN QUERY PLAN row
+        let mut children: Vec<ExplainNode> = Vec::new();
+        let mut raw_lines: Vec<String> = Vec::new();
+        for row in &rows {
+            let detail: String = row.try_get("detail").unwrap_or_default();
+            raw_lines.push(detail.clone());
+            let is_seq_scan = detail.to_uppercase().contains("SCAN") && !detail.to_uppercase().contains("INDEX");
+            children.push(ExplainNode {
+                node_type: if is_seq_scan { "Seq Scan".into() } else { "Index Scan".into() },
+                relation: None,
+                alias: None,
+                startup_cost: 0.0,
+                total_cost: 0.0,
+                cost_pct: 0.0,
+                actual_rows: None,
+                actual_loops: None,
+                actual_time_ms: None,
+                is_seq_scan,
+                children: vec![],
+            });
+        }
+
+        let root = ExplainNode {
+            node_type: "Query Plan".into(),
+            relation: None,
+            alias: None,
+            startup_cost: 0.0,
+            total_cost: 0.0,
+            cost_pct: 100.0,
+            actual_rows: None,
+            actual_loops: None,
+            actual_time_ms: None,
+            is_seq_scan: false,
+            children,
+        };
+
+        Ok(ExplainPlan {
+            root,
+            raw_json: raw_lines.join("\n"),
+            total_cost: 0.0,
+            planning_time_ms: None,
+            execution_time_ms: None,
+        })
+    }
+
+    async fn drop_table(&self, table_name: &str, schema: Option<&str>) -> Result<(), QueryError> {
+        let _ = schema; // SQLite has no schema concept
+        let safe_name = table_name.replace(['"', ';'], "");
+        if safe_name.is_empty() {
+            return Err(QueryError::from("Invalid table name".to_string()));
+        }
+        let sql = format!("DROP TABLE IF EXISTS \"{safe_name}\"");
+        let mut conn = self.pool.acquire().await.map_err(|e| QueryError::from(e.to_string()))?;
+        sqlx::query(&sql).execute(&mut *conn).await.map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(())
     }
 
     fn driver_name(&self) -> &'static str {

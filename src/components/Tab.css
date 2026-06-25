@@ -25,8 +25,8 @@
 
 .tab--active {
   background: var(--color-bg);
-  color: var(--brand-turquoise);
-  border-bottom-color: var(--brand-turquoise);
+  color: var(--comic-yellow);
+  border-bottom-color: var(--comic-yellow);
 }
 
 .tab-icon {
@@ -37,7 +37,7 @@
 }
 
 .tab--active .tab-icon {
-  color: var(--brand-turquoise);
+  color: var(--comic-yellow);
 }
 
 .tab-label {
@@ -71,7 +71,7 @@
 }
 
 .tab-close--dirty {
-  color: var(--brand-turquoise);
+  color: var(--comic-yellow);
   opacity: 1;
   display: flex;
   align-items: center;

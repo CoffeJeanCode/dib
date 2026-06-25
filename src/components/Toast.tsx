@@ -14,7 +14,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: str
   };
 
   return (
-    <div className={`toast toast--${toast.type}`}>
+    <div className={`toast pattern-halftone toast--${toast.type}`}>
       <span className="toast-message">{toast.message}</span>
       <button className="toast-copy-btn" onClick={handleCopy} title="Copiar mensaje">
         <Copy size={14} />

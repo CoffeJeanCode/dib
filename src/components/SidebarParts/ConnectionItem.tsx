@@ -58,7 +58,7 @@ export function ConnectionItem({
   return (
     <div>
       <div
-        className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected" : ""}`}
+        className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected pattern-hatching" : ""}`}
         onClick={() => onSelect(navIdx, conn.id)}
         onContextMenu={(e) => onContextMenu(e, conn.id)}
       >
