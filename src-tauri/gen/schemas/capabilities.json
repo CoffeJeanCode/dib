@@ -1,1 +1,1 @@
-{}
+{"default":{"identifier":"default","description":"Default capability for the main dib window. Grants only the permissions required by the app — filesystem access via shell:allow-open and core Tauri IPC.","local":true,"windows":["main"],"permissions":["core:default","shell:allow-open"]}}

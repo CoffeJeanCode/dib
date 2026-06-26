@@ -179,6 +179,9 @@ export function CommandPalette({
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && filtered[selectedIndex]?.kind === "table") {
+        window.dispatchEvent(new CustomEvent("dib:open-table-structure", { detail: filtered[selectedIndex].table }));
+        onClose();
       } else if (e.key === "Enter" && filtered[selectedIndex]) {
         execute(filtered[selectedIndex]);
       } else if (e.key === "Escape") {
@@ -226,7 +229,7 @@ export function CommandPalette({
               const headerText = isRecentView ? "RECENT" : (isEmpty ? "SUGGESTIONS" : ITEM_CATEGORY[item.kind].toUpperCase());
               
               let hintText = "↵ Seleccionar";
-              if (item.kind === "table") hintText = "↵ Abrir Tabla";
+              if (item.kind === "table") hintText = "↵ Abrir · ⌃↵ Estructura";
               if (item.kind === "script") hintText = "↵ Ejecutar Script";
               if (item.kind === "database") hintText = "↵ Cambiar BD";
               if (item.kind === "drop") hintText = "↵ Eliminar";

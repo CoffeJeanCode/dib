@@ -2,9 +2,10 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, PgPool, Row, TypeInfo};
 
-use super::driver::{
-    ChangeRow, ColumnInfo, DatabaseDriver, DbConfig, ExplainPlan, GridFilter,
-    PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation,
+use crate::db::{
+    ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, ExplainNode, ExplainPlan,
+    ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects,
+    StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation, TableStructure,
 };
 
 /// Try to coerce a filter string to a numeric JSON value so Postgres
@@ -54,9 +55,20 @@ fn build_where_pg(filters: &[GridFilter]) -> (String, Vec<Value>) {
     (sql, values)
 }
 
+fn decode_fk_action(code: &str) -> String {
+    match code {
+        "a" => "NO ACTION".to_string(),
+        "r" => "RESTRICT".to_string(),
+        "c" => "CASCADE".to_string(),
+        "n" => "SET NULL".to_string(),
+        "d" => "SET DEFAULT".to_string(),
+        other => other.to_string(),
+    }
+}
+
 /// Recursively parse a JSON plan node produced by EXPLAIN (FORMAT JSON).
 /// `root_cost` is the total_cost of the plan root, used to calculate cost_pct.
-fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> super::driver::ExplainNode {
+fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> ExplainNode {
     let node_type = node.get("Node Type").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
     let relation = node.get("Relation Name").and_then(|v| v.as_str()).map(|s| s.to_string());
     let alias = node.get("Alias").and_then(|v| v.as_str()).map(|s| s.to_string());
@@ -75,7 +87,7 @@ fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> super::driver
         .map(|arr| arr.iter().map(|child| parse_explain_node(child, root_cost)).collect())
         .unwrap_or_default();
 
-    super::driver::ExplainNode {
+    ExplainNode {
         node_type,
         relation,
         alias,
@@ -245,7 +257,7 @@ impl DatabaseDriver for PostgresDriver {
             }
         }
 
-        Ok(SchemaObjects { tables, views, functions, procedures })
+        Ok(SchemaObjects { tables, views, materialized_views: Vec::new(), functions, procedures, triggers: Vec::new() })
     }
 
     async fn get_table_schema(
@@ -293,7 +305,7 @@ impl DatabaseDriver for PostgresDriver {
     async fn execute_query(&self, sql: &str) -> Result<QueryResult, QueryError> {
         if is_select(sql) {
             use std::collections::HashSet;
-            use super::driver::ColumnMetadata;
+
 
             let rows = sqlx::query(sql)
                 .fetch_all(&self.pool)
@@ -730,6 +742,152 @@ impl DatabaseDriver for PostgresDriver {
         sqlx::query(&sql).execute(&mut *tx).await.map_err(|e| QueryError::from(e.to_string()))?;
         tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
         Ok(())
+    }
+
+    async fn get_table_structure(&self, table_name: &str, schema: Option<&str>) -> Result<TableStructure, QueryError> {
+        // Columns
+        let col_rows = sqlx::query(
+            "SELECT a.attname AS name,
+                    pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type,
+                    (SELECT EXISTS(
+                        SELECT 1 FROM pg_index i
+                        WHERE i.indrelid = a.attrelid AND a.attnum = ANY(i.indkey) AND i.indisprimary
+                    )) AS is_primary_key,
+                    NOT a.attnotnull AS is_nullable,
+                    pg_catalog.pg_get_expr(d.adbin, d.adrelid) AS default_value
+             FROM pg_catalog.pg_attribute a
+             JOIN pg_catalog.pg_class t ON t.oid = a.attrelid
+             JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace
+             LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+             WHERE a.attnum > 0 AND NOT a.attisdropped
+               AND t.relname = $1 AND n.nspname = COALESCE($2, current_schema())
+             ORDER BY a.attnum",
+        )
+        .bind(table_name)
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let columns: Vec<StructureColumn> = col_rows.iter().map(|r| StructureColumn {
+            name: r.get("name"),
+            data_type: r.get("data_type"),
+            is_primary_key: r.get("is_primary_key"),
+            is_nullable: r.get("is_nullable"),
+            default_value: r.get("default_value"),
+        }).collect();
+
+        // Indexes
+        let idx_rows = sqlx::query(
+            "SELECT i.relname AS name, ix.indisunique AS is_unique, ix.indisprimary AS is_primary,
+                    am.amname AS index_type,
+                    string_agg(a.attname, ', ' ORDER BY k.n) AS columns
+             FROM pg_index ix
+             JOIN pg_class t ON t.oid = ix.indrelid
+             JOIN pg_class i ON i.oid = ix.indexrelid
+             JOIN pg_am am ON am.oid = i.relam
+             JOIN pg_namespace n ON n.oid = t.relnamespace
+             CROSS JOIN LATERAL unnest(ix.indkey) WITH ORDINALITY AS k(attnum, n)
+             JOIN pg_attribute a ON a.attrelid = ix.indrelid AND a.attnum = k.attnum
+             WHERE t.relname = $1 AND n.nspname = COALESCE($2, current_schema()) AND k.attnum > 0
+             GROUP BY i.relname, ix.indisunique, ix.indisprimary, am.amname
+             ORDER BY ix.indisprimary DESC, i.relname",
+        )
+        .bind(table_name)
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let indexes: Vec<StructureIndex> = idx_rows.iter().map(|r| {
+            let cols_str: String = r.get("columns");
+            StructureIndex {
+                name: r.get("name"),
+                columns: cols_str.split(", ").map(|s| s.to_string()).collect(),
+                is_unique: r.get("is_unique"),
+                is_primary: r.get("is_primary"),
+                index_type: r.get("index_type"),
+            }
+        }).collect();
+
+        // Foreign keys
+        let fk_rows = sqlx::query(
+            "SELECT c.conname AS name,
+                    f.relname AS foreign_table, fn.nspname AS foreign_schema,
+                    c.confdeltype AS on_delete, c.confupdtype AS on_update,
+                    string_agg(a.attname, ', ' ORDER BY k.n) AS columns,
+                    string_agg(fa.attname, ', ' ORDER BY k.n) AS foreign_columns
+             FROM pg_constraint c
+             JOIN pg_class t ON t.oid = c.conrelid
+             JOIN pg_namespace n ON n.oid = t.relnamespace
+             JOIN pg_class f ON f.oid = c.confrelid
+             JOIN pg_namespace fn ON fn.oid = f.relnamespace
+             CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS k(attnum, n)
+             JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+             JOIN pg_attribute fa ON fa.attrelid = c.confrelid AND fa.attnum = c.confkey[k.n]
+             WHERE c.contype = 'f' AND t.relname = $1 AND n.nspname = COALESCE($2, current_schema())
+             GROUP BY c.conname, f.relname, fn.nspname, c.confdeltype, c.confupdtype
+             ORDER BY c.conname",
+        )
+        .bind(table_name)
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let foreign_keys: Vec<ForeignKey> = fk_rows.iter().map(|r| {
+            let cols_str: String = r.get("columns");
+            let fcols_str: String = r.get("foreign_columns");
+            ForeignKey {
+                name: r.get("name"),
+                columns: cols_str.split(", ").map(|s| s.to_string()).collect(),
+                foreign_table: r.get("foreign_table"),
+                foreign_schema: r.get("foreign_schema"),
+                foreign_columns: fcols_str.split(", ").map(|s| s.to_string()).collect(),
+                on_delete: decode_fk_action(r.get("on_delete")),
+                on_update: decode_fk_action(r.get("on_update")),
+            }
+        }).collect();
+
+        // Triggers
+        let trig_rows = sqlx::query(
+            "SELECT tg.tgname AS name,
+                    CASE WHEN (tg.tgtype::int & 2) != 0 THEN 'BEFORE'
+                         WHEN (tg.tgtype::int & 64) != 0 THEN 'INSTEAD OF'
+                         ELSE 'AFTER' END AS timing,
+                    CASE WHEN (tg.tgtype::int & 4) != 0 THEN 'INSERT'
+                         WHEN (tg.tgtype::int & 8) != 0 THEN 'DELETE'
+                         WHEN (tg.tgtype::int & 16) != 0 THEN 'UPDATE'
+                         ELSE 'OTHER' END AS event,
+                    p.proname AS function_name
+             FROM pg_trigger tg
+             JOIN pg_class c ON c.oid = tg.tgrelid
+             JOIN pg_namespace n ON n.oid = c.relnamespace
+             JOIN pg_proc p ON p.oid = tg.tgfoid
+             WHERE c.relname = $1 AND n.nspname = COALESCE($2, current_schema()) AND NOT tg.tgisinternal
+             ORDER BY tg.tgname",
+        )
+        .bind(table_name)
+        .bind(schema)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let triggers: Vec<StructureTrigger> = trig_rows.iter().map(|r| StructureTrigger {
+            name: r.get("name"),
+            event: r.get("event"),
+            timing: r.get("timing"),
+            function_name: r.get("function_name"),
+        }).collect();
+
+        Ok(TableStructure {
+            table_name: table_name.to_string(),
+            schema: schema.map(|s| s.to_string()),
+            columns,
+            indexes,
+            foreign_keys,
+            triggers,
+        })
     }
 
     fn driver_name(&self) -> &'static str {

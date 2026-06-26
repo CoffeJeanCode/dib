@@ -14,10 +14,11 @@ import { useKeybindings } from "../hooks/useKeybindings";
 import {
   LogOut, Network, ChevronRight,
   Key, Hash, Type, Calendar,
-  Table2, Pencil, Trash2,
+  Table2, Pencil, Trash2, Layers,
 } from "lucide-react";
 import type { TableInfo, ColumnInfo, PagedResult, PendingChange, GridFilter, TableRelation } from "../types/db";
 import type { TabData, TabPayload } from "./Tab";
+import { TableStructureView } from "./TableStructureView";
 
 function colIcon(col: ColumnInfo) {
   if (col.is_primary_key) return <Key size={12} className="qp-col-icon qp-col-icon--pk" />;
@@ -368,6 +369,32 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     },
     [tabs, loadTablePage, tableRelations, connectionId],
   );
+
+  const openTableStructureTab = useCallback((table: TableInfo) => {
+    const tabId = `structure-${table.schema ?? "public"}-${table.name}`;
+    setTabs((prev) => {
+      if (prev.some((t) => t.id === tabId)) { setActiveTabId(tabId); return prev; }
+      const newTab: TabData = {
+        id: tabId,
+        type: "table_structure",
+        title: table.schema ? `${table.schema}.${table.name}` : table.name,
+        isDirty: false,
+        payload: { table },
+        closeable: true,
+      };
+      setActiveTabId(tabId);
+      return [...prev, newTab];
+    });
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const table = (e as CustomEvent<TableInfo>).detail;
+      if (table) openTableStructureTab(table);
+    };
+    window.addEventListener("dib:open-table-structure", handler);
+    return () => window.removeEventListener("dib:open-table-structure", handler);
+  }, [openTableStructureTab]);
 
   const openSqlTab = useCallback((sql: string, name: string, scriptId?: string) => {
     const tabId = scriptId ?? crypto.randomUUID();
@@ -760,6 +787,15 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                     ? `${activeTab.payload.table.schema}.${activeTab.payload.table.name}`
                     : activeTab.payload.table?.name}
                 </span>
+                {activeTab.payload.table && (
+                  <button
+                    className="qp-structure-btn"
+                    title="Ver Estructura"
+                    onClick={() => activeTab.payload.table && openTableStructureTab(activeTab.payload.table)}
+                  >
+                    <Layers size={14} />
+                  </button>
+                )}
               </div>
             )}
             {!activeTableState?.loading && !activeTableState?.result && !activeTableState?.error && (
@@ -815,18 +851,29 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                 </button>
               </div>
             )}
-            <CommitFooter
-              changes={activeTableState?.pendingChanges ?? []}
-              committing={committing === activeTabId}
-              onRevert={() => {
-                updateTableTabState(activeTabId, { pendingChanges: [] });
-                markTabClean(activeTabId);
-                if (activeTab.payload.table) {
-                  loadTablePage(activeTabId, activeTab.payload.table, 0, []);
-                }
-              }}
-              onApply={() => handleCommit(activeTabId)}
-            />
+            <div className="qp-footer-row">
+              <CommitFooter
+                changes={activeTableState?.pendingChanges ?? []}
+                committing={committing === activeTabId}
+                onRevert={() => {
+                  updateTableTabState(activeTabId, { pendingChanges: [] });
+                  markTabClean(activeTabId);
+                  if (activeTab.payload.table) {
+                    loadTablePage(activeTabId, activeTab.payload.table, 0, []);
+                  }
+                }}
+                onApply={() => handleCommit(activeTabId)}
+              />
+              {activeTab.payload.table && (
+                <button
+                  className="qp-structure-footer-btn"
+                  onClick={() => activeTab.payload.table && openTableStructureTab(activeTab.payload.table)}
+                  title="Ver Estructura de tabla"
+                >
+                  <Layers size={12} /> Structure
+                </button>
+              )}
+            </div>
           </>
         )}
 
@@ -855,6 +902,13 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
           />
         )}
 
+        {activeTab?.type === "table_structure" && activeTab.payload.table && (
+          <TableStructureView
+            connectionId={connectionId}
+            table={activeTab.payload.table}
+          />
+        )}
+
         {!activeTab && <EmptyWorkspaceState />}
       </div>
 
@@ -863,6 +917,14 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
         x={menuState.x}
         y={menuState.y}
         items={[
+          {
+            icon: <Layers size={14} />,
+            label: "Ver Estructura",
+            onClick: () => {
+              if (contextTable) openTableStructureTab(contextTable);
+              setContextTable(null); closeMenu();
+            },
+          },
           {
             icon: <Network size={14} />,
             label: "Visualizar Relaciones",

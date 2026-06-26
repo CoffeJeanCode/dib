@@ -212,3 +212,11 @@ pub async fn import_script_dialog() -> Result<Option<ImportedScript>, String> {
         None => Ok(None),
     }
 }
+
+/// Returns the next sequential number for Untitled-N.sql naming.
+/// Queries the real count of saved_scripts so the number never grows
+/// without bound across sessions.
+#[tauri::command]
+pub fn get_next_script_number(app_db: tauri::State<'_, crate::storage::AppDb>) -> Result<u64, String> {
+    app_db.get_script_count()
+}
