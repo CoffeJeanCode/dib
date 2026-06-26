@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { TableInfo, ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure } from "../types/db";
+import type { TableInfo, ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry } from "../types/db";
 
 export const dbService = {
   fetchTables: (connectionId: string) =>
@@ -36,6 +36,13 @@ export const dbService = {
     executionTimeMs: number,
   ) =>
     invoke<void>("save_query_history", { connectionId, queryText, success, executionTimeMs }),
+
+  getQueryHistory: (
+    connectionId: string,
+    limit?: number,
+    offset?: number,
+  ) =>
+    invoke<QueryHistoryEntry[]>("get_query_history", { connectionId, limit, offset }),
 
   generateCrudSql: (
     connectionId: string,

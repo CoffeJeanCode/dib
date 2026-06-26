@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Database, FileCode2 } from "lucide-react";
 import { workspaceService } from "../../services/workspaceService";
 import { ConnectionItem } from "./ConnectionItem";
 import { ScriptItem } from "./ScriptItem";
+import { QueryHistoryPanel } from "./QueryHistoryPanel";
+import { DatabaseCategories } from "./DatabaseCategories";
 import type { InternalScript, SavedConnection } from "../../types/db";
 
 interface SidebarNavProps {
+  activeView: "connections" | "scripts" | "history" | "database";
+  activeSessionId?: string | null;
   connections: SavedConnection[];
   scripts: InternalScript[];
   scriptsLoading: boolean;
@@ -24,6 +27,8 @@ type NavItem =
   | { kind: "script"; data: InternalScript };
 
 export function SidebarNav({
+  activeView,
+  activeSessionId,
   connections,
   scripts,
   scriptsLoading,
@@ -36,7 +41,6 @@ export function SidebarNav({
   undoStack,
   onContextMenu,
 }: SidebarNavProps) {
-  const [activeView, setActiveView] = useState<"connections" | "scripts">("connections");
   const [selectedIdx, setSelectedIdx] = useState(-1);
 
   const navItems = useMemo((): NavItem[] => {
@@ -132,22 +136,6 @@ export function SidebarNav({
 
   return (
     <>
-      {/* Segmented Control */}
-      <div className="sidebar-tabs">
-        <button
-          className={`sidebar-tab${activeView === "connections" ? " sidebar-tab--active" : ""}`}
-          onClick={() => setActiveView("connections")}
-        >
-          <Database size={16} />
-        </button>
-        <button
-          className={`sidebar-tab${activeView === "scripts" ? " sidebar-tab--active" : ""}`}
-          onClick={() => setActiveView("scripts")}
-        >
-          <FileCode2 size={16} />
-        </button>
-      </div>
-
       <nav
         id="dib-sidebar-nav"
         className="sidebar-nav"
@@ -157,7 +145,9 @@ export function SidebarNav({
         aria-label="Sidebar navigation"
       >
         <div className="sidebar-section">
-          {activeView === "connections" ? (
+          {activeView === "database" ? (
+            <DatabaseCategories sessionId={activeSessionId} />
+          ) : activeView === "connections" ? (
             <>
               {connections.length === 0 ? (
                 <div className="sidebar-item sidebar-item--empty">
@@ -175,7 +165,6 @@ export function SidebarNav({
                       conn={conn}
                       isSelected={isKeySelected}
                       isActive={isActive}
-                      activeConnectionId={activeConnectionId}
                       navIdx={navIdx}
                       onSelect={handleConnectionSelect}
                       onContextMenu={handleContextMenu}
@@ -186,6 +175,11 @@ export function SidebarNav({
                 })
               )}
             </>
+          ) : activeView === "history" ? (
+            <QueryHistoryPanel
+              activeConnectionId={activeConnectionId}
+              onScriptOpen={onScriptOpen}
+            />
           ) : (
             <>
               {scriptsLoading ? (

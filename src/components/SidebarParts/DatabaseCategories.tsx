@@ -1,19 +1,19 @@
-import { useState, useCallback, useEffect, useContext } from "react";
-import { ChevronRight, Box, Eye, Zap, Folder } from "lucide-react";
+import { useState, useCallback, useEffect, useRef, useContext } from "react";
+import { ChevronRight, Box, Eye, Zap, Folder, Bolt } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import type { SchemaObjects, TableInfo } from "../../types/db";
+import type { SchemaObjects, TableInfo, TriggerInfo } from "../../types/db";
 import { ToastContext } from "../../App";
 
 interface DatabaseCategoriesProps {
-  isActive: boolean;
-  activeConnectionId?: string | null;
+  sessionId: string | null | undefined;
 }
 
 const CATEGORIES = [
-  { key: "tables", label: "Tablas", icon: <Box size={14} /> },
-  { key: "views", label: "Vistas", icon: <Eye size={14} /> },
+  { key: "tables",     label: "Tablas",        icon: <Box size={14} /> },
+  { key: "views",      label: "Vistas",         icon: <Eye size={14} /> },
+  { key: "functions",  label: "Funciones",      icon: <Folder size={14} /> },
   { key: "procedures", label: "Procedimientos", icon: <Zap size={14} /> },
-  { key: "functions", label: "Funciones", icon: <Folder size={14} /> },
+  { key: "triggers",   label: "Triggers",       icon: <Bolt size={14} /> },
 ] as const;
 
 function fmtErr(e: unknown): string {
@@ -25,34 +25,34 @@ function fmtErr(e: unknown): string {
   return "Error desconocido";
 }
 
-export function DatabaseCategories({ isActive, activeConnectionId }: DatabaseCategoriesProps) {
+export function DatabaseCategories({ sessionId }: DatabaseCategoriesProps) {
   const toast = useContext(ToastContext);
-  const [dbCategoriesOpen, setDbCategoriesOpen] = useState<Record<string, boolean>>({
-    tables: true,
-    views: false,
-    procedures: false,
-    functions: false,
+  // ponytail: ref avoids toast identity in useEffect deps → prevents infinite refetch
+  const toastRef = useRef(toast);
+  useEffect(() => { toastRef.current = toast; });
+
+  const [open, setOpen] = useState<Record<string, boolean>>({
+    tables: true, views: false, functions: false, procedures: false, triggers: false,
   });
   const [objects, setObjects] = useState<SchemaObjects | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const toggleDbCategory = useCallback((cat: string) => {
-    setDbCategoriesOpen((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  const toggle = useCallback((cat: string) => {
+    setOpen((prev) => ({ ...prev, [cat]: !prev[cat] }));
   }, []);
 
-  // Deep schema fetch + cache invalidation on DB switch (dib:reload).
   useEffect(() => {
-    if (!isActive || !activeConnectionId) {
+    if (!sessionId) {
       setObjects(null);
       return;
     }
     let cancelled = false;
     const load = () => {
-      setObjects(null); // clear tree instantly while the new structure loads
+      setObjects(null);
       setLoading(true);
-      invoke<SchemaObjects>("fetch_schema_objects", { connectionId: activeConnectionId })
+      invoke<SchemaObjects>("fetch_schema_objects", { connectionId: sessionId })
         .then((o) => { if (!cancelled) setObjects(o); })
-        .catch((e) => { if (!cancelled) toast.error(fmtErr(e)); })
+        .catch((e) => { if (!cancelled) toastRef.current.error(fmtErr(e)); })
         .finally(() => { if (!cancelled) setLoading(false); });
     };
     load();
@@ -61,14 +61,25 @@ export function DatabaseCategories({ isActive, activeConnectionId }: DatabaseCat
       cancelled = true;
       window.removeEventListener("dib:reload", load);
     };
-  }, [isActive, activeConnectionId, toast]);
+  }, [sessionId]); // sessionId only — no toast/objects in deps
 
-  if (!isActive || !activeConnectionId) return null;
+  if (!sessionId) {
+    return (
+      <div className="sidebar-db-categories">
+        <span className="sidebar-item-text sidebar-item-text--muted" style={{ padding: "12px 16px", display: "block" }}>
+          Sin conexión activa
+        </span>
+      </div>
+    );
+  }
 
-  const itemsFor = (key: string): TableInfo[] => {
+  const itemsFor = (key: string): (TableInfo | TriggerInfo)[] => {
     if (!objects) return [];
-    return (objects[key as keyof SchemaObjects] as TableInfo[]) ?? [];
+    return (objects[key as keyof SchemaObjects] as (TableInfo | TriggerInfo)[]) ?? [];
   };
+
+  const displayName = (it: TableInfo | TriggerInfo): string =>
+    "trigger_name" in it ? it.trigger_name : it.name;
 
   return (
     <div className="sidebar-db-categories">
@@ -76,19 +87,16 @@ export function DatabaseCategories({ isActive, activeConnectionId }: DatabaseCat
         const items = itemsFor(cat.key);
         return (
           <div key={cat.key} className="sidebar-db-category">
-            <button
-              className="sidebar-section-toggle"
-              onClick={() => toggleDbCategory(cat.key)}
-            >
+            <button className="sidebar-section-toggle" onClick={() => toggle(cat.key)}>
               <ChevronRight
                 size={12}
-                className={`sidebar-chevron${dbCategoriesOpen[cat.key] ? " sidebar-chevron--open" : ""}`}
+                className={`sidebar-chevron${open[cat.key] ? " sidebar-chevron--open" : ""}`}
               />
               {cat.icon}
               <span className="sidebar-section-title" style={{ margin: 0 }}>{cat.label}</span>
               {objects && <span className="sidebar-section-count">{items.length}</span>}
             </button>
-            {dbCategoriesOpen[cat.key] && (
+            {open[cat.key] && (
               <div className="sidebar-db-category-items">
                 {loading ? (
                   <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 24 }}>
@@ -99,17 +107,20 @@ export function DatabaseCategories({ isActive, activeConnectionId }: DatabaseCat
                     Vacío
                   </span>
                 ) : (
-                  // ponytail: read-only listing — table navigation stays in QueryPanel's navigator
-                  items.map((it) => (
-                    <span
-                      key={`${it.schema ?? ""}.${it.name}`}
-                      className="sidebar-item-text"
-                      style={{ paddingLeft: 24, display: "block" }}
-                      title={it.schema ? `${it.schema}.${it.name}` : it.name}
-                    >
-                      {it.name}
-                    </span>
-                  ))
+                  items.map((it) => {
+                    const name = displayName(it);
+                    const schema = "schema" in it ? it.schema : null;
+                    return (
+                      <span
+                        key={`${schema ?? ""}.${name}`}
+                        className="sidebar-item-text"
+                        style={{ paddingLeft: 24, display: "block" }}
+                        title={schema ? `${schema}.${name}` : name}
+                      >
+                        {name}
+                      </span>
+                    );
+                  })
                 )}
               </div>
             )}

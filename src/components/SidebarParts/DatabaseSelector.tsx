@@ -43,7 +43,10 @@ export function DatabaseSelector({ connections, activeConnectionId, onConnection
         <span className="sidebar-db-selector-icon">
           {getEngineIcon(activeConn.engine, 14)}
         </span>
-        <span className="sidebar-db-selector-name">{activeConn.name}</span>
+        <span className="sidebar-db-selector-info">
+          <span className="sidebar-db-selector-name">{getDbName(activeConn) || activeConn.name}</span>
+          <span className="sidebar-db-selector-detail">{activeConn.name}</span>
+        </span>
         <ChevronDown
           size={12}
           className={`sidebar-db-selector-chevron${dbDropdownOpen ? " sidebar-db-selector-chevron--open" : ""}`}

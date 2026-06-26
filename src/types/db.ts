@@ -27,11 +27,20 @@ export interface TableInfo {
   schema: string | null;
 }
 
+export interface TriggerInfo {
+  trigger_name: string;
+  table_name: string;
+  schema: string | null;
+  event: string;
+  timing: string;
+}
+
 export interface SchemaObjects {
   tables: TableInfo[];
   views: TableInfo[];
   functions: TableInfo[];
   procedures: TableInfo[];
+  triggers: TriggerInfo[];
 }
 
 export interface ColumnInfo {

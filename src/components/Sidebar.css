@@ -410,12 +410,29 @@
   color: var(--brand-bright-blue);
 }
 
-.sidebar-db-selector-name {
+.sidebar-db-selector-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.sidebar-db-selector-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.sidebar-db-selector-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  line-height: 1.2;
 }
 
 .sidebar-db-selector-chevron {

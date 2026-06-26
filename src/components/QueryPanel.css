@@ -324,6 +324,16 @@
   background: color-mix(in srgb, var(--semantic-info, #7aa2f7) 18%, transparent);
 }
 
+.qp-structure-footer-btn--active {
+  border-color: var(--neon-cyan, #67E8F9);
+  background: rgba(103, 232, 249, 0.12);
+  color: var(--neon-cyan, #67E8F9);
+}
+
+.qp-structure-footer-btn--active:hover {
+  background: rgba(103, 232, 249, 0.20);
+}
+
 .qp-grid-wrap {
   flex: 1;
   overflow: hidden;

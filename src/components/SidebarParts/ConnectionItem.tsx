@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Database, Pencil, Trash2 } from "lucide-react";
 import { ENGINE_COLORS, getEngineIcon, getDbName } from "./utils";
-import { DatabaseCategories } from "./DatabaseCategories";
 import type { SavedConnection } from "../../types/db";
 
 interface ConnectionItemProps {
   conn: SavedConnection;
   isSelected: boolean;
   isActive: boolean;
-  activeConnectionId?: string | null;
   navIdx: number;
   onSelect: (navIdx: number, connId: string) => void;
   onContextMenu: (e: React.MouseEvent, connId: string) => void;
@@ -20,7 +18,6 @@ export function ConnectionItem({
   conn,
   isSelected,
   isActive,
-  activeConnectionId,
   navIdx,
   onSelect,
   onContextMenu,
@@ -58,7 +55,7 @@ export function ConnectionItem({
   return (
     <div>
       <div
-        className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected bg-pattern-halftone" : ""}`}
+        className={`sidebar-item${isSelected ? " sidebar-item--keyboard-selected bg-pattern-halftone" : ""}${isActive ? " sidebar-item--active" : ""}`}
         onClick={() => onSelect(navIdx, conn.id)}
         onContextMenu={(e) => onContextMenu(e, conn.id)}
       >
@@ -116,7 +113,6 @@ export function ConnectionItem({
         )}
       </div>
 
-      <DatabaseCategories isActive={isActive} activeConnectionId={activeConnectionId} />
     </div>
   );
 }

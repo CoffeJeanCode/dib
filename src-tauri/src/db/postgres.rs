@@ -6,6 +6,7 @@ use crate::db::{
     ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, ExplainNode, ExplainPlan,
     ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects,
     StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation, TableStructure,
+    TriggerInfo,
 };
 
 /// Try to coerce a filter string to a numeric JSON value so Postgres
@@ -257,7 +258,30 @@ impl DatabaseDriver for PostgresDriver {
             }
         }
 
-        Ok(SchemaObjects { tables, views, materialized_views: Vec::new(), functions, procedures, triggers: Vec::new() })
+        let triggers = sqlx::query(
+            "SELECT t.tgname AS trigger_name, c.relname AS table_name, \
+                    n.nspname AS schema, '' AS event, '' AS timing \
+             FROM pg_trigger t \
+             JOIN pg_class c ON c.oid = t.tgrelid \
+             JOIN pg_namespace n ON n.oid = c.relnamespace \
+             WHERE NOT t.tgisinternal \
+               AND n.nspname NOT IN ('pg_catalog', 'information_schema') \
+             ORDER BY n.nspname, t.tgname",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .into_iter()
+        .map(|r| TriggerInfo {
+            trigger_name: r.try_get("trigger_name").unwrap_or_default(),
+            table_name:   r.try_get("table_name").unwrap_or_default(),
+            schema:       r.try_get("schema").ok(),
+            event:        r.try_get("event").unwrap_or_default(),
+            timing:       r.try_get("timing").unwrap_or_default(),
+        })
+        .collect();
+
+        Ok(SchemaObjects { tables, views, materialized_views: Vec::new(), functions, procedures, triggers })
     }
 
     async fn get_table_schema(

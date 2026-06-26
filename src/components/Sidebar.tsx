@@ -1,36 +1,35 @@
 import { useState, useCallback } from "react";
-import { Database, Pencil, Trash2, FileCode2 } from "lucide-react";
+import { Pencil, Trash2, FileCode2 } from "lucide-react";
 import { useSavedConnections } from "../hooks/useSavedConnections";
 import { useSidebarScripts } from "../hooks/useSidebarScripts";
 import { useContextMenu } from "../hooks/useContextMenu";
 import { ContextMenu } from "./ContextMenu";
-import { SidebarHeader, DatabaseSelector, SidebarNav } from "./SidebarParts";
-import { ENGINE_COLORS } from "./SidebarParts";
+import { DatabaseSelector, SidebarNav } from "./SidebarParts";
 import type { SavedConnection } from "../types/db";
 import "./Sidebar.css";
 
+type Panel = "connections" | "scripts" | "history" | "database";
+
 interface SidebarProps {
-  collapsed: boolean;
+  activeView: Panel;
   width?: number;
   activeConnectionId?: string | null;
-  onToggle: () => void;
+  activeSessionId?: string | null;
   onResizeStart?: (e: React.MouseEvent) => void;
   onConnectionSelect?: (savedId: string) => void;
   onScriptOpen?: (sql: string, title: string, id: string) => void;
   onEditConnection?: (conn: SavedConnection) => void;
-  onSettingsOpen?: () => void;
 }
 
 export function Sidebar({
-  collapsed,
+  activeView,
   width,
   activeConnectionId,
-  onToggle,
+  activeSessionId,
   onResizeStart,
   onConnectionSelect,
   onScriptOpen,
   onEditConnection,
-  onSettingsOpen,
 }: SidebarProps) {
   const { connections, remove, save } = useSavedConnections();
   const { scripts, scriptsLoading, refreshScripts } = useSidebarScripts();
@@ -60,7 +59,7 @@ export function Sidebar({
   }, [closeMenu]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, connId: string) => {
-    if (!activeConnectionId) return; // Restricción para el Home/Empty State
+    if (!activeConnectionId) return;
     setContextConnId(connId);
     openMenu(e);
   }, [openMenu, activeConnectionId]);
@@ -95,65 +94,6 @@ export function Sidebar({
     },
   ];
 
-  if (collapsed) {
-    return (
-      <aside className="sidebar sidebar--collapsed">
-        <div className="sidebar-header">
-          <button className="sidebar-toggle" onClick={onToggle} aria-label="Expand sidebar">
-            »
-          </button>
-        </div>
-
-        <nav className="sidebar-nav">
-          <div className="sidebar-collapsed-icons">
-            {connections.map((conn) => (
-              <div
-                key={conn.id}
-                className={`sidebar-collapsed-icon${conn.id === activeConnectionId ? " sidebar-collapsed-icon--active" : ""}`}
-                title={conn.name}
-                onClick={() => onConnectionSelect?.(conn.id)}
-              >
-                <Database
-                  size={18}
-                  className={`sidebar-icon sidebar-icon--${ENGINE_COLORS[conn.engine?.toLowerCase()] ?? "gray"}`}
-                />
-              </div>
-            ))}
-          </div>
-        </nav>
-
-        <div className="sidebar-flyout">
-          <SidebarHeader onToggle={onToggle} onSettingsOpen={onSettingsOpen} collapsed />
-          <DatabaseSelector
-            connections={connections}
-            activeConnectionId={activeConnectionId}
-            onConnectionSelect={onConnectionSelect}
-          />
-          <nav className="sidebar-nav">
-            <div className="sidebar-section">
-              <span className="sidebar-section-title">Connections</span>
-              {connections.map((conn) => (
-                <div
-                  key={conn.id}
-                  className="sidebar-item"
-                  onClick={() => onConnectionSelect?.(conn.id)}
-                >
-                  <Database
-                    size={14}
-                    className={`sidebar-icon sidebar-icon--${ENGINE_COLORS[conn.engine?.toLowerCase()] ?? "gray"}`}
-                  />
-                  <div className="sidebar-item-texts">
-                    <span className="sidebar-item-text">{conn.name}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </nav>
-        </div>
-      </aside>
-    );
-  }
-
   return (
     <aside
       className="sidebar"
@@ -162,13 +102,14 @@ export function Sidebar({
       {onResizeStart && (
         <div className="sidebar-resize-handle" onMouseDown={onResizeStart} />
       )}
-      <SidebarHeader onToggle={onToggle} onSettingsOpen={onSettingsOpen} />
       <DatabaseSelector
         connections={connections}
         activeConnectionId={activeConnectionId}
         onConnectionSelect={onConnectionSelect}
       />
       <SidebarNav
+        activeView={activeView}
+        activeSessionId={activeSessionId}
         connections={connections}
         scripts={scripts}
         scriptsLoading={scriptsLoading}

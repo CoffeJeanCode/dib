@@ -1,0 +1,79 @@
+.st-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.st-content {
+  position: absolute;
+  white-space: nowrap;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 6px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--fg-base);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+  transition-delay: 0s;
+}
+
+/* show with 450ms delay on hover */
+.st-wrap:hover .st-content {
+  opacity: 1;
+  transition-delay: 450ms;
+}
+
+/* placements */
+.st-wrap--top .st-content {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.st-wrap--bottom .st-content {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.st-wrap--right .st-content {
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.st-wrap--left .st-content {
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.st-label {
+  color: var(--fg-base);
+  font-weight: 500;
+}
+
+.st-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.st-key-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.st-sep {
+  color: var(--text-secondary);
+  font-size: 10px;
+  margin: 0 1px;
+}

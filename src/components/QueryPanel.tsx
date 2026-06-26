@@ -371,21 +371,83 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   );
 
   const openTableStructureTab = useCallback((table: TableInfo) => {
-    const tabId = `structure-${table.schema ?? "public"}-${table.name}`;
+    const structureTabId = `structure-${table.schema ?? "public"}-${table.name}`;
+    const dataTabId = tableTabId(table);
     setTabs((prev) => {
-      if (prev.some((t) => t.id === tabId)) { setActiveTabId(tabId); return prev; }
+      // If structure tab is already the active one, toggle back to data tab
+      if (prev.some((t) => t.id === structureTabId)) {
+        setActiveTabId(structureTabId);
+        return prev;
+      }
       const newTab: TabData = {
-        id: tabId,
+        id: structureTabId,
         type: "table_structure",
         title: table.schema ? `${table.schema}.${table.name}` : table.name,
         isDirty: false,
         payload: { table },
         closeable: true,
       };
-      setActiveTabId(tabId);
+      // Place structure tab right after the data tab for logical grouping
+      const dataTabIdx = prev.findIndex((t) => t.id === dataTabId);
+      setActiveTabId(structureTabId);
+      if (dataTabIdx !== -1) {
+        const next = [...prev];
+        next.splice(dataTabIdx + 1, 0, newTab);
+        return next;
+      }
       return [...prev, newTab];
     });
-  }, []);
+  }, []); // tableTabId is a pure module-level fn, no deps needed
+
+  /** Toggle between data tab and structure tab for the same table. */
+  const toggleStructureTab = useCallback((table: TableInfo) => {
+    const structureTabId = `structure-${table.schema ?? "public"}-${table.name}`;
+    const dataTabId = tableTabId(table);
+    setTabs((prev) => {
+      const structureExists = prev.some((t) => t.id === structureTabId);
+      const dataExists = prev.some((t) => t.id === dataTabId);
+      // If currently on data tab → open/focus structure
+      if (activeTabId === dataTabId) {
+        if (structureExists) { setActiveTabId(structureTabId); return prev; }
+        const newTab: TabData = {
+          id: structureTabId,
+          type: "table_structure",
+          title: table.schema ? `${table.schema}.${table.name}` : table.name,
+          isDirty: false,
+          payload: { table },
+          closeable: true,
+        };
+        const dataTabIdx = prev.findIndex((t) => t.id === dataTabId);
+        setActiveTabId(structureTabId);
+        if (dataTabIdx !== -1) {
+          const next = [...prev];
+          next.splice(dataTabIdx + 1, 0, newTab);
+          return next;
+        }
+        return [...prev, newTab];
+      }
+      // If currently on structure tab → navigate back to data tab
+      if (activeTabId === structureTabId && dataExists) {
+        setActiveTabId(dataTabId);
+        return prev;
+      }
+      // Otherwise open structure tab normally
+      if (!structureExists) {
+        const newTab: TabData = {
+          id: structureTabId,
+          type: "table_structure",
+          title: table.schema ? `${table.schema}.${table.name}` : table.name,
+          isDirty: false,
+          payload: { table },
+          closeable: true,
+        };
+        setActiveTabId(structureTabId);
+        return [...prev, newTab];
+      }
+      setActiveTabId(structureTabId);
+      return prev;
+    });
+  }, [activeTabId]); // tableTabId is a pure module-level fn
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -864,15 +926,23 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                 }}
                 onApply={() => handleCommit(activeTabId)}
               />
-              {activeTab.payload.table && (
-                <button
-                  className="qp-structure-footer-btn"
-                  onClick={() => activeTab.payload.table && openTableStructureTab(activeTab.payload.table)}
-                  title="Ver Estructura de tabla"
-                >
-                  <Layers size={12} /> Structure
-                </button>
-              )}
+              {activeTab.payload.table && (() => {
+                const t = activeTab.payload.table!;
+                const structId = `structure-${t.schema ?? "public"}-${t.name}`;
+                const structureIsOpen = tabs.some((tb) => tb.id === structId);
+                return (
+                  <button
+                    id="dib-structure-toggle-btn"
+                    className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
+                    onClick={() => toggleStructureTab(t)}
+                    title={structureIsOpen ? "Ver datos de la tabla" : "Ver Estructura de tabla (toggle)"}
+                    aria-pressed={structureIsOpen}
+                  >
+                    <Layers size={12} />
+                    {structureIsOpen ? "Datos" : "Structure"}
+                  </button>
+                );
+              })()}
             </div>
           </>
         )}

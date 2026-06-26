@@ -20,8 +20,10 @@ import "./App.css";
 
 interface ActiveConn {
   activeId: string;
+  savedId: string;
   name: string;
   engine: string;
+  dbVersion: number;
 }
 
 interface NavTable { table: TableInfo; v: number }
@@ -98,9 +100,12 @@ function App() {
         const saved = connections.find((c) => c.id === savedId);
         setActive({
           activeId: connInfo.id,
+          savedId: savedId,
           name: saved?.name || connInfo.config.database || connInfo.config.path || connInfo.id,
           engine: connInfo.config.db_type,
+          dbVersion: 0,
         });
+        window.dispatchEvent(new CustomEvent("dib:reload"));
       } catch (e: unknown) {
         const err = e as { code?: string; message?: string };
         if (err?.code === "PASSWORD_REQUIRED") {
@@ -120,8 +125,10 @@ function App() {
   const handleNewConnection = useCallback((connInfo: ConnectionInfo) => {
     setActive({
       activeId: connInfo.id,
+      savedId: connInfo.id,
       name: connInfo.config.database || connInfo.config.path || connInfo.id,
       engine: connInfo.config.db_type,
+      dbVersion: 0,
     });
     setShowNewConnection(false);
   }, []);
@@ -151,7 +158,7 @@ function App() {
     if (!active) return;
     try {
       await connectionService.switchDatabase(active.activeId, dbName);
-      setActive((prev) => prev ? { ...prev, name: dbName } : prev);
+      setActive((prev) => prev ? { ...prev, name: dbName, dbVersion: prev.dbVersion + 1 } : prev);
       window.dispatchEvent(new CustomEvent("dib:reload"));
       info(`Conectado a "${dbName}"`);
     } catch (e: unknown) {
@@ -196,7 +203,8 @@ function App() {
   return (
     <ToastContext.Provider value={{ info, error, warn }}>
     <Layout
-      activeConnectionId={active?.activeId ?? null}
+      activeConnectionId={active?.savedId ?? null}
+      activeSessionId={active?.activeId ?? null}
       onConnectionSelect={handleConnectionSelect}
       onScriptOpen={handleScriptOpen}
       onEditConnection={handleEditConnection}
@@ -274,6 +282,7 @@ function App() {
         </div>
       ) : !connecting && active ? (
         <QueryPanel
+          key={`${active.activeId}-${active.dbVersion}`}
           connectionId={active.activeId}
           connectionName={active.name}
           engine={active.engine}
