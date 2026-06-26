@@ -26,7 +26,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: str
   return (
     <div className={`toast bg-pattern-halftone toast--${toast.type}`}>
       <div className={`toast-badge toast-badge--${toast.type}`}>
-        <Icon size={14} strokeWidth={3} />
+        <Icon size={12} strokeWidth={3} />
       </div>
       <span className="toast-message">{toast.message}</span>
       <button className="toast-copy-btn" onClick={handleCopy} title="Copiar mensaje">

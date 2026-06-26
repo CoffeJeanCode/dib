@@ -26,21 +26,14 @@
 
 .toast--info {
   border-color: var(--brand-turquoise);
-  box-shadow: 2px 2px 0px var(--brand-turquoise);
-  --pattern-color: var(--brand-turquoise);
 }
 
 .toast--error {
-  border-color: var(--comic-red);
-  box-shadow: 2px 2px 0px var(--comic-red);
-  --pattern-color: var(--comic-red);
+  border-color: var(--color-red);
 }
 
 .toast--warning {
   border-color: var(--dt-orange);
-  box-shadow: 2px 2px 0px var(--dt-orange);
-  --pattern-color: var(--dt-orange);
-  background: color-mix(in srgb, #a83900 8%, var(--color-bg-elevated));
 }
 
 .toast-message {

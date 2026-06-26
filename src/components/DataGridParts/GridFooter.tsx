@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { useDataGridContext } from "./DataGridContext";
 
 export const GridFooter = memo(function GridFooter() {
-  const { totalRows, selectedCells, saveIndicator, editState, activeCell, isEditing } = useDataGridContext();
+  const { totalRows, selectedCells, saveIndicator, editState, activeCell, isEditing, footerRight } = useDataGridContext();
 
   return (
     <div className="dg-footer">
@@ -33,9 +33,15 @@ export const GridFooter = memo(function GridFooter() {
       )}
 
       {activeCell && !isEditing && (
-        <span className="dg-footer-pos">
+        <span className="dg-footer-pos" style={footerRight ? { margin: 0 } : undefined}>
           F{activeCell.row + 1} C{activeCell.col + 1}
         </span>
+      )}
+      
+      {footerRight && (
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          {footerRight}
+        </div>
       )}
     </div>
   );

@@ -27,6 +27,7 @@ export interface DataGridProps {
   onFkNavigate?: (targetTable: string, targetColumn: string, value: unknown) => void;
   onSaveError?: (msg: string) => void;
   disableAutoFocus?: boolean;
+  footerRight?: React.ReactNode;
 }
 
 export const DataGrid = memo(function DataGrid({
@@ -48,6 +49,7 @@ export const DataGrid = memo(function DataGrid({
   onFkNavigate,
   onSaveError,
   disableAutoFocus,
+  footerRight,
 }: DataGridProps) {
   const state = useDataGridState({
     columns,
@@ -73,7 +75,7 @@ export const DataGrid = memo(function DataGrid({
   if (!columns.length) return <div className="dg-empty">No data</div>;
 
   return (
-    <DataGridContext.Provider value={{ ...state, columns, filters }}>
+    <DataGridContext.Provider value={{ ...state, columns, filters, footerRight }}>
       <div
         className="dg-wrap"
         role="table"

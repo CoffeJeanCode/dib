@@ -11,24 +11,11 @@ function fmtErr(e: unknown): string {
   return "Unknown error";
 }
 import { useKeybindings } from "../hooks/useKeybindings";
-import {
-  LogOut, Network, ChevronRight,
-  Key, Hash, Type, Calendar,
-  Table2, Pencil, Trash2, Layers,
-} from "lucide-react";
+import { Layers } from "lucide-react";
 import type { TableInfo, ColumnInfo, PagedResult, PendingChange, GridFilter, TableRelation } from "../types/db";
 import type { TabData, TabPayload } from "./Tab";
 import { TableStructureView } from "./TableStructureView";
 
-function colIcon(col: ColumnInfo) {
-  if (col.is_primary_key) return <Key size={12} className="qp-col-icon qp-col-icon--pk" />;
-  const t = col.data_type.toUpperCase();
-  if (/INT|FLOAT|NUMERIC|DECIMAL|REAL|DOUBLE|SERIAL|NUMBER/.test(t))
-    return <Hash size={12} className="qp-col-icon qp-col-icon--num" />;
-  if (/DATE|TIME|TIMESTAMP/.test(t))
-    return <Calendar size={12} className="qp-col-icon qp-col-icon--date" />;
-  return <Type size={12} className="qp-col-icon qp-col-icon--text" />;
-}
 
 import { DataGrid } from "./DataGrid";
 import { CommitFooter } from "./CommitFooter";
@@ -36,9 +23,6 @@ import { TabBar } from "./TabBar";
 import { SqlEditor } from "./SqlEditor";
 import { SchemaVisualizer } from "./SchemaVisualizer";
 import { EmptyWorkspaceState } from "./EmptyWorkspaceState";
-import { ContextMenu } from "./ContextMenu";
-import { DangerConfirmDialog } from "./DangerConfirmDialog";
-import { useContextMenu } from "../hooks/useContextMenu";
 import { ToastContext } from "../App";
 import "./QueryPanel.css";
 
@@ -67,22 +51,19 @@ interface QueryPanelProps {
   connectionId: string;
   connectionName: string;
   engine?: string;
-  onDisconnect?: () => void;
   navigateTo?: { table: TableInfo; v: number } | null;
   openScript?: { sql: string; name: string; id: string; v: number } | null;
-  onDatabaseSwitch?: (dbName: string) => void;
 }
 
-export function QueryPanel({ connectionId, connectionName, engine, onDisconnect, navigateTo, openScript, onDatabaseSwitch }: QueryPanelProps) {
+export function QueryPanel({ connectionId, connectionName, engine, navigateTo, openScript }: QueryPanelProps) {
   const toast = useContext(ToastContext);
   const [tables, setTables] = useState<TableInfo[]>([]);
-  const [tablesLoading, setTablesLoading] = useState(true);
-  const [tablesError, setTablesError] = useState<string | null>(null);
-  const [databases, setDatabases] = useState<string[]>([]);
   const [columnMap, setColumnMap] = useState<Record<string, ColumnInfo[]>>({});
-  const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
 
   const [tabs, setTabs] = useState<TabData[]>([]);
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
+
   const [activeTabId, setActiveTabId] = useState("");
   const closedTabsHistoryRef = useRef<Array<{ tab: TabData; sql?: string }>>([]);
   const tabSqlRef = useRef<Record<string, string>>({}); 
@@ -92,9 +73,8 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   tabSqlRef.current = tabSql;
 
   const [tableRelations, setTableRelations] = useState<Record<string, TableRelation[]>>({});
-  const [tablesWidth, setTablesWidth] = useState(220);
-  const { menuState, openMenu, closeMenu } = useContextMenu();
-  const [contextTable, setContextTable] = useState<TableInfo | null>(null);
+  const tableRelationsRef = useRef(tableRelations);
+  tableRelationsRef.current = tableRelations;
   const [committing, setCommitting] = useState<string | null>(null);
   const [isReloading, setIsReloading] = useState(false);
 
@@ -108,7 +88,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
       });
     }
   }, [isReloading]);
-  const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useKeybindings([
     {
@@ -240,34 +219,11 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   useEffect(() => {
     setTables([]);
     setColumnMap({});
-    setExpandedTables(new Set());
-    setTablesLoading(true);
     let mounted = true;
-    
-    // Fetch tables
     dbService.fetchTables(connectionId)
-      .then((data) => {
-        if (!mounted) return;
-        setTables(data);
-        setTablesLoading(false);
-      })
-      .catch((e: unknown) => {
-        if (!mounted) return;
-        setTablesError(String(e));
-        setTablesLoading(false);
-      });
-
-    // Fetch databases
-    dbService.listDatabases(connectionId)
-      .then((dbs) => {
-        if (!mounted) return;
-        setDatabases(dbs);
-      })
+      .then((data) => { if (mounted) setTables(data); })
       .catch(() => {});
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [connectionId]);
 
   const reloadHandlerRef = useRef<(() => void) | null>(null);
@@ -277,15 +233,18 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     return () => window.removeEventListener("dib:reload", dispatch);
   }, []);
 
-  const loadColumnsIfNeeded = useCallback(
-    (table: TableInfo) => {
-      if (columnMap[table.name] !== undefined) return;
-      dbService.fetchTableSchema(connectionId, table.name, table.schema ?? null)
-        .then((cols) => setColumnMap((prev) => ({ ...prev, [table.name]: cols })))
-        .catch(() => setColumnMap((prev) => ({ ...prev, [table.name]: [] })));
-    },
-    [connectionId, columnMap],
-  );
+  // Batch-load columns when SchemaVisualizer tab opens
+  useEffect(() => {
+    const tab = tabs.find((t) => t.id === activeTabId);
+    if (tab?.type !== "schema" || tables.length === 0) return;
+    tables.forEach((t) => {
+      if (columnMap[t.name] !== undefined) return;
+      dbService.fetchTableSchema(connectionId, t.name, t.schema ?? null)
+        .then((cols) => setColumnMap((prev) => ({ ...prev, [t.name]: cols })))
+        .catch(() => setColumnMap((prev) => ({ ...prev, [t.name]: [] })));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTabId]);
 
   const loadTablePage = useCallback(
     async (tabId: string, table: TableInfo, pageOffset: number, filters: GridFilter[] = []) => {
@@ -339,12 +298,14 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
   const openTableTab = useCallback(
     (table: TableInfo, initialFilters?: GridFilter[]) => {
       const tid = tableTabId(table);
-      const exists = tabs.some((t) => t.id === tid);
+      const exists = tabsRef.current.some((t) => t.id === tid);
+      
       if (exists) {
         setActiveTabId(tid);
         if (initialFilters?.length) loadTablePage(tid, table, 0, initialFilters);
         return;
       }
+      
       const newTab: TabData = {
         id: tid,
         type: "table",
@@ -353,21 +314,29 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
         payload: { table },
         closeable: true,
       };
-      setTabs((prev) => [...prev, newTab]);
+      tabsRef.current = [...tabsRef.current, newTab];
+      setTabs(tabsRef.current);
+      
       setTableTabStates((prev) => ({
         ...prev,
-        [tid]: defaultTableTabState(table),
+        [tid]: prev[tid] || defaultTableTabState(table),
       }));
       setActiveTabId(tid);
       loadTablePage(tid, table, 0, initialFilters ?? []);
-      // Fetch relations for FK navigation (best-effort)
-      if (!tableRelations[table.name]) {
+      
+      if (!tableRelationsRef.current) tableRelationsRef.current = {};
+      if (!tableRelationsRef.current[table.name]) {
+        // Eagerly mark as loading to prevent double fetches
+        tableRelationsRef.current[table.name] = [];
         dbService.fetchTableRelations(connectionId, table.name, table.schema ?? null)
-          .then((rels) => setTableRelations((prev) => ({ ...prev, [table.name]: rels })))
+          .then((rels) => {
+             tableRelationsRef.current[table.name] = rels;
+             setTableRelations((prev) => ({ ...prev, [table.name]: rels }));
+          })
           .catch(() => {});
       }
     },
-    [tabs, loadTablePage, tableRelations, connectionId],
+    [loadTablePage, connectionId],
   );
 
   const openTableStructureTab = useCallback((table: TableInfo) => {
@@ -595,9 +564,24 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     setActiveTabId(tabId);
   }, []);
 
-  const openSnippetTab = useCallback((sql: string, label: string) => {
-    openSqlTab(sql, label);
-  }, [openSqlTab]);
+  // Dispatch active table to left sidebar for active state highlighting
+  useEffect(() => {
+    const tab = tabs.find((t) => t.id === activeTabId);
+    const detail = (tab?.type === "table" && tab.payload.table)
+      ? { name: tab.payload.table.name, schema: tab.payload.table.schema ?? null }
+      : null;
+    window.dispatchEvent(new CustomEvent("dib:active-table", { detail }));
+  }, [activeTabId, tabs]);
+
+  // Listen for relation tab open from left sidebar context menu
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const table = (e as CustomEvent<TableInfo>).detail;
+      if (table) openRelationTab(table);
+    };
+    window.addEventListener("dib:open-table-relations", handler);
+    return () => window.removeEventListener("dib:open-table-relations", handler);
+  }, [openRelationTab]);
 
   const handleImportScriptAndSave = useCallback((sql: string, name: string) => {
     const newId = crypto.randomUUID();
@@ -605,24 +589,12 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     workspaceService.saveInternalScript(newId, name, sql).catch(console.error);
   }, [openSqlTab]);
 
-  const toggleExpand = useCallback((table: TableInfo) => {
-    setExpandedTables((prev) => {
-      const next = new Set(prev);
-      if (next.has(table.name)) {
-        next.delete(table.name);
-      } else {
-        next.add(table.name);
-        loadColumnsIfNeeded(table);
-      }
-      return next;
-    });
-  }, [loadColumnsIfNeeded]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
   const activeTableState = activeTabId ? tableTabStates[activeTabId] ?? null : null;
 
-  const gridRows = useMemo(() => activeTableState?.result?.rows ?? [], [activeTableState]);
-  const gridCols = useMemo(() => activeTableState?.result?.columns ?? [], [activeTableState]);
+  const gridRows = useMemo(() => activeTableState?.result?.rows ?? [], [activeTableState?.result?.rows]);
+  const gridCols = useMemo(() => activeTableState?.result?.columns ?? [], [activeTableState?.result?.columns]);
 
   const activeTabIdRef = useRef(activeTabId);
   activeTabIdRef.current = activeTabId;
@@ -676,12 +648,21 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     );
   }, []);
 
-  const handleGridPendingChanges = useCallback((changes: import("../types/db").PendingChange[]) => {
-    const tabId = activeTabIdRef.current;
-    updateTableTabState(tabId, { pendingChanges: changes });
-    if (changes.length > 0) markTabDirty(tabId);
-    else markTabClean(tabId);
-  }, [updateTableTabState, markTabDirty, markTabClean]);
+  const handleGridPendingChanges = useCallback(
+    (changes: import("../types/db").PendingChange[]) => {
+      if (!activeTabId) return;
+      setTableTabStates((prev) => {
+        const existing = prev[activeTabId];
+        if (!existing) return prev;
+        // Avoid infinite loop if no changes and it was already empty
+        if (changes.length === 0 && existing.pendingChanges.length === 0) return prev;
+        return { ...prev, [activeTabId]: { ...existing, pendingChanges: changes } };
+      });
+      if (changes.length > 0) markTabDirty(activeTabId);
+      else markTabClean(activeTabId);
+    },
+    [activeTabId, markTabDirty, markTabClean, setTableTabStates],
+  );
 
   const handleGridFiltersChange = useCallback((newFilters: import("../types/db").GridFilter[]) => {
     const tabId = activeTabIdRef.current;
@@ -718,25 +699,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
     toast.warn(`Rollback: ${msg}`);
   }, [toast]);
 
-  const handleTablesResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startW = tablesWidth;
-    let rafId: number;
-    const onMove = (ev: MouseEvent) => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const w = Math.max(140, Math.min(420, startW + ev.clientX - startX));
-        setTablesWidth(w);
-      });
-    };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  }, [tablesWidth]);
 
   const totalRows = activeTableState?.result?.total ?? 0;
   const currentPage = Math.floor((activeTableState?.offset ?? 0) / PAGE_SIZE);
@@ -744,90 +706,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
 
   return (
     <div className="qp">
-      <aside className="qp-tables" style={{ width: tablesWidth, minWidth: tablesWidth }}>
-        <div className="qp-tables-header">
-          {databases.length > 0 ? (
-            <select 
-              className="qp-db-select" 
-              value={connectionName}
-              onChange={(e) => onDatabaseSwitch?.(e.target.value)}
-              title="Cambiar Base de Datos"
-            >
-              <option value={connectionName} disabled hidden>{connectionName}</option>
-              {databases.map(db => (
-                <option key={db} value={db}>{db}</option>
-              ))}
-            </select>
-          ) : (
-            <span className="qp-db-name" title={connectionName}>{connectionName}</span>
-          )}
-          {onDisconnect && (
-            <button className="qp-disconnect-btn" onClick={onDisconnect} title="Disconnect">
-              <LogOut size={14} />
-            </button>
-          )}
-        </div>
-
-        {tablesLoading && <div className="qp-placeholder">Loading tables…</div>}
-        {tablesError && <div className="qp-error">{tablesError}</div>}
-        {!tablesLoading && !tablesError && tables.length === 0 && (
-          <div className="qp-placeholder">No tables found</div>
-        )}
-
-        <ul className="qp-table-list">
-          {tables.map((t) => {
-            const label = t.schema ? `${t.schema}.${t.name}` : t.name;
-            const tid = tableTabId(t);
-            const isActive = activeTabId === tid;
-            const expanded = expandedTables.has(t.name);
-            const cols = columnMap[t.name];
-            return (
-              <li key={label} className="qp-tree-node">
-                <div
-                  className={`qp-table-item${isActive ? " qp-table-item--active bg-pattern-halftone" : ""}`}
-                  onClick={() => openTableTab(t)}
-                  onContextMenu={(e) => { e.preventDefault(); setContextTable(t); openMenu(e); }}
-                  title={label}
-                >
-                  <button
-                    className={`qp-chevron${expanded ? " qp-chevron--open" : ""}`}
-                    onClick={(e) => { e.stopPropagation(); toggleExpand(t); }}
-                    aria-label={expanded ? "Collapse" : "Expand"}
-                  >
-                    <ChevronRight size={12} />
-                  </button>
-                  <span className="qp-table-icon">▤</span>
-                  <span className="qp-table-name">{t.name}</span>
-                </div>
-                {expanded && (
-                  <ul className="qp-col-list">
-                    {cols === undefined ? (
-                      <li className="qp-col-item qp-col-item--muted">…</li>
-                    ) : cols.length === 0 ? (
-                      <li className="qp-col-item qp-col-item--muted">Sin columnas</li>
-                    ) : (
-                      cols.map((col) => (
-                        <li key={col.name} className="qp-col-item">
-                          {colIcon(col)}
-                          <span className="qp-col-name">{col.name}</span>
-                          <span className="qp-col-type">{col.data_type}</span>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </aside>
-
-      <div
-        className="qp-resize-handle"
-        onMouseDown={handleTablesResizeStart}
-        title="Drag to resize"
-      />
-
       <div className="qp-data">
         {tabs.length > 0 && (
           <TabBar
@@ -883,6 +761,25 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                   onSaveError={handleGridSaveError}
                   activeCell={activeTab.payload.activeCell ?? null}
                   onActiveCellChange={handleGridActiveCellChange}
+                  footerRight={
+                    activeTab.payload.table ? (() => {
+                      const t = activeTab.payload.table!;
+                      const structId = `structure-${t.schema ?? "public"}-${t.name}`;
+                      const structureIsOpen = tabs.some((tb) => tb.id === structId);
+                      return (
+                        <button
+                          id="dib-structure-toggle-btn"
+                          className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
+                          onClick={() => toggleStructureTab(t)}
+                          title={structureIsOpen ? "Ver datos de la tabla" : "Ver Estructura de tabla (toggle)"}
+                          aria-pressed={structureIsOpen}
+                        >
+                          <Layers size={12} />
+                          {structureIsOpen ? "Datos" : "Structure"}
+                        </button>
+                      );
+                    })() : undefined
+                  }
                 />
               )}
             </div>
@@ -926,23 +823,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
                 }}
                 onApply={() => handleCommit(activeTabId)}
               />
-              {activeTab.payload.table && (() => {
-                const t = activeTab.payload.table!;
-                const structId = `structure-${t.schema ?? "public"}-${t.name}`;
-                const structureIsOpen = tabs.some((tb) => tb.id === structId);
-                return (
-                  <button
-                    id="dib-structure-toggle-btn"
-                    className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
-                    onClick={() => toggleStructureTab(t)}
-                    title={structureIsOpen ? "Ver datos de la tabla" : "Ver Estructura de tabla (toggle)"}
-                    aria-pressed={structureIsOpen}
-                  >
-                    <Layers size={12} />
-                    {structureIsOpen ? "Datos" : "Structure"}
-                  </button>
-                );
-              })()}
             </div>
           </>
         )}
@@ -981,124 +861,6 @@ export function QueryPanel({ connectionId, connectionName, engine, onDisconnect,
 
         {!activeTab && <EmptyWorkspaceState />}
       </div>
-
-      <ContextMenu
-        open={menuState.open}
-        x={menuState.x}
-        y={menuState.y}
-        items={[
-          {
-            icon: <Layers size={14} />,
-            label: "Ver Estructura",
-            onClick: () => {
-              if (contextTable) openTableStructureTab(contextTable);
-              setContextTable(null); closeMenu();
-            },
-          },
-          {
-            icon: <Network size={14} />,
-            label: "Visualizar Relaciones",
-            onClick: () => {
-              if (contextTable) openRelationTab(contextTable);
-              setContextTable(null); closeMenu();
-            },
-          },
-          {
-            icon: <Table2 size={14} />,
-            label: "Generar SELECT",
-            onClick: () => {
-              const t = contextTable;
-              setContextTable(null); closeMenu();
-              if (t) {
-                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "select")
-                  .then((sql) => openSnippetTab(sql, `SELECT ${t.name}`))
-                  .catch((e) => toast.error(fmtErr(e)));
-              }
-            },
-          },
-          {
-            icon: <Table2 size={14} />,
-            label: "Generar DDL (CREATE TABLE)",
-            onClick: () => {
-              const t = contextTable;
-              setContextTable(null); closeMenu();
-              if (t) {
-                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "ddl")
-                  .then((sql) => openSnippetTab(sql, `DDL ${t.name}`))
-                  .catch((e) => toast.error(fmtErr(e)));
-              }
-            },
-          },
-          {
-            icon: <Pencil size={14} />,
-            label: "Generar INSERT",
-            onClick: () => {
-              const t = contextTable;
-              setContextTable(null); closeMenu();
-              if (t) {
-                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "insert")
-                  .then((sql) => openSnippetTab(sql, `INSERT ${t.name}`))
-                  .catch((e) => toast.error(fmtErr(e)));
-              }
-            },
-          },
-          {
-            icon: <Pencil size={14} />,
-            label: "Generar UPDATE",
-            onClick: () => {
-              const t = contextTable;
-              setContextTable(null); closeMenu();
-              if (t) {
-                dbService.generateCrudSql(connectionId, t.name, t.schema ?? null, "update")
-                  .then((sql) => openSnippetTab(sql, `UPDATE ${t.name}`))
-                  .catch((e) => toast.error(fmtErr(e)));
-              }
-            },
-          },
-          {
-            icon: <Trash2 size={14} />,
-            label: "Vaciar Tabla (TRUNCATE)",
-            danger: true,
-            onClick: () => {
-              if (contextTable)
-                openSnippetTab(`TRUNCATE TABLE ${contextTable.name};`, `TRUNCATE ${contextTable.name}`);
-              setContextTable(null); closeMenu();
-            },
-          },
-          {
-            icon: <Trash2 size={14} />,
-            label: "DROP TABLE",
-            danger: true,
-            onClick: () => {
-              const t = contextTable;
-              setContextTable(null); closeMenu();
-              if (!t) return;
-              const label = t.schema ? `${t.schema}.${t.name}` : t.name;
-              setDangerDialog({
-                message: `¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`,
-                onConfirm: () => {
-                  setDangerDialog(null);
-                  dbService.dropTable(connectionId, t.name, t.schema ?? null)
-                    .then(() => {
-                      toast.info(`Tabla "${label}" eliminada`);
-                      window.dispatchEvent(new CustomEvent("dib:reload"));
-                      dbService.fetchTables(connectionId).then(setTables).catch(() => {});
-                    })
-                    .catch((e) => toast.error(fmtErr(e)));
-                },
-              });
-            },
-          },
-        ]}
-        onClose={() => { setContextTable(null); closeMenu(); }}
-      />
-      {dangerDialog && (
-        <DangerConfirmDialog
-          message={dangerDialog.message}
-          onConfirm={dangerDialog.onConfirm}
-          onCancel={() => setDangerDialog(null)}
-        />
-      )}
     </div>
   );
 }

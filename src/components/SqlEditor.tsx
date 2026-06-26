@@ -77,10 +77,14 @@ export function SqlEditor({
 
     const onMove = (moveEvt: MouseEvent) => {
       if (!isResizingRef.current) return;
-      const delta = moveEvt.clientY - startYRef.current;
-      const newH = Math.max(100, startHRef.current + delta);
-      if (editorContainerRef.current) {
-        editorContainerRef.current.style.height = `${newH}px`;
+      const editorEl = editorContainerRef.current;
+      if (editorEl) {
+        const parentH = editorEl.parentElement?.clientHeight ?? window.innerHeight;
+        // toolbar ~40px, resizer 4px, min result panel 40px
+        const maxH = parentH - 84;
+        const delta = moveEvt.clientY - startYRef.current;
+        const newH = Math.min(Math.max(100, startHRef.current + delta), maxH);
+        editorEl.style.height = `${newH}px`;
       }
     };
 

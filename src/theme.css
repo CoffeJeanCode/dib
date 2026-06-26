@@ -504,3 +504,27 @@ a:focus-visible {
   font-size: var(--font-size-sm);
   z-index: 1000;
 }
+
+/* ── Custom Scrollbars ────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border: 2px solid var(--color-bg);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-dark);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

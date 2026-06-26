@@ -101,7 +101,7 @@ function App() {
         setActive({
           activeId: connInfo.id,
           savedId: savedId,
-          name: saved?.name || connInfo.config.database || connInfo.config.path || connInfo.id,
+          name: connInfo.config.database || connInfo.config.path || saved?.name || connInfo.id,
           engine: connInfo.config.db_type,
           dbVersion: 0,
         });
@@ -126,7 +126,7 @@ function App() {
     setActive({
       activeId: connInfo.id,
       savedId: connInfo.id,
-      name: connInfo.config.database || connInfo.config.path || connInfo.id,
+      name: connInfo.config.database || connInfo.config.path || connInfo.id,  // DB name, not instance label
       engine: connInfo.config.db_type,
       dbVersion: 0,
     });
@@ -206,7 +206,11 @@ function App() {
       activeConnectionId={active?.savedId ?? null}
       activeSessionId={active?.activeId ?? null}
       onConnectionSelect={handleConnectionSelect}
+      connectionName={active?.name}
       onScriptOpen={handleScriptOpen}
+      onTableSelect={handleTableSelect}
+      onDatabaseSwitch={handleDatabaseSwitch}
+      onDisconnect={handleDisconnect}
       onEditConnection={handleEditConnection}
       onSettingsOpen={() => setSettingsOpen(true)}
     >
@@ -286,10 +290,8 @@ function App() {
           connectionId={active.activeId}
           connectionName={active.name}
           engine={active.engine}
-          onDisconnect={handleDisconnect}
           navigateTo={navigateTo}
           openScript={openScript}
-          onDatabaseSwitch={handleDatabaseSwitch}
         />
       ) : (
         !connecting && (

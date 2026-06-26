@@ -104,13 +104,15 @@
   margin-bottom: 6px;
   transition: border-color var(--transition-fastest), box-shadow var(--transition-fastest);
 }
+
 .ve-node:hover {
   border-color: var(--color-highlight);
 }
+
 .ve-node--seqscan {
   border-color: var(--ve-cost-high);
-  box-shadow: 2px 2px 0px var(--ve-cost-high);
 }
+
 .ve-node--d1 { margin-left: 20px; }
 .ve-node--d2 { margin-left: 40px; }
 .ve-node--d3 { margin-left: 60px; }

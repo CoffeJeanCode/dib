@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Database, FileCode2, Clock, Settings, LayoutGrid } from "lucide-react";
 import { useUiState } from "../hooks/useUiState";
 import { useKeybindings } from "../hooks/useKeybindings";
 import { Sidebar } from "./Sidebar";
-import type { SavedConnection } from "../types/db";
+import type { SavedConnection, TableInfo } from "../types/db";
 import "./Layout.css";
 
 const SIDEBAR_MIN = 160;
@@ -23,14 +23,25 @@ interface LayoutProps {
   activeConnectionId?: string | null;
   activeSessionId?: string | null;
   onConnectionSelect?: (connectionId: string) => void;
+  connectionName?: string;
   onScriptOpen?: (sql: string, title: string, id: string) => void;
+  onTableSelect?: (table: TableInfo) => void;
+  onDatabaseSwitch?: (db: string) => void;
+  onDisconnect?: () => void;
   onEditConnection?: (conn: SavedConnection) => void;
   onSettingsOpen?: () => void;
 }
 
-export function Layout({ children, activeConnectionId, activeSessionId, onConnectionSelect, onScriptOpen, onEditConnection, onSettingsOpen }: LayoutProps) {
+export function Layout({ children, activeConnectionId, activeSessionId, connectionName, onConnectionSelect, onScriptOpen, onTableSelect, onDatabaseSwitch, onDisconnect, onEditConnection, onSettingsOpen }: LayoutProps) {
   const { state, loaded, updateState } = useUiState();
-  const [activePanel, setActivePanel] = useState<Panel>("connections");
+  const [activePanel, setActivePanel] = useState<Panel>(activeConnectionId ? "database" : "connections");
+
+  useEffect(() => {
+    if (activeConnectionId) {
+      setActivePanel("database");
+      if (!state.is_sidebar_open) updateState({ is_sidebar_open: true });
+    }
+  }, [activeConnectionId]);
 
   const handleActivityClick = useCallback((panel: Panel) => {
     if (state.is_sidebar_open && activePanel === panel) {
@@ -150,8 +161,12 @@ export function Layout({ children, activeConnectionId, activeSessionId, onConnec
           activeConnectionId={activeConnectionId}
           activeSessionId={activeSessionId}
           onResizeStart={handleResizeStart}
+          connectionName={connectionName}
           onConnectionSelect={onConnectionSelect}
           onScriptOpen={onScriptOpen}
+          onTableSelect={onTableSelect}
+          onDatabaseSwitch={onDatabaseSwitch}
+          onDisconnect={onDisconnect}
           onEditConnection={onEditConnection}
         />
       )}

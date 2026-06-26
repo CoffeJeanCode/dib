@@ -392,11 +392,6 @@
   outline: none;
 }
 
-.dg-wrap:focus-visible {
-  outline: 2px solid var(--brand-turquoise);
-  outline-offset: -2px;
-}
-
 /* ── FK navigation ───────────────────────────────────────── */
 .dg-cell--fk {
   cursor: default;

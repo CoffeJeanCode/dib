@@ -222,8 +222,14 @@ export function useDataGridState({
   useEffect(() => {
     setColumnWidths((prev) => {
       const next = { ...prev };
-      for (const col of columns) if (!(col in next)) next[col] = DEFAULT_COL_W;
-      return next;
+      let changed = false;
+      for (const col of columns) {
+        if (!(col in next)) {
+          next[col] = DEFAULT_COL_W;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
     });
   }, [columns]);
 
@@ -613,6 +619,68 @@ export function useDataGridState({
     navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
   }, [selectedCells, editState.rows]);
 
+  const cutSelection = useCallback(() => {
+    if (!selectedCells.size || !tableName) return;
+    copySelection();
+    const nextRows = editState.rows.map((r) => [...(r as unknown[])]) as unknown[][];
+    const nextChanges = new Map(editState.changes);
+    for (const id of selectedCells) {
+      const [r, c] = id.split(":").map(Number);
+      if (editState.ghostRowIds.has(r)) continue;
+      const col = columns[c];
+      const pkStr = getPkStr(r, editState.rows);
+      const key = makeKey(pkStr, col);
+      const original = rows[r]?.[c];
+      if (cellStr(original) !== cellStr(null)) {
+        nextChanges.set(key, {
+          id: key, type: "update", table: tableName,
+          row_index: r, column: col,
+          column_type: colInfoMap[col]?.data_type,
+          old_value: original, new_value: null,
+          row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
+        } as import("../types/db").PendingChange);
+      } else if (nextChanges.has(key)) {
+        nextChanges.delete(key);
+      }
+      nextRows[r][c] = null;
+    }
+    mutate({ rows: nextRows, changes: nextChanges });
+  }, [selectedCells, tableName, copySelection, editState, rows, columns, colInfoMap, pkColIdx, getPkStr, mutate]);
+
+  const pasteFromClipboard = useCallback(async () => {
+    if (!activeCell || !tableName) return;
+    const text = await navigator.clipboard.readText().catch(() => "");
+    if (!text) return;
+    const pasteRows = text.split("\n").map((line) => line.split("\t"));
+    const nextRows = editState.rows.map((r) => [...(r as unknown[])]) as unknown[][];
+    const nextChanges = new Map(editState.changes);
+    for (let dr = 0; dr < pasteRows.length; dr++) {
+      const r = activeCell.row + dr;
+      if (r >= editState.rows.length) break;
+      if (editState.ghostRowIds.has(r)) continue;
+      for (let dc = 0; dc < pasteRows[dr].length; dc++) {
+        const c = activeCell.col + dc;
+        if (c >= columns.length) break;
+        const col = columns[c];
+        const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
+        const pkStr = getPkStr(r, editState.rows);
+        const key = makeKey(pkStr, col);
+        const original = rows[r]?.[c];
+        if (cellStr(original) !== cellStr(newValue)) {
+          nextChanges.set(key, {
+            id: key, type: "update", table: tableName,
+            row_index: r, column: col,
+            column_type: colInfoMap[col]?.data_type,
+            old_value: original, new_value: newValue,
+            row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
+          } as import("../types/db").PendingChange);
+        }
+        nextRows[r][c] = newValue;
+      }
+    }
+    mutate({ rows: nextRows, changes: nextChanges });
+  }, [activeCell, tableName, editState, rows, columns, colInfoMap, pkColIdx, getPkStr, mutate]);
+
   // Keyboard
   const handleGridKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -632,6 +700,8 @@ export function useDataGridState({
         if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); return; }
         if (e.key === "y" || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); return; }
         if (e.key === "c" && !isEditing) { e.preventDefault(); copySelection(); return; }
+        if (e.key === "x" && !isEditing) { e.preventDefault(); cutSelection(); return; }
+        if (e.key === "v" && !isEditing) { e.preventDefault(); void pasteFromClipboard(); return; }
         if (e.key === "n") { e.preventDefault(); insertGhostRow(); return; }
         if (e.key === "d" && !isEditing) {
           e.preventDefault();

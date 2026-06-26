@@ -5,7 +5,7 @@ import { useSidebarScripts } from "../hooks/useSidebarScripts";
 import { useContextMenu } from "../hooks/useContextMenu";
 import { ContextMenu } from "./ContextMenu";
 import { DatabaseSelector, SidebarNav } from "./SidebarParts";
-import type { SavedConnection } from "../types/db";
+import type { SavedConnection, TableInfo } from "../types/db";
 import "./Sidebar.css";
 
 type Panel = "connections" | "scripts" | "history" | "database";
@@ -17,7 +17,11 @@ interface SidebarProps {
   activeSessionId?: string | null;
   onResizeStart?: (e: React.MouseEvent) => void;
   onConnectionSelect?: (savedId: string) => void;
+  connectionName?: string;
   onScriptOpen?: (sql: string, title: string, id: string) => void;
+  onTableSelect?: (table: TableInfo) => void;
+  onDatabaseSwitch?: (db: string) => void;
+  onDisconnect?: () => void;
   onEditConnection?: (conn: SavedConnection) => void;
 }
 
@@ -27,8 +31,12 @@ export function Sidebar({
   activeConnectionId,
   activeSessionId,
   onResizeStart,
+  connectionName,
   onConnectionSelect,
   onScriptOpen,
+  onTableSelect,
+  onDatabaseSwitch,
+  onDisconnect,
   onEditConnection,
 }: SidebarProps) {
   const { connections, remove, save } = useSavedConnections();
@@ -97,16 +105,23 @@ export function Sidebar({
   return (
     <aside
       className="sidebar"
-      style={width ? { width, minWidth: width } : undefined}
+      style={width ? { "--sidebar-width": `${width}px` } as React.CSSProperties : undefined}
     >
       {onResizeStart && (
         <div className="sidebar-resize-handle" onMouseDown={onResizeStart} />
       )}
+
+      {/* ── Unified Database/Connection Selector ── */}
       <DatabaseSelector
         connections={connections}
         activeConnectionId={activeConnectionId}
+        activeSessionId={activeSessionId}
+        connectionName={connectionName}
         onConnectionSelect={onConnectionSelect}
+        onDatabaseSwitch={onDatabaseSwitch}
+        onDisconnect={onDisconnect}
       />
+
       <SidebarNav
         activeView={activeView}
         activeSessionId={activeSessionId}
@@ -115,7 +130,11 @@ export function Sidebar({
         scriptsLoading={scriptsLoading}
         activeConnectionId={activeConnectionId}
         onConnectionSelect={onConnectionSelect}
+        connectionName={connectionName}
         onScriptOpen={onScriptOpen}
+        onTableSelect={onTableSelect}
+        onDatabaseSwitch={onDatabaseSwitch}
+        onDisconnect={onDisconnect}
         onRefreshScripts={refreshScripts}
         onDeleteConnection={deleteConn}
         onUndoDelete={undoDelete}

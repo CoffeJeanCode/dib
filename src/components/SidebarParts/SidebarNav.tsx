@@ -4,7 +4,7 @@ import { ConnectionItem } from "./ConnectionItem";
 import { ScriptItem } from "./ScriptItem";
 import { QueryHistoryPanel } from "./QueryHistoryPanel";
 import { DatabaseCategories } from "./DatabaseCategories";
-import type { InternalScript, SavedConnection } from "../../types/db";
+import type { InternalScript, SavedConnection, TableInfo } from "../../types/db";
 
 interface SidebarNavProps {
   activeView: "connections" | "scripts" | "history" | "database";
@@ -14,7 +14,11 @@ interface SidebarNavProps {
   scriptsLoading: boolean;
   activeConnectionId?: string | null;
   onConnectionSelect?: (savedId: string) => void;
+  connectionName?: string;
   onScriptOpen?: (sql: string, title: string, id: string) => void;
+  onTableSelect?: (table: TableInfo) => void;
+  onDatabaseSwitch?: (db: string) => void;
+  onDisconnect?: () => void;
   onRefreshScripts: () => void;
   onDeleteConnection: (conn: SavedConnection) => void;
   onUndoDelete: () => void;
@@ -33,8 +37,12 @@ export function SidebarNav({
   scripts,
   scriptsLoading,
   activeConnectionId,
+  connectionName,
   onConnectionSelect,
   onScriptOpen,
+  onTableSelect,
+  onDatabaseSwitch,
+  onDisconnect,
   onRefreshScripts,
   onDeleteConnection,
   onUndoDelete,
@@ -138,7 +146,7 @@ export function SidebarNav({
     <>
       <nav
         id="dib-sidebar-nav"
-        className="sidebar-nav"
+        className="sidebar-nav dg-scroll"
         tabIndex={0}
         onKeyDown={handleNavKeyDown}
         onFocus={() => { if (selectedIdx < 0 && navItems.length > 0) setSelectedIdx(0); }}
@@ -146,7 +154,14 @@ export function SidebarNav({
       >
         <div className="sidebar-section">
           {activeView === "database" ? (
-            <DatabaseCategories sessionId={activeSessionId} />
+            <DatabaseCategories
+              sessionId={activeSessionId}
+              connectionName={connectionName}
+              onTableSelect={onTableSelect}
+              onScriptOpen={onScriptOpen}
+              onDatabaseSwitch={onDatabaseSwitch}
+              onDisconnect={onDisconnect}
+            />
           ) : activeView === "connections" ? (
             <>
               {connections.length === 0 ? (
