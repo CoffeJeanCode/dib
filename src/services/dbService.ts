@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { TableInfo, ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan } from "../types/db";
+import type { TableInfo, ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure } from "../types/db";
 
 export const dbService = {
   fetchTables: (connectionId: string) =>
@@ -70,4 +70,7 @@ export const dbService = {
 
   listDatabases: (connectionId: string) =>
     invoke<string[]>("list_databases", { connectionId }),
+
+  getTableStructure: (connectionId: string, tableName: string, schema: string | null) =>
+    invoke<TableStructure>("get_table_structure", { connectionId, tableName, schema }),
 };

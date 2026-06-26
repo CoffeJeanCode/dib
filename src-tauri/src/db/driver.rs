@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::db::types::{
     ChangeRow, ColumnInfo, DbConfig, DdlResult, ExplainPlan,
     GridFilter, PagedResult, QueryError, QueryResult,
-    SchemaChange, SchemaObjects, TableInfo, TableRelation,
+    SchemaChange, SchemaObjects, TableInfo, TableRelation, TableStructure,
 };
 
 #[async_trait]
@@ -73,6 +73,12 @@ pub trait DatabaseDriver: Send + Sync {
     async fn cancel_query(&self, pid: i32) -> Result<bool, QueryError> {
         let _ = pid;
         Err(QueryError { message: "Query cancellation not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
+    }
+    /// Return full structural anatomy: columns, indexes, foreign keys, triggers.
+    /// Only implemented for PostgreSQL; other drivers return an error.
+    async fn get_table_structure(&self, table_name: &str, schema: Option<&str>) -> Result<TableStructure, QueryError> {
+        let _ = (table_name, schema);
+        Err(QueryError { message: "Structure introspection not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
     }
     #[allow(dead_code)]
     fn driver_name(&self) -> &'static str;

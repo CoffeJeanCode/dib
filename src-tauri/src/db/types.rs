@@ -210,3 +210,52 @@ pub struct ExplainPlan {
     pub planning_time_ms: Option<f64>,
     pub execution_time_ms: Option<f64>,
 }
+
+// ── Table Structure ───────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StructureColumn {
+    pub name: String,
+    pub data_type: String,
+    pub is_primary_key: bool,
+    pub is_nullable: bool,
+    pub default_value: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StructureIndex {
+    pub name: String,
+    pub columns: Vec<String>,
+    pub is_unique: bool,
+    pub is_primary: bool,
+    pub index_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ForeignKey {
+    pub name: String,
+    pub columns: Vec<String>,
+    pub foreign_table: String,
+    pub foreign_schema: Option<String>,
+    pub foreign_columns: Vec<String>,
+    pub on_delete: String,
+    pub on_update: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StructureTrigger {
+    pub name: String,
+    pub event: String,
+    pub timing: String,
+    pub function_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TableStructure {
+    pub table_name: String,
+    pub schema: Option<String>,
+    pub columns: Vec<StructureColumn>,
+    pub indexes: Vec<StructureIndex>,
+    pub foreign_keys: Vec<ForeignKey>,
+    pub triggers: Vec<StructureTrigger>,
+}

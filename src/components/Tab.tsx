@@ -1,8 +1,8 @@
-import { Table2, Network, FileCode2, Circle, Wrench } from "lucide-react";
+import { Table2, Network, FileCode2, Circle, Wrench, Layers } from "lucide-react";
 import type { TableInfo } from "../types/db";
 import "./Tab.css";
 
-export type TabType = "table" | "sql_editor" | "schema" | "table_builder";
+export type TabType = "table" | "sql_editor" | "schema" | "table_builder" | "table_structure";
 
 export interface TabPayload {
   table?: TableInfo;
@@ -42,6 +42,7 @@ const ICON_MAP: Record<TabType, React.ReactNode> = {
   sql_editor: <FileCode2 size={13} />,
   schema: <Network size={13} />,
   table_builder: <Wrench size={13} />,
+  table_structure: <Layers size={13} />,
 };
 
 export function Tab({ tab, active, onSelect, onClose, dragListeners, dragAttributes, style, dragging }: TabProps) {

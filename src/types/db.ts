@@ -181,3 +181,45 @@ export interface ExplainPlan {
   planning_time_ms: number | null;
   execution_time_ms: number | null;
 }
+
+export interface StructureColumn {
+  name: string;
+  data_type: string;
+  is_primary_key: boolean;
+  is_nullable: boolean;
+  default_value: string | null;
+}
+
+export interface StructureIndex {
+  name: string;
+  columns: string[];
+  is_unique: boolean;
+  is_primary: boolean;
+  index_type: string;
+}
+
+export interface ForeignKey {
+  name: string;
+  columns: string[];
+  foreign_table: string;
+  foreign_schema: string | null;
+  foreign_columns: string[];
+  on_delete: string;
+  on_update: string;
+}
+
+export interface StructureTrigger {
+  name: string;
+  event: string;
+  timing: string;
+  function_name: string;
+}
+
+export interface TableStructure {
+  table_name: string;
+  schema: string | null;
+  columns: StructureColumn[];
+  indexes: StructureIndex[];
+  foreign_keys: ForeignKey[];
+  triggers: StructureTrigger[];
+}

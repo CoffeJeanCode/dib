@@ -6,7 +6,7 @@ use commands::connection::{connect_saved, connect_to_db, disconnect, list_databa
 use commands::ddl::{apply_schema_changes, drop_table, generate_crud_sql, get_function_ddl, get_trigger_ddl, get_view_ddl};
 use commands::persistence::{delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state};
 use commands::query::{apply_changes, cancel_query, explain_query, fetch_table_data, run_query};
-use commands::schema::{fetch_schema_objects, fetch_table_relations, fetch_table_schema, fetch_tables};
+use commands::schema::{fetch_schema_objects, fetch_table_relations, fetch_table_schema, fetch_tables, get_table_structure};
 use commands::system_status::check_system_status;
 use commands::workspace::{
     delete_internal_script, export_script_dialog, get_internal_scripts, get_next_script_number,
@@ -43,6 +43,7 @@ pub fn run() {
             fetch_schema_objects,
             fetch_table_schema,
             fetch_table_relations,
+            get_table_structure,
             // query execution
             run_query,
             fetch_table_data,
