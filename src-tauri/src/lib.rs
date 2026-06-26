@@ -2,12 +2,17 @@ mod commands;
 mod db;
 mod storage;
 
-use commands::db::{apply_changes, apply_schema_changes, connect_saved, connect_to_db, disconnect, drop_table, explain_query, fetch_schema_objects, fetch_table_data, fetch_table_relations, fetch_table_schema, fetch_tables, generate_crud_sql, get_next_script_number, list_databases, run_query, switch_database, test_connection, DbState};
-use commands::persistence::{
-    delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state,
-};
+use commands::connection::{connect_saved, connect_to_db, disconnect, list_databases, switch_database, test_connection, DbState};
+use commands::ddl::{apply_schema_changes, drop_table, generate_crud_sql, get_function_ddl, get_trigger_ddl, get_view_ddl};
+use commands::persistence::{delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state};
+use commands::query::{apply_changes, cancel_query, explain_query, fetch_table_data, run_query};
+use commands::schema::{fetch_schema_objects, fetch_table_relations, fetch_table_schema, fetch_tables};
 use commands::system_status::check_system_status;
-use commands::workspace::{delete_internal_script, export_script_dialog, get_internal_scripts, get_query_history, import_script_dialog, list_scripts, read_script, save_internal_script, save_query_history, save_script};
+use commands::workspace::{
+    delete_internal_script, export_script_dialog, get_internal_scripts, get_next_script_number,
+    get_query_history, import_script_dialog, list_scripts, read_script,
+    save_internal_script, save_query_history, save_script,
+};
 use storage::AppDb;
 use tauri::Manager;
 
@@ -26,22 +31,38 @@ pub fn run() {
         .manage(DbState::new())
         .invoke_handler(tauri::generate_handler![
             check_system_status,
+            // connection
             connect_to_db,
             connect_saved,
             disconnect,
+            test_connection,
+            list_databases,
+            switch_database,
+            // schema introspection
             fetch_tables,
             fetch_schema_objects,
             fetch_table_schema,
-            fetch_table_data,
             fetch_table_relations,
+            // query execution
             run_query,
+            fetch_table_data,
             apply_changes,
-            test_connection,
+            explain_query,
+            cancel_query,
+            // ddl
+            apply_schema_changes,
+            drop_table,
+            get_view_ddl,
+            get_function_ddl,
+            get_trigger_ddl,
+            generate_crud_sql,
+            // persistence
             save_connection,
             get_saved_connections,
             delete_connection,
             save_ui_state,
             load_ui_state,
+            // workspace / scripts
             save_script,
             list_scripts,
             read_script,
@@ -52,13 +73,7 @@ pub fn run() {
             delete_internal_script,
             save_query_history,
             get_query_history,
-            apply_schema_changes,
-            list_databases,
-            switch_database,
-            generate_crud_sql,
-            explain_query,
-            drop_table,
-            get_next_script_number
+            get_next_script_number,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

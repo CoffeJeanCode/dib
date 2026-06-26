@@ -2,9 +2,10 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, PgPool, Row, TypeInfo};
 
-use super::driver::{
-    ChangeRow, ColumnInfo, DatabaseDriver, DbConfig, ExplainPlan, GridFilter,
-    PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation,
+use crate::db::{
+    ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, ExplainNode, ExplainPlan,
+    GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo,
+    TableRelation,
 };
 
 /// Try to coerce a filter string to a numeric JSON value so Postgres
@@ -56,7 +57,7 @@ fn build_where_pg(filters: &[GridFilter]) -> (String, Vec<Value>) {
 
 /// Recursively parse a JSON plan node produced by EXPLAIN (FORMAT JSON).
 /// `root_cost` is the total_cost of the plan root, used to calculate cost_pct.
-fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> super::driver::ExplainNode {
+fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> ExplainNode {
     let node_type = node.get("Node Type").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
     let relation = node.get("Relation Name").and_then(|v| v.as_str()).map(|s| s.to_string());
     let alias = node.get("Alias").and_then(|v| v.as_str()).map(|s| s.to_string());
@@ -75,7 +76,7 @@ fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> super::driver
         .map(|arr| arr.iter().map(|child| parse_explain_node(child, root_cost)).collect())
         .unwrap_or_default();
 
-    super::driver::ExplainNode {
+    ExplainNode {
         node_type,
         relation,
         alias,
@@ -245,7 +246,7 @@ impl DatabaseDriver for PostgresDriver {
             }
         }
 
-        Ok(SchemaObjects { tables, views, functions, procedures })
+        Ok(SchemaObjects { tables, views, materialized_views: Vec::new(), functions, procedures, triggers: Vec::new() })
     }
 
     async fn get_table_schema(
@@ -293,7 +294,7 @@ impl DatabaseDriver for PostgresDriver {
     async fn execute_query(&self, sql: &str) -> Result<QueryResult, QueryError> {
         if is_select(sql) {
             use std::collections::HashSet;
-            use super::driver::ColumnMetadata;
+
 
             let rows = sqlx::query(sql)
                 .fetch_all(&self.pool)
