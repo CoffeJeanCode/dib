@@ -112,7 +112,7 @@ export function SqlEditor({
           {connectionName && (
             <span className="sqleditor-connection">{connectionName}</span>
           )}
-          <span className="sqleditor-hint">Ctrl+Enter · F5 ejecutar · Ctrl+Shift+E explain</span>
+          <span className="sqleditor-hint">Ctrl+Enter · F5 todo · Ctrl+Shift+Enter bloque · Ctrl+Shift+E explain</span>
           {fileStatus && (
             <span className={`sqleditor-status${fileStatus.ok ? " sqleditor-status--ok" : " sqleditor-status--err"}`}>
               {fileStatus.msg}

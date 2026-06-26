@@ -625,7 +625,9 @@ export function useDataGridState({
     const nextRows = editState.rows.map((r) => [...(r as unknown[])]) as unknown[][];
     const nextChanges = new Map(editState.changes);
     for (const id of selectedCells) {
-      const [r, c] = id.split(":").map(Number);
+      const parts = id.split(":");
+      const r = parseInt(parts[0], 10);
+      const c = parseInt(parts[1], 10);
       if (editState.ghostRowIds.has(r)) continue;
       const col = columns[c];
       const pkStr = getPkStr(r, editState.rows);
@@ -659,7 +661,7 @@ export function useDataGridState({
       if (r >= editState.rows.length) break;
       if (editState.ghostRowIds.has(r)) continue;
       for (let dc = 0; dc < pasteRows[dr].length; dc++) {
-        const c = activeCell.col + dc;
+        const c: number = activeCell.col + dc;
         if (c >= columns.length) break;
         const col = columns[c];
         const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
@@ -790,8 +792,8 @@ export function useDataGridState({
     },
     [
       activeCell, anchorCell, isEditing, editState.rows, columns, selectedCells,
-      triggerSave, undo, redo, copySelection, insertGhostRow, duplicateRows,
-      markRowsForDeletion, commitEdit, cancelEdit, startEdit, setActiveCell,
+      triggerSave, undo, redo, copySelection, cutSelection, pasteFromClipboard,
+      insertGhostRow, duplicateRows, markRowsForDeletion, commitEdit, cancelEdit, startEdit, setActiveCell,
     ],
   );
 

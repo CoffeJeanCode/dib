@@ -410,6 +410,78 @@ export function useSqlEditor({
       executeQuery,
     );
 
+    const executeCurrentCommand = () => {
+      const position = editor.getPosition();
+      const model = editor.getModel();
+      if (!position || !model) return;
+      
+      const fullText = model.getValue();
+      const offset = model.getOffsetAt(position);
+      
+      let start = 0;
+      let end = fullText.length;
+      let inSingle = false;
+      let inDouble = false;
+      let inLineComment = false;
+      let inBlockComment = false;
+      let lastSemi = 0;
+      
+      for (let i = 0; i < fullText.length; i++) {
+        const c = fullText[i];
+        const nextC = fullText[i + 1] || "";
+        
+        if (inSingle) {
+          if (c === "'") {
+             if (nextC === "'") i++; // escaped
+             else inSingle = false;
+          }
+        } else if (inDouble) {
+          if (c === '"') {
+             if (nextC === '"') i++; // escaped
+             else inDouble = false;
+          }
+        } else if (inBlockComment) {
+          if (c === '*' && nextC === '/') {
+             inBlockComment = false;
+             i++;
+          }
+        } else if (inLineComment) {
+          if (c === '\n') inLineComment = false;
+        } else {
+          if (c === "'") inSingle = true;
+          else if (c === '"') inDouble = true;
+          else if (c === '-' && nextC === '-') {
+             inLineComment = true;
+             i++;
+          }
+          else if (c === '/' && nextC === '*') {
+             inBlockComment = true;
+             i++;
+          }
+          else if (c === ';') {
+             if (i < offset) {
+                lastSemi = i + 1;
+             } else {
+                end = i;
+                break;
+             }
+          }
+        }
+      }
+      
+      const statement = fullText.substring(lastSemi, end).trim();
+      if (statement) {
+        runQueryRef.current?.(statement);
+        editor.focus();
+      }
+    };
+
+    editor.addCommand(
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyMod.Shift | monacoInstance.KeyCode.Enter,
+      executeCurrentCommand,
+    );
+
+
 
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,

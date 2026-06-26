@@ -1,10 +1,11 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { UseDataGridStateOptions } from "../../hooks/useDataGridState";
 import type { useDataGridState } from "../../hooks/useDataGridState";
 
 export type DataGridContextValue = ReturnType<typeof useDataGridState> & {
   columns: string[];
   filters?: UseDataGridStateOptions["filters"];
+  footerRight?: ReactNode;
 };
 
 export const DataGridContext = createContext<DataGridContextValue | null>(null);
