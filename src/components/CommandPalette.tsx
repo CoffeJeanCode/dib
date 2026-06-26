@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Search, Table2, FileText, Zap, Database, Trash2 } from "lucide-react";
-import type { TableInfo, InternalScript } from "../types/db";
-import { dbService } from "../services/dbService";
-import { workspaceService } from "../services/workspaceService";
+import type { TableInfo, InternalScript } from "@/types/db";
+import { dbService } from "@/services/dbService";
+import { workspaceService } from "@/services/workspaceService";
 import "./CommandPalette.css";
 
 let recentPaletteIds: string[] = [];

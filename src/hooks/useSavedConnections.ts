@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { connectionService } from "../services/connectionService";
-import type { SavedConnection } from "../types/db";
+import { connectionService } from "@/services/connectionService";
+import type { SavedConnection } from "@/types/db";
 
 export function useSavedConnections() {
   const [connections, setConnections] = useState<SavedConnection[]>([]);

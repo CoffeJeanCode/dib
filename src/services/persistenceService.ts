@@ -1,4 +1,4 @@
-import { safeInvoke as invoke } from "../utils/ipc";
+import { safeInvoke as invoke } from "@/utils/ipc";
 
 interface UiState {
   is_sidebar_open: boolean;

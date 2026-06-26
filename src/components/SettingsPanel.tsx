@@ -1,4 +1,4 @@
-import { useUiState } from "../hooks/useUiState";
+import { useUiState } from "@/hooks/useUiState";
 import "./SettingsPanel.css";
 
 interface SettingsPanelProps {

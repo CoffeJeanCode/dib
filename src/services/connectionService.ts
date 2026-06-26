@@ -1,5 +1,5 @@
-import { safeInvoke as invoke } from "../utils/ipc";
-import type { ConnectionInfo, SavedConnection } from "../types/db";
+import { safeInvoke as invoke } from "@/utils/ipc";
+import type { ConnectionInfo, SavedConnection } from "@/types/db";
 
 export const connectionService = {
   connectSaved: (savedId: string, password: string | null, savePassword: boolean) =>

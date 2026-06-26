@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Copy, X, AlertTriangle, Info } from "lucide-react";
-import type { Toast as ToastType } from "../hooks/useToast";
+import type { Toast as ToastType } from "@/hooks/useToast";
 import "./Toast.css";
 
 interface ToastContainerProps {

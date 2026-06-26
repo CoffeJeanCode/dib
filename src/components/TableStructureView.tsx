@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { dbService } from "../services/dbService";
-import type { TableStructure, TableInfo } from "../types/db";
+import { dbService } from "@/services/dbService";
+import type { TableStructure, TableInfo } from "@/types/db";
 import {
   Key, Hash, Type, Calendar, Link2, ArrowRight,
   Zap, Shield, Search, RefreshCw, AlertCircle,

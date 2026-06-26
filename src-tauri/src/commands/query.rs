@@ -1,19 +1,34 @@
-use tauri::State;
+use tauri::{Manager, State};
 
 use crate::db::{ChangeRow, ExplainPlan, GridFilter, PagedResult, QueryError, QueryResult};
 use crate::commands::connection::DbState;
 
 #[tauri::command]
-pub async fn run_query(connection_id: String, sql: String, state: State<'_, DbState>) -> Result<QueryResult, QueryError> {
-    let connections = state.connections.lock().await;
+pub async fn run_query(
+    connection_id: String,
+    sql: String,
+    state: State<'_, DbState>,
+    app_handle: tauri::AppHandle,
+) -> Result<QueryResult, QueryError> {
+    let start = std::time::Instant::now();
 
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
-        message: format!("Connection not found: {}", connection_id),
-        code: None,
-        severity: Some("ERROR".to_string()),
-    })?;
+    let result = {
+        let connections = state.connections.lock().await;
+        let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+            message: format!("Connection not found: {}", connection_id),
+            code: None,
+            severity: Some("ERROR".to_string()),
+        })?;
+        driver.execute_query(&sql).await
+    };
 
-    driver.execute_query(&sql).await
+    if result.is_ok() {
+        let elapsed_ms = start.elapsed().as_millis() as i64;
+        let db = app_handle.state::<crate::storage::AppDb>();
+        let _ = db.save_query_history_internal(&connection_id, &sql, true, elapsed_ms);
+    }
+
+    result
 }
 
 #[tauri::command]

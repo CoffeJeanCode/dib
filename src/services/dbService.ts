@@ -1,5 +1,5 @@
-import { safeInvoke as invoke } from "../utils/ipc";
-import type { TableInfo, ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry } from "../types/db";
+import { safeInvoke as invoke } from "@/utils/ipc";
+import type { TableInfo, ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry } from "@/types/db";
 
 /**
  * Wraps Tauri `invoke` with connection-error handling.
@@ -30,6 +30,7 @@ async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promi
       );
       // Return a rejected promise so callers still get the error path,
       // but the toast has already been dispatched.
+      // eslint-disable-next-line preserve-caught-error
       throw new Error("El backend de Tauri no está disponible. Intenta reiniciar la aplicación.");
     }
 

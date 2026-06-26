@@ -1,6 +1,6 @@
 import { Database, Plus } from "lucide-react";
-import { useSavedConnections } from "../hooks/useSavedConnections";
-import type { SavedConnection } from "../types/db";
+import { useSavedConnections } from "@/hooks/useSavedConnections";
+import type { SavedConnection } from "@/types/db";
 import "./HomeView.css";
 
 interface HomeViewProps {

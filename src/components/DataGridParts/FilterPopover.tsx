@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { createPortal } from "react-dom";
 import { useDataGridContext } from "./DataGridContext";
-import { operatorsForType } from "../../hooks/useDataGridState";
-import type { FilterOperator } from "../../types/db";
+import { operatorsForType } from "@/hooks/useDataGridState";
+import type { FilterOperator } from "@/types/db";
 
 export const FilterPopover = memo(function FilterPopover() {
   const {

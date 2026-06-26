@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from "react";
-import { safeInvoke as invoke } from "../utils/ipc";
-import { ToastContext } from "../App";
+import { safeInvoke as invoke } from "@/utils/ipc";
+import { ToastContext } from "@/App";
 import "./StatusBlock.css";
 
 interface SystemStatus {

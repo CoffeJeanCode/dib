@@ -3,10 +3,10 @@ use serde_json::{json, Value};
 use sqlx::{Column, PgPool, Row, TypeInfo};
 
 use crate::db::{
-    ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, ExplainNode, ExplainPlan,
-    ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects,
-    StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation, TableStructure,
-    TriggerInfo,
+    ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, DdlResult, ExplainNode,
+    ExplainPlan, ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange,
+    SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation,
+    TableStructure, TriggerInfo,
 };
 
 /// Try to coerce a filter string to a numeric JSON value so Postgres
@@ -968,6 +968,43 @@ impl DatabaseDriver for PostgresDriver {
             foreign_keys,
             triggers,
         })
+    }
+
+    async fn get_function_ddl(&self, function_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
+        let schema_str = schema.unwrap_or("public");
+        let row = sqlx::query(
+            "SELECT pg_get_functiondef(p.oid) AS ddl \
+             FROM pg_proc p \
+             JOIN pg_namespace n ON p.pronamespace = n.oid \
+             WHERE p.proname = $1 AND n.nspname = $2 \
+             LIMIT 1",
+        )
+        .bind(function_name)
+        .bind(schema_str)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .ok_or_else(|| QueryError::from(format!("Function '{}.{}' not found", schema_str, function_name)))?;
+
+        let ddl: String = row.try_get("ddl").map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(DdlResult { name: function_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
+    }
+
+    async fn get_trigger_ddl(&self, trigger_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
+        let row = sqlx::query(
+            "SELECT pg_get_triggerdef(t.oid) AS ddl \
+             FROM pg_trigger t \
+             WHERE t.tgname = $1 AND NOT t.tgisinternal \
+             LIMIT 1",
+        )
+        .bind(trigger_name)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .ok_or_else(|| QueryError::from(format!("Trigger '{}' not found", trigger_name)))?;
+
+        let ddl: String = row.try_get("ddl").map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(DdlResult { name: trigger_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
     }
 
     fn driver_name(&self) -> &'static str {

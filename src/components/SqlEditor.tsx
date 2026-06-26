@@ -1,9 +1,9 @@
 import { useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
 import { Play, Upload, Download, Zap, Lock } from "lucide-react";
-import type { QueryResult, PendingChange, ColumnInfo } from "../types/db";
-import { dbService } from "../services/dbService";
-import { useSqlEditor, THEME_DARK, THEME_LIGHT } from "../hooks/useSqlEditor";
+import type { QueryResult, PendingChange, ColumnInfo } from "@/types/db";
+import { dbService } from "@/services/dbService";
+import { useSqlEditor, THEME_DARK, THEME_LIGHT } from "@/hooks/useSqlEditor";
 import { DataGrid } from "./DataGrid";
 import { VisualExplain } from "./VisualExplain";
 import "./SqlEditor.css";

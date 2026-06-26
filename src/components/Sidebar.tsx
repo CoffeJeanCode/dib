@@ -1,11 +1,11 @@
 import { useState, useCallback } from "react";
 import { Pencil, Trash2, FileCode2 } from "lucide-react";
-import { useSavedConnections } from "../hooks/useSavedConnections";
-import { useSidebarScripts } from "../hooks/useSidebarScripts";
-import { useContextMenu } from "../hooks/useContextMenu";
+import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { useSidebarScripts } from "@/hooks/useSidebarScripts";
+import { useContextMenu } from "@/hooks/useContextMenu";
 import { ContextMenu } from "./ContextMenu";
 import { DatabaseSelector, SidebarNav } from "./SidebarParts";
-import type { SavedConnection, TableInfo } from "../types/db";
+import type { SavedConnection, TableInfo } from "@/types/db";
 import "./Sidebar.css";
 
 type Panel = "connections" | "scripts" | "history" | "database";
@@ -130,11 +130,8 @@ export function Sidebar({
         scriptsLoading={scriptsLoading}
         activeConnectionId={activeConnectionId}
         onConnectionSelect={onConnectionSelect}
-        connectionName={connectionName}
         onScriptOpen={onScriptOpen}
         onTableSelect={onTableSelect}
-        onDatabaseSwitch={onDatabaseSwitch}
-        onDisconnect={onDisconnect}
         onRefreshScripts={refreshScripts}
         onDeleteConnection={deleteConn}
         onUndoDelete={undoDelete}

@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useContext } from "react";
 import type { OnMount } from "@monaco-editor/react";
-import type { TableInfo, ColumnInfo, QueryResult, ExplainPlan } from "../types/db";
-import { dbService } from "../services/dbService";
-import { workspaceService } from "../services/workspaceService";
-import { ToastContext } from "../App";
+import type { TableInfo, ColumnInfo, QueryResult, ExplainPlan } from "@/types/db";
+import { dbService } from "@/services/dbService";
+import { workspaceService } from "@/services/workspaceService";
+import { ToastContext } from "@/App";
 
 function fmtErr(e: unknown): string {
   if (typeof e === "string") return e;
@@ -345,7 +345,9 @@ export function useSqlEditor({
         toast.error(msg);
       } finally {
         setLoading(false);
-        dbService.saveQueryHistory(connectionId, sqlText, success, Date.now() - t0).catch(() => {});
+        dbService.saveQueryHistory(connectionId, sqlText, success, Date.now() - t0)
+          .then(() => window.dispatchEvent(new Event("dib:query-executed")))
+          .catch(() => {});
         // CRITERIO 2: Return focus to Monaco immediately after query resolves
         // so the cursor keeps blinking in the current editor line.
         requestAnimationFrame(() => {
@@ -418,7 +420,6 @@ export function useSqlEditor({
       const fullText = model.getValue();
       const offset = model.getOffsetAt(position);
       
-      let start = 0;
       let end = fullText.length;
       let inSingle = false;
       let inDouble = false;

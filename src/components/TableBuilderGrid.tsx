@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
-import { dbService } from "../services/dbService";
+import { dbService } from "@/services/dbService";
 import { Plus, Trash2, Check, RotateCcw } from "lucide-react";
-import type { ColumnInfo, SchemaChange } from "../types/db";
-import { useKeybindings } from "../hooks/useKeybindings";
+import type { ColumnInfo, SchemaChange } from "@/types/db";
+import { useKeybindings } from "@/hooks/useKeybindings";
 import "./TableBuilderGrid.css";
 
 interface BuilderRow {

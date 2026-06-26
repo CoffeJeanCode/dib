@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { safeInvoke as invoke } from "../utils/ipc";
+import { safeInvoke as invoke } from "@/utils/ipc";
 import { RotateCcw, CheckCircle2, XCircle, X } from "lucide-react";
-import type { QueryHistoryEntry } from "../types/db";
+import type { QueryHistoryEntry } from "@/types/db";
 import "./QueryHistoryPanel.css";
 
 interface QueryHistoryPanelProps {
@@ -27,12 +27,15 @@ function fmtTime(iso: string): string {
 export function QueryHistoryPanel({ connectionId, onRestore, onClose }: QueryHistoryPanelProps) {
   const [entries, setEntries] = useState<QueryHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
 
   const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
     invoke<QueryHistoryEntry[]>("get_query_history", { connectionId, limit: 50, offset: 0 })
-      .then(setEntries)
-      .catch(console.error)
+      .then((data) => setEntries(data || []))
+      .catch((err) => setError(String(err)))
       .finally(() => setLoading(false));
   }, [connectionId]);
 
@@ -56,8 +59,9 @@ export function QueryHistoryPanel({ connectionId, onRestore, onClose }: QueryHis
 
       <div className="qhp-list">
         {loading && <div className="qhp-empty">Cargando…</div>}
-        {!loading && entries.length === 0 && (
-          <div className="qhp-empty">Sin historial aún</div>
+        {error && <div className="qhp-empty" style={{ color: "var(--color-danger)" }}>Error: {error}</div>}
+        {!loading && !error && entries.length === 0 && (
+          <div className="qhp-empty">No hay consultas exitosas recientes</div>
         )}
         {entries.map((e) => (
           <div

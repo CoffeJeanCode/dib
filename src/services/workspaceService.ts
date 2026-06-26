@@ -1,5 +1,5 @@
-import { safeInvoke as invoke } from "../utils/ipc";
-import type { InternalScript } from "../types/db";
+import { safeInvoke as invoke } from "@/utils/ipc";
+import type { InternalScript } from "@/types/db";
 
 export const workspaceService = {
   getInternalScripts: () =>

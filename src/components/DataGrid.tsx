@@ -1,6 +1,6 @@
 import { memo } from "react";
-import type { PendingChange, ColumnInfo, GridFilter, TableRelation } from "../types/db";
-import { useDataGridState } from "../hooks/useDataGridState";
+import type { PendingChange, ColumnInfo, GridFilter, TableRelation } from "@/types/db";
+import { useDataGridState } from "@/hooks/useDataGridState";
 import { DataGridContext } from "./DataGridParts/DataGridContext";
 import { GridHeader } from "./DataGridParts/GridHeader";
 import { GridBody } from "./DataGridParts/GridBody";

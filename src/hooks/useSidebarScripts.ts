@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { workspaceService } from "../services/workspaceService";
-import type { InternalScript } from "../types/db";
+import { workspaceService } from "@/services/workspaceService";
+import type { InternalScript } from "@/types/db";
 
 export function useSidebarScripts() {
   const [scripts, setScripts] = useState<InternalScript[]>([]);

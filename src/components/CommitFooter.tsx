@@ -1,5 +1,5 @@
 import { Save } from "lucide-react";
-import type { PendingChange } from "../types/db";
+import type { PendingChange } from "@/types/db";
 import "./CommitFooter.css";
 
 interface CommitFooterProps {

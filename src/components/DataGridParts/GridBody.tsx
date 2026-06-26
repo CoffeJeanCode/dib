@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useDataGridContext } from "./DataGridContext";
-import { cellStr, cellId, makeKey } from "../../hooks/useDataGridState";
+import { cellStr, cellId, makeKey } from "@/hooks/useDataGridState";
 
 const ROW_H = 38;
 

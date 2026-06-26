@@ -13,7 +13,7 @@ import {
   Position
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import type { ExplainNode, ExplainPlan } from "../types/db";
+import type { ExplainNode, ExplainPlan } from "@/types/db";
 import "./VisualExplain.css";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ function ExplainFlowNode({ data }: { data: any }) {
     : node.node_type;
 
   return (
-    <div className={`ve-node ${node.is_seq_scan ? "ve-node--seqscan" : ""}`} style={{ width: 280, margin: 0, padding: "10px 12px 14px", position: "relative" }}>
+    <div className={`ve-node ${node.is_seq_scan ? "ve-node--seqscan" : ""}`} style={{ width: 350, margin: 0, padding: "10px 12px 14px", position: "relative" }}>
       <Handle type="target" position={Position.Top} style={{ background: "transparent", border: "none" }} />
       
       {/* Header */}
@@ -75,7 +75,7 @@ function ExplainFlowNode({ data }: { data: any }) {
       </div>
 
       {/* Cost bar */}
-      <div className="ve-cost-bar-track">
+      <div className="ve-cost-bar-track"> 
         <div
           className="ve-cost-bar-fill"
           style={{ width: `${pct}%`, background: costColor(pct) }}
@@ -117,8 +117,8 @@ async function layoutExplainTree(
       
       const NODE_W = 280;
       const NODE_H = 110;
-      const GAP_X = 50;
-      const GAP_Y = 60;
+      const GAP_X = 120;
+      const GAP_Y = 50;
 
       const subtreeWidth = new Map<ExplainNode, number>();
       

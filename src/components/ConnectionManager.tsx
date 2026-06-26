@@ -1,8 +1,8 @@
 import { useState, useEffect, useContext } from "react";
-import { safeInvoke as invoke } from "../utils/ipc";
-import type { ConnectionInfo, DbConfig, SavedConnection } from "../types/db";
-import { useSavedConnections } from "../hooks/useSavedConnections";
-import { ToastContext } from "../App";
+import { safeInvoke as invoke } from "@/utils/ipc";
+import type { ConnectionInfo, DbConfig, SavedConnection } from "@/types/db";
+import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { ToastContext } from "@/App";
 import "./ConnectionManager.css";
 
 interface ConnectionManagerProps {

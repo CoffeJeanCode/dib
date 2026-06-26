@@ -1,5 +1,5 @@
 import { Table2, Network, FileCode2, Circle, Wrench, Layers } from "lucide-react";
-import type { TableInfo } from "../types/db";
+import type { TableInfo } from "@/types/db";
 import "./Tab.css";
 
 export type TabType = "table" | "sql_editor" | "schema" | "table_builder" | "table_structure";

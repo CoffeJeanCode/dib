@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { persistenceService } from "../services/persistenceService";
+import { persistenceService } from "@/services/persistenceService";
 
 interface UiState {
   is_sidebar_open: boolean;

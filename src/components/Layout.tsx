@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Database, FileCode2, Clock, Settings, LayoutGrid } from "lucide-react";
-import { useUiState } from "../hooks/useUiState";
-import { useKeybindings } from "../hooks/useKeybindings";
-import { Sidebar } from "./Sidebar";
-import type { SavedConnection, TableInfo } from "../types/db";
+import { useUiState } from "@/hooks/useUiState";
+import { useKeybindings } from "@/hooks/useKeybindings";
+import { Sidebar } from "@/features/Sidebar";
+import type { SavedConnection, TableInfo } from "@/types/db";
 import "./Layout.css";
 
 const SIDEBAR_MIN = 160;
