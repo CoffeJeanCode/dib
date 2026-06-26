@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../utils/ipc";
 import type { TableInfo, PagedResult, PendingChange, ScriptInfo } from "../types/db";
 import { DataGrid } from "./DataGrid";
 import { CommitFooter } from "./CommitFooter";

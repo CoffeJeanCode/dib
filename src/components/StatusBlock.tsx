@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../utils/ipc";
 import { ToastContext } from "../App";
 import "./StatusBlock.css";
 

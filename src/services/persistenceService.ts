@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../utils/ipc";
 
 interface UiState {
   is_sidebar_open: boolean;

@@ -61,6 +61,15 @@ function App() {
     return () => window.removeEventListener("dib:open-palette", handler);
   }, [active]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ command: string; message: string }>).detail;
+      error(`Backend no disponible — ${detail.command}: ${detail.message}. Reinicia la aplicación si persiste.`);
+    };
+    window.addEventListener("dib:backend-error", handler);
+    return () => window.removeEventListener("dib:backend-error", handler);
+  }, [error]);
+
   useKeybindings([
     { combo: "ctrl+p",       handler: () => { if (active) setPaletteOpen((p) => !p) } },
     { combo: "ctrl+shift+p", handler: () => { if (active) setPaletteOpen((p) => !p) } },

@@ -24,10 +24,7 @@
 }
 
 .tab--active {
-  background: var(--color-bg);
-  color: var(--color-highlight);
-  border: 1px solid var(--color-highlight);
-  font-weight: var(--font-weight-medium);
+  background: var(--color-bg-active);
 }
 
 .tab-icon {

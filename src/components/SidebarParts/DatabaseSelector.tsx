@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ChevronDown, LogOut, Database as DbIcon } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../../utils/ipc";
 import { getEngineIcon, getDbName } from "./utils";
 import type { SavedConnection } from "../../types/db";
 

@@ -1,4 +1,18 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import {
+  ReactFlow,
+  Background,
+  BackgroundVariant,
+  Controls,
+  useNodesState,
+  useEdgesState,
+  MarkerType,
+  type Node,
+  type Edge,
+  Handle,
+  Position
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import type { ExplainNode, ExplainPlan } from "../types/db";
 import "./VisualExplain.css";
 
@@ -20,17 +34,16 @@ function fmtCost(c: number): string {
   return c.toFixed(2);
 }
 
-// ── Node Card ─────────────────────────────────────────────────────────────────
+// ── Custom Node ───────────────────────────────────────────────────────────────
 
-interface NodeCardProps {
+interface ExplainNodeData {
   node: ExplainNode;
-  depth: number;
   totalPlanCost: number;
 }
 
-function NodeCard({ node, depth, totalPlanCost }: NodeCardProps) {
-  const [expanded, setExpanded] = useState(true);
-  const hasChildren = node.children.length > 0;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ExplainFlowNode({ data }: { data: any }) {
+  const { node, totalPlanCost } = data as ExplainNodeData;
   const pct = totalPlanCost > 0
     ? Math.min((node.total_cost / totalPlanCost) * 100, 100)
     : node.cost_pct;
@@ -40,17 +53,13 @@ function NodeCard({ node, depth, totalPlanCost }: NodeCardProps) {
     : node.node_type;
 
   return (
-    <div
-      className={`ve-node ve-node--d${Math.min(depth, 4)}${node.is_seq_scan ? " ve-node--seqscan" : ""}`}
-      style={{ "--ve-depth": depth } as React.CSSProperties}
-    >
+    <div className={`ve-node ${node.is_seq_scan ? "ve-node--seqscan" : ""}`} style={{ width: 280, margin: 0, padding: "10px 12px 14px", position: "relative" }}>
+      <Handle type="target" position={Position.Top} style={{ background: "transparent", border: "none" }} />
+      
       {/* Header */}
-      <div className="ve-node-header" onClick={() => hasChildren && setExpanded((e) => !e)}>
+      <div className="ve-node-header">
         <div className="ve-node-left">
-          {hasChildren && (
-            <span className={`ve-node-chevron${expanded ? " ve-node-chevron--open" : ""}`}>▶</span>
-          )}
-          <span className="ve-node-type">{label}</span>
+          <span className="ve-node-type" title={label}>{label}</span>
           {node.is_seq_scan && (
             <span className="ve-seq-badge" title="Seq Scan — potencial cuello de botella">⚠ Seq Scan</span>
           )}
@@ -86,22 +95,89 @@ function NodeCard({ node, depth, totalPlanCost }: NodeCardProps) {
           )}
         </div>
       )}
-
-      {/* Children */}
-      {hasChildren && expanded && (
-        <div className="ve-children">
-          {node.children.map((child, i) => (
-            <NodeCard
-              key={`${child.node_type}-${i}`}
-              node={child}
-              depth={depth + 1}
-              totalPlanCost={totalPlanCost}
-            />
-          ))}
-        </div>
-      )}
+      
+      <Handle type="source" position={Position.Bottom} style={{ background: "transparent", border: "none" }} />
     </div>
   );
+}
+
+const nodeTypes = { explainNode: ExplainFlowNode };
+
+// ── Layout Algorithm ──────────────────────────────────────────────────────────
+
+async function layoutExplainTree(
+  root: ExplainNode,
+  totalCost: number
+): Promise<{ nodes: Node[]; edges: Edge[] }> {
+  return new Promise((resolve) => {
+    // We defer the execution to not block UI immediately (simulating async virtualization layout)
+    setTimeout(() => {
+      const nodes: Node[] = [];
+      const edges: Edge[] = [];
+      
+      const NODE_W = 280;
+      const NODE_H = 110;
+      const GAP_X = 50;
+      const GAP_Y = 60;
+
+      const subtreeWidth = new Map<ExplainNode, number>();
+      
+      function computeWidth(node: ExplainNode): number {
+        if (node.children.length === 0) {
+          subtreeWidth.set(node, NODE_W);
+          return NODE_W;
+        }
+        let w = 0;
+        for (const c of node.children) {
+          w += computeWidth(c) + GAP_X;
+        }
+        w -= GAP_X;
+        const res = Math.max(w, NODE_W);
+        subtreeWidth.set(node, res);
+        return res;
+      }
+      
+      computeWidth(root);
+      
+      let idCounter = 1;
+      function traverse(node: ExplainNode, x: number, y: number, parentId: string | null) {
+        const id = `node-${idCounter++}`;
+        nodes.push({
+          id,
+          type: "explainNode",
+          position: { x, y },
+          data: { node, totalPlanCost: totalCost },
+          draggable: false, // Make it a static view
+        });
+        
+        if (parentId) {
+          edges.push({
+            id: `e-${parentId}-${id}`,
+            source: parentId,
+            target: id,
+            type: "smoothstep",
+            animated: node.is_seq_scan,
+            style: { stroke: node.is_seq_scan ? "var(--ve-cost-high)" : "var(--ve-border)", strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: node.is_seq_scan ? "var(--ve-cost-high)" : "var(--ve-border)" },
+          });
+        }
+        
+        const sw = subtreeWidth.get(node) ?? NODE_W;
+        let currentX = x - (sw / 2);
+        
+        for (const c of node.children) {
+          const cw = subtreeWidth.get(c) ?? NODE_W;
+          traverse(c, currentX + (cw / 2), y + NODE_H + GAP_Y, id);
+          currentX += cw + GAP_X;
+        }
+      }
+      
+      // Center root at 0, 0
+      traverse(root, 0, 0, null);
+      
+      resolve({ nodes, edges });
+    }, 10);
+  });
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -114,6 +190,19 @@ interface VisualExplainProps {
 export function VisualExplain({ plan, onClose }: VisualExplainProps) {
   const [showRaw, setShowRaw] = useState(false);
   const toggleRaw = useCallback(() => setShowRaw((v) => !v), []);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    layoutExplainTree(plan.root, plan.total_cost || 1).then((res) => {
+      setNodes(res.nodes);
+      setEdges(res.edges);
+      setLoading(false);
+    });
+  }, [plan, setNodes, setEdges]);
 
   const seqScans = countSeqScans(plan.root);
 
@@ -150,8 +239,27 @@ export function VisualExplain({ plan, onClose }: VisualExplainProps) {
       {showRaw ? (
         <pre className="ve-raw">{plan.raw_json}</pre>
       ) : (
-        <div className="ve-canvas">
-          <NodeCard node={plan.root} depth={0} totalPlanCost={plan.total_cost || 1} />
+        <div className="ve-canvas" style={{ padding: 0 }}>
+          {loading ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--ve-muted)' }}>
+              Renderizando grafo...
+            </div>
+          ) : (
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.2 }}
+              minZoom={0.1}
+              proOptions={{ hideAttribution: true }}
+            >
+              <Background variant={BackgroundVariant.Dots} gap={12} size={1} color="var(--ve-border)" />
+              <Controls showInteractive={false} />
+            </ReactFlow>
+          )}
         </div>
       )}
     </div>

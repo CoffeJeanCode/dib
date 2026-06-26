@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../utils/ipc";
 import { RotateCcw, CheckCircle2, XCircle, X } from "lucide-react";
 import type { QueryHistoryEntry } from "../types/db";
 import "./QueryHistoryPanel.css";

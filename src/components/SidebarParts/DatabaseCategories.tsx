@@ -4,7 +4,7 @@ import {
   LogOut, Database as DbIcon, Network, Pencil, Trash2, Layers,
   Key, Hash, Type, Calendar,
 } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../../utils/ipc";
 import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "../../types/db";
 import { ToastContext } from "../../App";
 import { ContextMenu } from "../ContextMenu";
@@ -214,30 +214,6 @@ export function DatabaseCategories({
 
   return (
     <div className="sidebar-db-categories">
-      {/* DB header: inline switcher + disconnect */}
-      <div className="sidebar-db-tree-header">
-        <DbIcon size={13} className="sidebar-db-tree-header-icon" />
-        {databases.length > 1 ? (
-          <select
-            className="sidebar-db-tree-select"
-            value={connectionName ?? ""}
-            onChange={(e) => onDatabaseSwitch?.(e.target.value)}
-            title="Cambiar Base de Datos"
-          >
-            {databases.map((db) => (
-              <option key={db} value={db}>{db}</option>
-            ))}
-          </select>
-        ) : (
-          <span className="sidebar-db-tree-name" title={connectionName}>{connectionName}</span>
-        )}
-        {onDisconnect && (
-          <button className="sidebar-db-disconnect" onClick={onDisconnect} title="Desconectar">
-            <LogOut size={13} />
-          </button>
-        )}
-      </div>
-
       {/* Category tree */}
       {CATEGORIES.map((cat) => {
         const items = itemsFor(cat.key);

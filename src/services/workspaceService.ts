@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../utils/ipc";
 import type { InternalScript } from "../types/db";
 
 export const workspaceService = {

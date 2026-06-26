@@ -15,7 +15,7 @@ function _key(e: KeyboardEvent): string {
   if (e.ctrlKey || e.metaKey) parts.push("ctrl");
   if (e.altKey) parts.push("alt");
   if (e.shiftKey) parts.push("shift");
-  parts.push(e.key === " " ? "space" : e.key.toLowerCase());
+  parts.push(e.key === " " ? "space" : (e.key || "").toLowerCase());
   return parts.join("+");
 }
 

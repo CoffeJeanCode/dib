@@ -39,7 +39,7 @@ export function EmptyWorkspaceState() {
       <div className="ews-content">
         <div className="ews-logo">
           <Database size={32} className="ews-logo-icon" />
-          <span className="ews-logo-text">DIB</span>
+          <span className="ews-logo-text">dib</span>
         </div>
 
         <ul className="ews-list">

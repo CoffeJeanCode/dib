@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { safeInvoke as invoke } from "../utils/ipc";
 import type { ConnectionInfo, DbConfig, SavedConnection } from "../types/db";
 import { useSavedConnections } from "../hooks/useSavedConnections";
 import { ToastContext } from "../App";

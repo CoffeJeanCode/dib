@@ -720,24 +720,22 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
         {activeTab?.type === "table" && (
           <>
             {activeTableState?.error && <div className="qp-data-error">{activeTableState.error}</div>}
-            {(activeTableState?.loading || activeTableState?.result) && (
-              <div className="qp-grid-header">
-                <span className="qp-breadcrumb">
-                  {activeTab.payload.table?.schema
-                    ? `${activeTab.payload.table.schema}.${activeTab.payload.table.name}`
-                    : activeTab.payload.table?.name}
-                </span>
-                {activeTab.payload.table && (
-                  <button
-                    className="qp-structure-btn"
-                    title="Ver Estructura"
-                    onClick={() => activeTab.payload.table && openTableStructureTab(activeTab.payload.table)}
-                  >
-                    <Layers size={14} />
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="qp-grid-header">
+              <span className="qp-breadcrumb">
+                {activeTab.payload.table?.schema
+                  ? `${activeTab.payload.table.schema}.${activeTab.payload.table.name}`
+                  : activeTab.payload.table?.name}
+              </span>
+              {activeTab.payload.table && (
+                <button
+                  className="qp-structure-btn"
+                  title="Ver Estructura"
+                  onClick={() => activeTab.payload.table && openTableStructureTab(activeTab.payload.table)}
+                >
+                  <Layers size={14} />
+                </button>
+              )}
+            </div>
             {!activeTableState?.loading && !activeTableState?.result && !activeTableState?.error && (
               <div className="qp-data-empty"><p>Cargando tabla…</p></div>
             )}
