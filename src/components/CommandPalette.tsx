@@ -7,6 +7,20 @@ import "./CommandPalette.css";
 
 let recentPaletteIds: string[] = [];
 
+/**
+ * Generates an ORM-style alias from a table name.
+ * Splits by `_`, takes the first character of each block, joins lowercase.
+ * Examples: "plantilla_contable_detalle" → "pcd", "tercero" → "t"
+ */
+export function generateOrmAlias(tableName: string): string {
+  return tableName
+    .split("_")
+    .filter(Boolean)
+    .map((block) => block[0])
+    .join("")
+    .toLowerCase();
+}
+
 export interface CommandAction {
   id: string;
   label: string;
@@ -14,7 +28,7 @@ export interface CommandAction {
 }
 
 type PaletteItem =
-  | { kind: "table";    id: string; label: string; table: TableInfo }
+  | { kind: "table";    id: string; label: string; table: TableInfo; matchedAlias?: string }
   | { kind: "script";   id: string; label: string; script: InternalScript }
   | { kind: "action";   id: string; label: string; onAction: () => void }
   | { kind: "database"; id: string; label: string; dbName: string }
@@ -145,9 +159,26 @@ export function CommandPalette({
       const pool = baseItems.filter((i) => i.kind === "script");
       return rest ? pool.filter((i) => i.label.toLowerCase().includes(rest)) : pool;
     }
-    // No prefix → tables only
+    // No prefix → tables only, with ORM alias priority
     const pool = baseItems.filter((i) => i.kind === "table");
-    return pool.filter((i) => i.label.toLowerCase().includes(q.toLowerCase()));
+    const qLower = q.toLowerCase();
+
+    // Phase 1: exact alias match → top priority
+    const aliasMatches: PaletteItem[] = [];
+    // Phase 2: normal includes match
+    const textMatches: PaletteItem[] = [];
+
+    for (const item of pool) {
+      const rawName = item.table.name;
+      const alias = generateOrmAlias(rawName);
+      if (alias === qLower) {
+        aliasMatches.push({ ...item, matchedAlias: alias });
+      } else if (item.label.toLowerCase().includes(qLower)) {
+        textMatches.push(item);
+      }
+    }
+
+    return [...aliasMatches, ...textMatches];
   }, [query, baseItems, actions]);
 
   useEffect(() => { setSelectedIndex(0); }, [query]);
@@ -250,6 +281,9 @@ export function CommandPalette({
                       {ITEM_ICON[item.kind]}
                     </span>
                     <span className="palette-item-label">{item.label}</span>
+                    {/* {item.kind === "table" && item.matchedAlias && (
+                      <span className="palette-item-alias">[{item.matchedAlias}]</span>
+                    )} */}
                     <span className="palette-item-shortcut">{hintText}</span>
                   </div>
                 </React.Fragment>

@@ -149,6 +149,19 @@
   white-space: nowrap;
 }
 
+/* ── ORM alias tag ──────────────────────────────────────── */
+.palette-item-alias {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #555560;
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2A2A30;
+  letter-spacing: 0.02em;
+}
+
 /* ── Shortcut hint badge ────────────────────────────────── */
 .palette-item-shortcut {
   margin-left: auto;

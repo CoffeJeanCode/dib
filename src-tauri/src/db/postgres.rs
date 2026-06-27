@@ -894,7 +894,7 @@ impl DatabaseDriver for PostgresDriver {
         let fk_rows = sqlx::query(
             "SELECT c.conname AS name,
                     f.relname AS foreign_table, fn.nspname AS foreign_schema,
-                    c.confdeltype AS on_delete, c.confupdtype AS on_update,
+                    c.confdeltype::text AS on_delete, c.confupdtype::text AS on_update,
                     string_agg(a.attname, ', ' ORDER BY k.n) AS columns,
                     string_agg(fa.attname, ', ' ORDER BY k.n) AS foreign_columns
              FROM pg_constraint c
@@ -915,19 +915,19 @@ impl DatabaseDriver for PostgresDriver {
         .await
         .map_err(|e| QueryError::from(e.to_string()))?;
 
-        let foreign_keys: Vec<ForeignKey> = fk_rows.iter().map(|r| {
-            let cols_str: String = r.get("columns");
-            let fcols_str: String = r.get("foreign_columns");
-            ForeignKey {
-                name: r.get("name"),
+        let foreign_keys: Vec<ForeignKey> = fk_rows.iter().map(|r| -> Result<ForeignKey, QueryError> {
+            let cols_str: String = r.try_get("columns").map_err(|e| QueryError::from(e.to_string()))?;
+            let fcols_str: String = r.try_get("foreign_columns").map_err(|e| QueryError::from(e.to_string()))?;
+            Ok(ForeignKey {
+                name: r.try_get("name").map_err(|e| QueryError::from(e.to_string()))?,
                 columns: cols_str.split(", ").map(|s| s.to_string()).collect(),
-                foreign_table: r.get("foreign_table"),
-                foreign_schema: r.get("foreign_schema"),
+                foreign_table: r.try_get("foreign_table").map_err(|e| QueryError::from(e.to_string()))?,
+                foreign_schema: r.try_get("foreign_schema").map_err(|e| QueryError::from(e.to_string()))?,
                 foreign_columns: fcols_str.split(", ").map(|s| s.to_string()).collect(),
-                on_delete: decode_fk_action(r.get("on_delete")),
-                on_update: decode_fk_action(r.get("on_update")),
-            }
-        }).collect();
+                on_delete: decode_fk_action(r.try_get("on_delete").map_err(|e| QueryError::from(e.to_string()))?),
+                on_update: decode_fk_action(r.try_get("on_update").map_err(|e| QueryError::from(e.to_string()))?),
+            })
+        }).collect::<Result<Vec<_>, _>>()?;
 
         // Triggers
         let trig_rows = sqlx::query(

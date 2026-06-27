@@ -48,7 +48,7 @@ function SkeletonRows({ n = 5, cols = 4 }: { n?: number; cols?: number }) {
       {Array.from({ length: n }).map((_, i) => (
         <tr key={i} className="sv2-skeleton-row">
           {Array.from({ length: cols }).map((_, j) => (
-            <td key={j}><span className="sv2-skeleton-cell" style={{ width: `${60 + (i * 17 + j * 23) % 40}%` }} /></td>
+            <td key={j}><span className="sv2-skeleton-cell" style={{ width: `${50 + (i * 17 + j * 23) % 40}%` }} /></td>
           ))}
         </tr>
       ))}
@@ -376,8 +376,8 @@ export function TableStructureView({ connectionId, table }: Props) {
                 {loading
                   ? Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="sv2-trig-card sv2-trig-card--skeleton">
-                      <span className="sv2-skeleton-cell" style={{ width: "50%" }} />
-                      <span className="sv2-skeleton-cell" style={{ width: "70%" }} />
+                      <span className="sv2-skeleton-cell" style={{ width: "80%" }} />
+                      <span className="sv2-skeleton-cell" style={{ width: "60%" }} />
                     </div>
                   ))
                   : structure!.triggers.map((trig) => (
