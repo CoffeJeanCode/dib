@@ -243,21 +243,22 @@ export function useSqlEditor({
   const [fileStatus, setFileStatus] = useState<{ msg: string; ok: boolean } | null>(null);
 
   useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (e: MediaQueryListEvent) => {
-      const next = e.matches ? "dark" : "light";
+    const applyTheme = (next: "dark" | "light") => {
       setEditorTheme(next);
-      // Synchronise the live Monaco instance via the editor API
-      // We use editorRef so we don't need to import monaco-editor directly
       editorRef.current?.updateOptions({});
-      // Monaco exposes a global monaco object at window.monaco in some bundles;
-      // @monaco-editor/react also calls monaco.editor.setTheme internally when
-      // the `theme` prop changes — we trigger a re-render via setEditorTheme above.
-      // Synchronise the HTML data-theme attribute
       document.documentElement.setAttribute("data-theme", next);
     };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystem = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem("dib-theme")) applyTheme(e.matches ? "dark" : "light");
+    };
+    const onManual = (e: Event) => applyTheme((e as CustomEvent<"dark" | "light">).detail);
+    mq.addEventListener("change", onSystem);
+    window.addEventListener("dib:theme", onManual);
+    return () => {
+      mq.removeEventListener("change", onSystem);
+      window.removeEventListener("dib:theme", onManual);
+    };
   }, []);
 
 

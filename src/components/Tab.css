@@ -65,7 +65,7 @@
 
 .tab-close:hover {
   background: var(--color-bg-hover);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 .tab-close--dirty {
@@ -78,7 +78,7 @@
 
 .tab-close--dirty:hover {
   background: var(--color-bg-hover);
-  color: var(--brand-light-cyan);
+  color: var(--color-teal);
 }
 
 .tab--dragging {

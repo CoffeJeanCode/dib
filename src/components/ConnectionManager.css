@@ -9,7 +9,7 @@
 .cm-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -59,7 +59,7 @@
 .cm-input:focus,
 .cm-select:focus {
   outline: none;
-  border-color: var(--brand-turquoise);
+  border-color: var(--color-teal);
 }
 
 .cm-input::placeholder {
@@ -123,13 +123,13 @@
 
 .cm-button--ghost:hover:not(:disabled) {
   background: var(--color-bg-hover);
-  border-color: var(--brand-turquoise);
+  border-color: var(--color-teal);
 }
 
 .cm-button--primary {
-  background: var(--brand-bright-blue);
-  color: #fff;
-  border-color: var(--brand-bright-blue);
+  background: var(--color-highlight);
+  color: var(--text-primary);
+  border-color: var(--color-highlight);
 }
 
 .cm-button--primary:hover:not(:disabled) {

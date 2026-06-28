@@ -24,7 +24,7 @@
 .sp-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -84,7 +84,7 @@
 }
 
 .sp-toggle input:checked + .sp-toggle-track {
-  background: var(--brand-bright-blue);
+  background: var(--color-highlight);
 }
 
 .sp-toggle-track::after {
@@ -95,7 +95,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--bg-elevated);
   transition: transform var(--transition-fast);
 }
 
@@ -123,9 +123,9 @@
 }
 
 .sp-button--primary {
-  background: var(--brand-bright-blue);
-  color: #fff;
-  border-color: var(--brand-bright-blue);
+  background: var(--color-highlight);
+  color: var(--text-primary);
+  border-color: var(--color-highlight);
 }
 
 .sp-button--primary:hover {

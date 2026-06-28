@@ -46,7 +46,7 @@ function App() {
   const [settingsOpen, setSettingsOpen]          = useState(false);
   const [cheatSheetOpen, setCheatSheetOpen]      = useState(false);
 
-  const { dangerDialog, handleDropTable, clearDangerDialog } =
+  const { dangerDialog, handleDropTable, handleTruncateTable, clearDangerDialog } =
     useDangerDialog(active?.activeId ?? null, info, error);
 
   const handleTogglePalette    = useCallback(() => setPaletteOpen((p) => !p), []);
@@ -70,6 +70,12 @@ function App() {
   const handleScriptOpen     = useCallback((sql: string, name: string, id?: string) =>
     setOpenScript({ sql, name, id: id ?? `ext-${Date.now()}`, v: Date.now() }), []);
   const handleEditConnection = useCallback((conn: SavedConnection) => setEditingConn(conn), []);
+
+  const handleAlterTable = useCallback((table: TableInfo) => {
+    const label = table.schema ? `${table.schema}.${table.name}` : table.name;
+    const sql = `ALTER TABLE ${label}\n  ADD COLUMN new_column TEXT;`;
+    handleScriptOpen(sql, `ALTER ${label}.sql`);
+  }, [handleScriptOpen]);
 
   const paletteActions = [
     ...(active ? [
@@ -104,6 +110,8 @@ function App() {
           onScriptOpen={handleScriptOpen}
           onDatabaseSwitch={handleDatabaseSwitch}
           onDropTable={handleDropTable}
+          onTruncateTable={handleTruncateTable}
+          onAlterTable={handleAlterTable}
           actions={paletteActions}
         />
         {connecting && <div className="app-connecting">Connecting…</div>}

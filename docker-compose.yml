@@ -1,0 +1,30 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /mnt/wslg:/mnt/wslg
+      - cargo-registry:/root/.cargo/registry
+      - cargo-git:/root/.cargo/git
+      - tauri-target:/app/src-tauri/target
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}
+      - XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+      - XAUTHORITY=/mnt/wslg/.Xauthority
+    network_mode: host
+
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    volumes:
+      - ./release:/output
+
+volumes:
+  cargo-registry:
+  cargo-git:
+  tauri-target:

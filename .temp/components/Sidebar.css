@@ -93,7 +93,6 @@
   padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
   min-height: 48px;
-  --pattern-color: var(--color-highlight);
 }
 
 .sidebar-logo {
@@ -297,25 +296,25 @@
 /* ── Keyboard navigation ─────────────────────────────────── */
 .sidebar-item--keyboard-selected {
   background: rgba(0, 238, 255, 0.06);
-  border-left-color: var(--neon-cyan);
+  border-left-color: var(--color-bg-active);
 }
 
 .sidebar-item--keyboard-selected .sidebar-item-text,
 .sidebar-item--keyboard-selected .sidebar-item-detail {
-  color: #FFFFFF;
+  color: var(--color-text-primary);
 }
 
 .sidebar-item--keyboard-selected:hover {
-  background: rgba(0, 238, 255, 0.08);
+  background: var(--color-bg-hover);
 }
 
 /* ── Inline rename input ─────────────────────────────────── */
 .sidebar-rename-input {
   flex: 1;
-  background: #121215;
+  background: var(--color-bg);
   border: 1px solid var(--neon-cyan);
   border-radius: var(--radius-sm);
-  color: #FFFFFF;
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   font-family: var(--font-sans);
   padding: 0 var(--space-1);

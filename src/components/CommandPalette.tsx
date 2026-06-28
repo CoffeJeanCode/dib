@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Search, Table2, FileText, Zap, Database, Trash2 } from "lucide-react";
+import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, ChevronLeft } from "lucide-react";
 import type { TableInfo, InternalScript } from "@/types/db";
 import { dbService } from "@/services/dbService";
 import { workspaceService } from "@/services/workspaceService";
@@ -7,11 +7,6 @@ import "./CommandPalette.css";
 
 let recentPaletteIds: string[] = [];
 
-/**
- * Generates an ORM-style alias from a table name.
- * Splits by `_`, takes the first character of each block, joins lowercase.
- * Examples: "plantilla_contable_detalle" → "pcd", "tercero" → "t"
- */
 export function generateOrmAlias(tableName: string): string {
   return tableName
     .split("_")
@@ -27,19 +22,19 @@ export interface CommandAction {
   onAction: () => void;
 }
 
+type DdlMode = "drop" | "truncate" | "alter" | null;
+
 type PaletteItem =
   | { kind: "table";    id: string; label: string; table: TableInfo; matchedAlias?: string }
   | { kind: "script";   id: string; label: string; script: InternalScript }
   | { kind: "action";   id: string; label: string; onAction: () => void }
-  | { kind: "database"; id: string; label: string; dbName: string }
-  | { kind: "drop";     id: string; label: string; table: TableInfo };
+  | { kind: "database"; id: string; label: string; dbName: string };
 
 const ITEM_ICON: Record<PaletteItem["kind"], React.ReactNode> = {
   table:    <Table2 size={16} />,
   script:   <FileText size={16} />,
   action:   <Zap size={16} />,
   database: <Database size={16} />,
-  drop:     <Trash2 size={16} />,
 };
 
 const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
@@ -47,7 +42,12 @@ const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
   script:   "Script",
   action:   "Acción",
   database: "Base de datos",
-  drop:     "DROP TABLE",
+};
+
+const DDL_MODE_META: Record<NonNullable<DdlMode>, { label: string; icon: React.ReactNode; danger: boolean; hint: string }> = {
+  drop:     { label: "DROP TABLE",     icon: <Trash2   size={14} />, danger: true,  hint: "↵ Confirmar eliminación" },
+  truncate: { label: "TRUNCATE TABLE", icon: <Scissors size={14} />, danger: true,  hint: "↵ Confirmar truncado" },
+  alter:    { label: "ALTER TABLE",    icon: <Edit3    size={14} />, danger: false, hint: "↵ Abrir editor" },
 };
 
 interface CommandPaletteProps {
@@ -58,6 +58,8 @@ interface CommandPaletteProps {
   onScriptOpen?: (sql: string, name: string, id?: string) => void;
   onDatabaseSwitch?: (dbName: string) => void;
   onDropTable?: (table: TableInfo) => void;
+  onTruncateTable?: (table: TableInfo) => void;
+  onAlterTable?: (table: TableInfo) => void;
   actions?: CommandAction[];
 }
 
@@ -69,12 +71,15 @@ export function CommandPalette({
   onScriptOpen,
   onDatabaseSwitch,
   onDropTable,
+  onTruncateTable,
+  onAlterTable,
   actions = [],
 }: CommandPaletteProps) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery]               = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [baseItems, setBaseItems] = useState<PaletteItem[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [baseItems, setBaseItems]       = useState<PaletteItem[]>([]);
+  const [ddlMode, setDdlMode]           = useState<DdlMode>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,7 +89,7 @@ export function CommandPalette({
   }, [selectedIndex]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setDdlMode(null); return; }
     setQuery("");
     setSelectedIndex(0);
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -99,7 +104,6 @@ export function CommandPalette({
             for (const t of tables) {
               const label = t.schema ? `${t.schema}.${t.name}` : t.name;
               next.push({ kind: "table", id: `t:${label}`, label, table: t });
-              next.push({ kind: "drop", id: `drop:${label}`, label: `DROP TABLE: ${label}`, table: t });
             }
           })
           .catch(console.error),
@@ -128,14 +132,32 @@ export function CommandPalette({
     Promise.all(loaders).then(() => setBaseItems([...next]));
   }, [open, connectionId]);
 
-  // Prefix-routed filtering: > actions, @ databases, # scripts, no prefix → tables
+  const enterDdlMode = useCallback((mode: NonNullable<DdlMode>) => {
+    setDdlMode(mode);
+    setQuery("");
+    setSelectedIndex(0);
+    setTimeout(() => inputRef.current?.focus(), 30);
+  }, []);
+
+  // DDL static actions — built-in, appear under > prefix and in suggestions
+  const ddlActionItems = useMemo<PaletteItem[]>(() => connectionId ? [
+    { kind: "action", id: "ddl:drop",     label: "Drop Table…",     onAction: () => enterDdlMode("drop") },
+    { kind: "action", id: "ddl:truncate", label: "Truncate Table…", onAction: () => enterDdlMode("truncate") },
+    { kind: "action", id: "ddl:alter",    label: "Alter Table…",    onAction: () => enterDdlMode("alter") },
+  ] : [], [connectionId, enterDdlMode]);
+
   const filtered = useMemo<PaletteItem[]>(() => {
-    const actionItems: PaletteItem[] = actions.map((a) => ({
-      kind: "action" as const,
-      id: `a:${a.id}`,
-      label: a.label,
-      onAction: a.onAction,
-    }));
+    // DDL sub-mode: show only tables
+    if (ddlMode) {
+      const pool = baseItems.filter((i) => i.kind === "table");
+      const q = query.trim().toLowerCase();
+      return q ? pool.filter((i) => i.label.toLowerCase().includes(q)) : pool;
+    }
+
+    const actionItems: PaletteItem[] = [
+      ...actions.map((a) => ({ kind: "action" as const, id: `a:${a.id}`, label: a.label, onAction: a.onAction })),
+      ...ddlActionItems,
+    ];
 
     const q = query.trim();
     if (!q) {
@@ -148,7 +170,7 @@ export function CommandPalette({
     const rest = q.slice(1).toLowerCase().trim();
 
     if (symbol === ">") {
-      const pool = [...baseItems.filter((i) => i.kind === "drop"), ...actionItems];
+      const pool = [...actionItems];
       return rest ? pool.filter((i) => i.label.toLowerCase().includes(rest)) : pool;
     }
     if (symbol === "@") {
@@ -159,47 +181,47 @@ export function CommandPalette({
       const pool = baseItems.filter((i) => i.kind === "script");
       return rest ? pool.filter((i) => i.label.toLowerCase().includes(rest)) : pool;
     }
-    // No prefix → tables only, with ORM alias priority
+
+    // No prefix → tables with ORM alias priority
     const pool = baseItems.filter((i) => i.kind === "table");
     const qLower = q.toLowerCase();
-
-    // Phase 1: exact alias match → top priority
     const aliasMatches: PaletteItem[] = [];
-    // Phase 2: normal includes match
     const textMatches: PaletteItem[] = [];
-
     for (const item of pool) {
-      const rawName = item.table.name;
-      const alias = generateOrmAlias(rawName);
-      if (alias === qLower) {
-        aliasMatches.push({ ...item, matchedAlias: alias });
-      } else if (item.label.toLowerCase().includes(qLower)) {
-        textMatches.push(item);
-      }
+      const alias = generateOrmAlias(item.table.name);
+      if (alias === qLower) aliasMatches.push({ ...item, matchedAlias: alias });
+      else if (item.label.toLowerCase().includes(qLower)) textMatches.push(item);
     }
-
     return [...aliasMatches, ...textMatches];
-  }, [query, baseItems, actions]);
+  }, [query, baseItems, actions, ddlActionItems, ddlMode]);
 
-  useEffect(() => { setSelectedIndex(0); }, [query]);
+  useEffect(() => { setSelectedIndex(0); }, [query, ddlMode]);
 
   const execute = useCallback(
     async (item: PaletteItem) => {
-      recentPaletteIds = [item.id, ...recentPaletteIds.filter((id) => id !== item.id)].slice(0, 5);
-      if (item.kind === "table") {
-        onTableSelect?.(item.table);
-      } else if (item.kind === "script") {
-        onScriptOpen?.(item.script.content, item.script.title, item.script.id);
-      } else if (item.kind === "database") {
-        onDatabaseSwitch?.(item.dbName);
-      } else if (item.kind === "drop") {
-        onDropTable?.(item.table);
-      } else {
+      // DDL mode-switch actions stay open
+      if (item.kind === "action" && item.id.startsWith("ddl:")) {
         item.onAction();
+        return;
       }
+
+      // DDL sub-mode table selection
+      if (ddlMode && item.kind === "table") {
+        if (ddlMode === "drop")     onDropTable?.(item.table);
+        if (ddlMode === "truncate") onTruncateTable?.(item.table);
+        if (ddlMode === "alter")    onAlterTable?.(item.table);
+        onClose();
+        return;
+      }
+
+      recentPaletteIds = [item.id, ...recentPaletteIds.filter((id) => id !== item.id)].slice(0, 5);
+      if (item.kind === "table")    onTableSelect?.(item.table);
+      else if (item.kind === "script")   onScriptOpen?.(item.script.content, item.script.title, item.script.id);
+      else if (item.kind === "database") onDatabaseSwitch?.(item.dbName);
+      else item.onAction();
       onClose();
     },
-    [onTableSelect, onScriptOpen, onDatabaseSwitch, onDropTable, onClose],
+    [ddlMode, onDropTable, onTruncateTable, onAlterTable, onTableSelect, onScriptOpen, onDatabaseSwitch, onClose],
   );
 
   const handleKeyDown = useCallback(
@@ -210,39 +232,58 @@ export function CommandPalette({
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" && e.altKey && filtered[selectedIndex]?.kind === "table") {
+        // Alt+Enter → open ERD for focused table
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("dib:open-table-relations", { detail: filtered[selectedIndex].table }));
+        onClose();
       } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && filtered[selectedIndex]?.kind === "table") {
         window.dispatchEvent(new CustomEvent("dib:open-table-structure", { detail: filtered[selectedIndex].table }));
         onClose();
       } else if (e.key === "Enter" && filtered[selectedIndex]) {
         execute(filtered[selectedIndex]);
       } else if (e.key === "Escape") {
-        onClose();
+        if (ddlMode) { setDdlMode(null); setQuery(""); }
+        else onClose();
       }
     },
-    [filtered, selectedIndex, execute, onClose],
+    [filtered, selectedIndex, execute, ddlMode, onClose],
   );
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && !ddlMode) onClose(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [open, ddlMode, onClose]);
 
   if (!open) return null;
 
   const isEmpty = query.trim() === "";
+  const currentDdlMeta = ddlMode ? DDL_MODE_META[ddlMode] : null;
 
   return (
     <div className="palette-backdrop" onClick={onClose}>
       <div className="palette" onClick={(e) => e.stopPropagation()}>
+        {/* DDL sub-mode indicator */}
+        {ddlMode && currentDdlMeta && (
+          <div className={`palette-ddl-bar${currentDdlMeta.danger ? " palette-ddl-bar--danger" : " palette-ddl-bar--alter"}`}>
+            <button className="palette-ddl-back" onClick={() => { setDdlMode(null); setQuery(""); }} title="Volver (Esc)">
+              <ChevronLeft size={14} />
+            </button>
+            <span className="palette-ddl-icon">{currentDdlMeta.icon}</span>
+            <span className="palette-ddl-label">{currentDdlMeta.label}</span>
+            <span className="palette-ddl-hint">— selecciona una tabla</span>
+          </div>
+        )}
+
         <div className="palette-input-wrap">
           <Search size={16} className="palette-input-icon" />
           <input
             ref={inputRef}
             className="palette-input"
             type="text"
-            placeholder="Tablas · > acciones · @ conexiones · # scripts"
+            placeholder={ddlMode ? "Filtrar tablas…" : "Tablas · > acciones · @ conexiones · # scripts"}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -254,36 +295,43 @@ export function CommandPalette({
             <div className="palette-empty">Sin resultados</div>
           ) : (
             filtered.map((item, i) => {
-              const isRecentView = isEmpty && recentPaletteIds.length > 0;
+              const isRecentView = !ddlMode && isEmpty && recentPaletteIds.length > 0;
               const prevItem = i > 0 ? filtered[i - 1] : null;
-              const showHeader = isRecentView ? (i === 0) : (!prevItem || prevItem.kind !== item.kind);
-              const headerText = isRecentView ? "RECENT" : (isEmpty ? "SUGGESTIONS" : ITEM_CATEGORY[item.kind].toUpperCase());
-              
+              const showHeader = ddlMode
+                ? i === 0
+                : isRecentView ? i === 0 : (!prevItem || prevItem.kind !== item.kind);
+              const headerText = ddlMode
+                ? "TABLAS"
+                : isRecentView ? "RECIENTE" : (isEmpty ? "SUGERENCIAS" : ITEM_CATEGORY[item.kind].toUpperCase());
+
               let hintText = "↵ Seleccionar";
-              if (item.kind === "table") hintText = "↵ Abrir · ⌃↵ Estructura";
-              if (item.kind === "script") hintText = "↵ Ejecutar Script";
-              if (item.kind === "database") hintText = "↵ Cambiar BD";
-              if (item.kind === "drop") hintText = "↵ Eliminar";
-              if (item.kind === "action") hintText = "↵ Ejecutar";
-              
+              if (ddlMode && item.kind === "table") hintText = currentDdlMeta?.hint ?? "↵";
+              else if (item.kind === "table")    hintText = "↵ Abrir · ⌥↵ ERD · ⌃↵ Estructura";
+              else if (item.kind === "script")   hintText = "↵ Ejecutar Script";
+              else if (item.kind === "database") hintText = "↵ Cambiar BD";
+              else if (item.kind === "action")   hintText = "↵ Ejecutar";
+
+              const isDdlAction = item.kind === "action" && item.id.startsWith("ddl:");
+              const isDangerItem = ddlMode === "drop" || ddlMode === "truncate";
+
               return (
                 <React.Fragment key={item.id}>
-                  {showHeader && (
-                    <div className="palette-group-header">{headerText}</div>
-                  )}
+                  {showHeader && <div className="palette-group-header">{headerText}</div>}
                   <div
                     data-palette-index={i}
-                    className={`palette-item${i === selectedIndex ? " palette-item--selected bg-pattern-halftone" : ""}${item.kind === "drop" ? " palette-item--danger" : ""}`}
+                    className={[
+                      "palette-item",
+                      i === selectedIndex ? "palette-item--selected" : "",
+                      isDangerItem && item.kind === "table" ? "palette-item--danger" : "",
+                      isDdlAction ? "palette-item--ddl" : "",
+                    ].filter(Boolean).join(" ")}
                     onClick={() => execute(item)}
                     onMouseEnter={() => setSelectedIndex(i)}
                   >
                     <span className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}>
-                      {ITEM_ICON[item.kind]}
+                      {ddlMode && item.kind === "table" ? currentDdlMeta?.icon : ITEM_ICON[item.kind]}
                     </span>
                     <span className="palette-item-label">{item.label}</span>
-                    {/* {item.kind === "table" && item.matchedAlias && (
-                      <span className="palette-item-alias">[{item.matchedAlias}]</span>
-                    )} */}
                     <span className="palette-item-shortcut">{hintText}</span>
                   </div>
                 </React.Fragment>

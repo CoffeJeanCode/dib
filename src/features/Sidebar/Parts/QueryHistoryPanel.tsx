@@ -34,6 +34,7 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
     setLoading(true);
     try {
       const data = await dbService.getQueryHistory(activeConnectionId, 100, 0);
+      console.log("[QueryHistoryPanel] raw data:", data);
       setHistory(data);
     } catch (e) {
       console.error(e);
@@ -46,7 +47,11 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
     fetchHistory();
     const onReload = () => fetchHistory();
     window.addEventListener("dib:reload", onReload);
-    return () => window.removeEventListener("dib:reload", onReload);
+    window.addEventListener("dib:query-executed", onReload);
+    return () => {
+      window.removeEventListener("dib:reload", onReload);
+      window.removeEventListener("dib:query-executed", onReload);
+    };
   }, [fetchHistory]);
 
   const handleItemClick = (entry: QueryHistoryEntry) => {

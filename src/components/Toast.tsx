@@ -24,7 +24,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: str
   const Icon = toast.type === "error" || toast.type === "warning" ? AlertTriangle : Info;
 
   return (
-    <div className={`toast bg-pattern-halftone toast--${toast.type}`}>
+    <div className={`toast toast--${toast.type}`}>
       <div className={`toast-badge toast-badge--${toast.type}`}>
         <Icon size={12} strokeWidth={3} />
       </div>

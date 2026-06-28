@@ -1,4 +1,5 @@
 import { useUiState } from "@/hooks/useUiState";
+import { useTheme, setTheme } from "@/hooks/useTheme";
 import "./SettingsPanel.css";
 
 interface SettingsPanelProps {
@@ -8,6 +9,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { state, updateState } = useUiState();
+  const { theme } = useTheme();
 
   if (!open) return null;
 
@@ -18,6 +20,22 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           <span className="sp-label">Settings</span>
         </div>
         <div className="sp-body">
+          <div className="sp-option">
+            <div className="sp-option-info">
+              <span className="sp-option-title">Dark mode</span>
+              <span className="sp-option-desc">
+                Override the system appearance preference.
+              </span>
+            </div>
+            <label className="sp-toggle">
+              <input
+                type="checkbox"
+                checked={theme === "dark"}
+                onChange={(e) => setTheme(e.target.checked ? "dark" : "light")}
+              />
+              <span className="sp-toggle-track" />
+            </label>
+          </div>
           <div className="sp-option">
             <div className="sp-option-info">
               <span className="sp-option-title">Save passwords in keyring</span>

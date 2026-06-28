@@ -56,7 +56,7 @@
   top: 25%;
   height: 50%;
   width: 2px;
-  background: var(--neon-cyan);
+  background: var(--color-teal);
   border-radius: 0 2px 2px 0;
 }
 

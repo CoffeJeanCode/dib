@@ -13,9 +13,9 @@ export interface TableNodeData {
 /** Returns the neon border/header colour per engine */
 function engineAccent(engine: string): string {
   const e = engine?.toLowerCase();
-  if (e === "postgres" || e === "postgresql") return "var(--neon-cyan)";
-  if (e === "sqlite") return "var(--neon-green)";
-  return "var(--neon-purple)";
+  if (e === "postgres" || e === "postgresql") return "var(--color-teal)";
+  if (e === "sqlite") return "var(--color-green)";
+  return "var(--color-purple)";
 }
 
 /** Returns a small icon emoji representing the column type */

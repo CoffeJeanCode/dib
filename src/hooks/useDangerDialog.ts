@@ -39,9 +39,38 @@ export function useDangerDialog(
     [activeConnectionId, onInfo, onError],
   );
 
+  const handleTruncateTable = useCallback(
+    (table: TableInfo) => {
+      if (!activeConnectionId) return;
+      const label = table.schema ? `${table.schema}.${table.name}` : table.name;
+      const connId = activeConnectionId;
+      setDangerDialog({
+        message: `¿Truncar tabla "${label}"? Se eliminarán TODOS los registros. Esta acción no se puede deshacer.`,
+        onConfirm: async () => {
+          setDangerDialog(null);
+          try {
+            const sql = table.schema
+              ? `TRUNCATE TABLE "${table.schema}"."${table.name}"`
+              : `TRUNCATE TABLE "${table.name}"`;
+            await dbService.runQuery(connId, sql);
+            onInfo(`Tabla "${label}" truncada`);
+            window.dispatchEvent(new CustomEvent("dib:reload"));
+          } catch (e: unknown) {
+            const msg = e && typeof e === "object" && "message" in e
+              ? String((e as { message: unknown }).message)
+              : String(e);
+            onError(msg);
+          }
+        },
+      });
+    },
+    [activeConnectionId, onInfo, onError],
+  );
+
   return {
     dangerDialog,
     handleDropTable,
+    handleTruncateTable,
     clearDangerDialog: () => setDangerDialog(null),
   };
 }

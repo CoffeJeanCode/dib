@@ -19,7 +19,7 @@
 }
 
 .commit-footer-icon {
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   flex-shrink: 0;
 }
 
@@ -58,13 +58,13 @@
 
 .commit-footer-btn--ghost:hover:not(:disabled) {
   background: var(--color-bg-hover);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 .commit-footer-btn--solid {
-  background: var(--neon-green);
+  background: var(--color-green);
   color: #000;
-  border: 1px solid var(--neon-green);
+  border: 1px solid var(--color-green);
   transition: box-shadow 60ms ease, transform 60ms ease, opacity 80ms ease;
 }
 

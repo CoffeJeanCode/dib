@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { workspaceService } from "@/services/workspaceService";
 import { ConnectionItem } from "./ConnectionItem";
 import { ScriptItem } from "./ScriptItem";
@@ -18,6 +18,7 @@ interface SidebarNavProps {
   onTableSelect?: (table: TableInfo) => void;
   onRefreshScripts: () => void;
   onDeleteConnection: (conn: SavedConnection) => void;
+  onEditConnection?: (conn: SavedConnection) => void;
   onUndoDelete: () => void;
   undoStack: SavedConnection[];
   onContextMenu?: (e: React.MouseEvent, connId: string) => void;
@@ -39,6 +40,7 @@ export function SidebarNav({
   onTableSelect,
   onRefreshScripts,
   onDeleteConnection,
+  onEditConnection,
   onUndoDelete,
   undoStack,
   onContextMenu,
@@ -70,10 +72,6 @@ export function SidebarNav({
     setSelectedIdx(navIdx);
     onScriptOpen?.(script.content, script.title, script.id);
   }, [onScriptOpen]);
-
-  const handleConnectionRename = useCallback((_connId: string, _newName: string) => {
-    // Rename is handled by the parent component
-  }, []);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, connId: string) => {
     onContextMenu?.(e, connId);
@@ -115,9 +113,7 @@ export function SidebarNav({
         case "F2": {
           e.preventDefault();
           const item = navItems[selectedIdx];
-          if (item?.kind === "conn") {
-            // F2 rename is handled by ConnectionItem
-          }
+          if (item?.kind === "conn") onEditConnection?.(item.data);
           break;
         }
         case "z":
@@ -174,7 +170,7 @@ export function SidebarNav({
                       navIdx={navIdx}
                       onSelect={handleConnectionSelect}
                       onContextMenu={handleContextMenu}
-                      onRename={handleConnectionRename}
+                      onEdit={(conn) => onEditConnection?.(conn)}
                       onDelete={onDeleteConnection}
                     />
                   );

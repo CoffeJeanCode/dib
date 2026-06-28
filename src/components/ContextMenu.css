@@ -38,7 +38,7 @@
 
 .ctx-item:hover {
   background: var(--color-bg-hover);
-  border-left-color: var(--brand-turquoise);
+  border-left-color: var(--color-teal);
 }
 
 .ctx-item--danger {
@@ -59,7 +59,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--brand-bright-blue);
+  color: var(--color-highlight);
   flex-shrink: 0;
 }
 

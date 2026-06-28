@@ -58,7 +58,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
               "dg-cell",
               isActive ? " dg-cell--active" : "",
               isSelected ? " dg-cell--selected" : "",
-              isChanged ? " dg-cell--changed bg-pattern-hatching" : "",
+              isChanged ? " dg-cell--changed" : "",
               isFk ? " dg-cell--fk" : "",
             ].join("")}
             role="cell"

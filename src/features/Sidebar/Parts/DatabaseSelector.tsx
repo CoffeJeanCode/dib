@@ -196,7 +196,7 @@ export function DatabaseSelector({
                   )}
                   <button
                     ref={(el) => { itemsRefs.current[idx] = el; }}
-                    className={`sidebar-db-option${item.value === connectionName ? " sidebar-db-option--active bg-pattern-halftone" : ""}${isFocused ? " sidebar-db-option--focused" : ""}`}
+                    className={`sidebar-db-option${item.value === connectionName ? " sidebar-db-option--active" : ""}${isFocused ? " sidebar-db-option--focused" : ""}`}
                     onClick={() => handleDbSwitch(item.value)}
                     role="option"
                     aria-selected={item.value === connectionName}

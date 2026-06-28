@@ -25,7 +25,7 @@
 }
 
 .toast--info {
-  border-color: var(--brand-turquoise);
+  border-color: var(--color-teal);
 }
 
 .toast--error {
@@ -33,7 +33,7 @@
 }
 
 .toast--warning {
-  border-color: var(--dt-orange);
+  border-color: var(--color-orange);
 }
 
 .toast-message {
@@ -71,8 +71,8 @@
 }
 
 .toast-copy-btn:hover {
-  color: var(--brand-turquoise);
-  border-color: var(--brand-turquoise);
+  color: var(--color-teal);
+  border-color: var(--color-teal);
 }
 
 .toast-close-btn {
@@ -116,16 +116,16 @@
 }
 
 .toast-badge--error {
-  background-color: var(--comic-red);
+  background-color: var(--color-red);
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
 }
 
 .toast-badge--warning {
-  background-color: var(--dt-orange);
+  background-color: var(--color-orange);
   clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
 }
 
 .toast-badge--info {
-  background-color: var(--brand-turquoise);
+  background-color: var(--color-teal);
   border-radius: 50%;
 }

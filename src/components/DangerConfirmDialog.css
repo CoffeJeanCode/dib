@@ -13,20 +13,20 @@
   background-image:
     repeating-linear-gradient(
       45deg,
-      rgba(239, 68, 68, 0.06) 0px,
-      rgba(239, 68, 68, 0.06) 1px,
+      color-mix(in srgb, var(--color-red) 6%, transparent) 0px,
+      color-mix(in srgb, var(--color-red) 6%, transparent) 1px,
       transparent 1px,
       transparent 10px
     ),
     repeating-linear-gradient(
       -45deg,
-      rgba(239, 68, 68, 0.04) 0px,
-      rgba(239, 68, 68, 0.04) 1px,
+      color-mix(in srgb, var(--color-red) 4%, transparent) 0px,
+      color-mix(in srgb, var(--color-red) 4%, transparent) 1px,
       transparent 1px,
       transparent 10px
     );
-  border: 3px solid var(--comic-red);
-  box-shadow: 4px 4px 0px var(--comic-red);
+  border: 3px solid var(--color-red);
+  box-shadow: 4px 4px 0px var(--color-red);
   border-radius: var(--radius-md);
   padding: var(--space-6);
   max-width: 380px;
@@ -70,10 +70,10 @@
 }
 
 .dcd-btn--confirm {
-  background: var(--comic-red);
-  color: #fff;
-  border: 2px solid #991b1b;
-  box-shadow: 3px 3px 0px #7f1d1d;
+  background: var(--color-red);
+  color: var(--text-primary);
+  border: 2px solid var(--color-red-dark);
+  box-shadow: 3px 3px 0px var(--color-red-dark);
 }
 
 .dcd-btn--confirm:hover {
@@ -81,6 +81,6 @@
 }
 
 .dcd-btn--confirm:active {
-  box-shadow: 1px 1px 0px #7f1d1d;
+  box-shadow: 1px 1px 0px var(--color-red-dark);
   transform: translate(2px, 2px);
 }

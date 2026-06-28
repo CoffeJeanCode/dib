@@ -29,14 +29,14 @@
 }
 
 .ews-logo-icon {
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 .ews-logo-text {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: bold;
   letter-spacing: -0.04em;
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 /* ── Shortcuts list ────────────────────────────────── */
@@ -105,7 +105,7 @@ kbd {
   font-family: var(--font-mono, "JetBrains Mono", "Fira Code", monospace);
   font-size: 11px;
   line-height: 1;
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   background: var(--color-bg-active);
   border: 1px solid var(--color-border-dark);
   border-radius: 4px;

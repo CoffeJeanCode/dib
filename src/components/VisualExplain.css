@@ -1,13 +1,13 @@
 /* VisualExplain.css — Visual EXPLAIN Plan Renderer */
 
 :root {
-  --ve-cost-high: #ef4444;
-  --ve-cost-med:  #f59e0b;
-  --ve-cost-low:  #10b981;
-  --ve-bg:        var(--color-bg-secondary, #252525);
-  --ve-border:    var(--color-border, #333333);
-  --ve-text:      var(--color-text-primary, #eaeaea);
-  --ve-muted:     var(--color-text-secondary, #888888);
+  --ve-cost-high: var(--color-red);
+  --ve-cost-med:  var(--color-orange);
+  --ve-cost-low:  var(--color-green);
+  --ve-bg:        var(--color-bg-secondary);
+  --ve-border:    var(--color-border);
+  --ve-text:      var(--color-text-primary);
+  --ve-muted:     var(--color-text-secondary);
 }
 
 .ve-root {
@@ -43,19 +43,19 @@
   gap: 8px;
 }
 .ve-title {
-  font-weight: 700;
+  font-weight: bold;
   font-size: 13px;
   letter-spacing: 0.02em;
-  color: #19b1b4;
+  color: var(--color-teal);
 }
 .ve-warn-badge {
-  background: rgba(239, 68, 68, 0.18);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: color-mix(in srgb, var(--color-red) 18%, transparent);
+  color: var(--color-red);
+  border: 1px solid color-mix(in srgb, var(--color-red) 35%, transparent);
   border-radius: 4px;
   padding: 1px 7px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   animation: ve-pulse 2s ease-in-out infinite;
 }
 @keyframes ve-pulse {
@@ -82,8 +82,8 @@
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
-.ve-raw-btn:hover { border-color: #19b1b4; color: #19b1b4; }
-.ve-close-btn:hover { border-color: #ef4444; color: #ef4444; }
+.ve-raw-btn:hover { border-color: var(--color-teal); color: var(--color-teal); }
+.ve-close-btn:hover { border-color: var(--color-red); color: var(--color-red); }
 
 /* ── Canvas ────────────────────────────────────────────────────────── */
 .ve-canvas {
@@ -99,7 +99,7 @@
 .ve-node {
   border: 1px solid var(--ve-border);
   border-radius: 8px;
-  background: var(--color-bg, #191919);
+  background: var(--color-bg);
   padding: 10px 12px 8px;
   margin-bottom: 6px;
   transition: border-color var(--transition-fastest), box-shadow var(--transition-fastest);
@@ -150,7 +150,7 @@
 }
 .ve-node-chevron--open { transform: rotate(90deg); }
 .ve-node-type {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: 12px;
   color: var(--ve-text);
   white-space: nowrap;
@@ -159,7 +159,7 @@
 }
 .ve-seq-badge {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: bold;
   color: var(--ve-cost-high);
   border: 1px solid var(--ve-cost-high);
   background: transparent;
@@ -173,7 +173,7 @@
 /* ── Cost Bar ──────────────────────────────────────────────────────── */
 .ve-cost-bar-track {
   height: 3px;
-  background: rgba(255,255,255,0.07);
+  background: var(--color-bg-active);
   border-radius: 2px;
   margin: 6px 0 2px;
   overflow: hidden;
@@ -185,7 +185,7 @@
 }
 .ve-cost-pct {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   line-height: 1;
   margin-bottom: 4px;
 }
@@ -211,6 +211,6 @@
   font-family: var(--font-mono, monospace);
   font-size: 12px;
   line-height: 1.6;
-  color: #a3c5c9;
+  color: var(--color-teal);
   white-space: pre;
 }

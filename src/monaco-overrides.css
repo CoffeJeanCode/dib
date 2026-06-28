@@ -75,7 +75,7 @@
   background: var(--suggest-focus-bg) !important;
   color: var(--suggest-focus-text) !important;
   /* Subtle left accent border using box-shadow (no layout shift) */
-  box-shadow: inset 3px 0 0 0 var(--color-focus, var(--neon-cyan, #00EEFF)) !important;
+  box-shadow: inset 3px 0 0 0 var(--color-focus) !important;
   outline: none !important;
 }
 

@@ -71,7 +71,7 @@
 
 .dg-cell--active {
   border: 1px solid var(--color-focus);
-  background: rgba(var(--color-focus-rgb, 103, 232, 249), 0.06);
+  background: var(--color-bg-hover);
   z-index: 1;
 }
 
@@ -81,7 +81,7 @@
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   user-select: none;
@@ -129,7 +129,7 @@
 
 .dg-resizer:hover,
 .dg-resizer:active {
-  background: var(--brand-turquoise);
+  background: var(--color-teal);
   opacity: 0.6;
 }
 
@@ -154,17 +154,16 @@
 
 /* ── Selected cell (multi-select) ───────────────────────── */
 .dg-cell--selected {
-  background: rgba(72, 214, 210, 0.1);
+  background: var(--color-bg-hover);
 }
 
 .dg-cell--selected.dg-cell--active {
-  background: rgba(72, 214, 210, 0.15);
+  background: var(--color-bg-active);
 }
 
 /* ── Dirty cell — pending change indicator ───────────────── */
 .dg-cell--changed {
-  background-color: rgba(239, 68, 68, 0.06);
-  --pattern-color: var(--comic-red);
+  background-color: color-mix(in srgb, var(--color-red) 6%, transparent);
 }
 
 .dg-cell--changed::before {
@@ -176,7 +175,7 @@
   height: 0;
   border-style: solid;
   border-width: 8px 8px 0 0;
-  border-color: var(--brand-pale-yellow) transparent transparent transparent;
+  border-color: var(--color-orange) transparent transparent transparent;
   pointer-events: none;
 }
 
@@ -210,7 +209,7 @@
 }
 
 .dg-footer:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--brand-turquoise);
+  box-shadow: inset 0 0 0 2px var(--color-teal);
 }
 
 .dg-footer-note {
@@ -219,7 +218,7 @@
 }
 
 .dg-footer-changes {
-  color: var(--brand-pale-yellow);
+  color: var(--color-orange);
   font-weight: var(--font-weight-medium);
 }
 
@@ -238,7 +237,7 @@
 }
 
 .dg-footer-selection {
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   font-weight: var(--font-weight-medium);
 }
 
@@ -272,11 +271,11 @@
 
 .dg-filter-btn:hover {
   background: var(--color-bg-hover);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 .dg-filter-btn--active {
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 /* ── Filter popover ──────────────────────────────────────── */
@@ -315,7 +314,7 @@
 
 .dg-filter-select:focus,
 .dg-filter-input:focus {
-  border-color: var(--brand-turquoise);
+  border-color: var(--color-teal);
 }
 
 .dg-filter-actions {
@@ -336,9 +335,9 @@
 }
 
 .dg-filter-apply {
-  background: var(--brand-bright-blue);
-  color: #fff;
-  border-color: var(--brand-bright-blue);
+  background: var(--color-highlight);
+  color: var(--bg-base);
+  border-color: var(--color-highlight);
 }
 
 .dg-filter-apply:hover { opacity: 0.88; }
@@ -367,7 +366,7 @@
 
 /* ── Ghost row (pending INSERT) ──────────────────────────── */
 .dg-row--ghost {
-  background: rgba(16, 185, 129, 0.06);
+  background: color-mix(in srgb, var(--color-green) 6%, transparent);
 }
 
 /* ── Deleted row (pending DELETE) ────────────────────────── */
@@ -398,7 +397,7 @@
 }
 
 .dg-fk-link {
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   text-decoration: underline dotted;
   text-underline-offset: 2px;
   cursor: pointer;

@@ -47,11 +47,11 @@
 }
 
 .history-item-icon.success {
-  color: #6EE7B7;
+  color: var(--color-green);
 }
 
 .history-item-icon.error {
-  color: #fca5a5;
+  color: var(--color-red-dark);
 }
 
 .history-item-time {

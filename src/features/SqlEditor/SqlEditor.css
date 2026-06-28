@@ -34,7 +34,7 @@
 .sqleditor-connection {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   background: var(--color-bg-active);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -54,9 +54,9 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--neon-green);
+  border: 1px solid var(--color-green);
   border-radius: var(--radius-sm);
-  background: var(--neon-green);
+  background: var(--color-green);
   color: #000;
   cursor: pointer;
   transition: box-shadow 60ms ease, transform 60ms ease, opacity 80ms ease;
@@ -89,8 +89,8 @@
 
 .sqleditor-file-btn:hover {
   background: var(--color-bg-hover);
-  color: var(--brand-turquoise);
-  border-color: var(--brand-turquoise);
+  color: var(--color-teal);
+  border-color: var(--color-teal);
 }
 
 .sqleditor-status {
@@ -137,7 +137,7 @@
 
 .sqleditor-resizer:hover,
 .sqleditor-resizer:active {
-  background: var(--brand-magenta);
+  background: var(--color-purple);
 }
 
 
@@ -195,16 +195,16 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid rgba(245, 158, 11, 0.5);
+  border: 1px solid color-mix(in srgb, var(--color-orange) 50%, transparent);
   border-radius: var(--radius-sm);
-  background: rgba(245, 158, 11, 0.08);
-  color: #f59e0b;
+  background: color-mix(in srgb, var(--color-orange) 8%, transparent);
+  color: var(--color-orange);
   cursor: pointer;
   transition: background var(--transition-fastest), border-color var(--transition-fastest);
 }
 .sqleditor-explain-btn:hover {
-  background: rgba(245, 158, 11, 0.16);
-  border-color: #f59e0b;
+  background: color-mix(in srgb, var(--color-orange) 16%, transparent);
+  border-color: var(--color-orange);
 }
 .sqleditor-explain-btn:disabled {
   opacity: 0.5;

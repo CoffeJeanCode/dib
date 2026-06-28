@@ -3,16 +3,16 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./theme.css";
 import "./monaco-overrides.css";
+import { getTheme } from "@/hooks/useTheme";
 
-// ── Apply data-theme to <html> so programmatic overrides work in sync
-//    with @media (prefers-color-scheme) in theme.css
-function applyTheme(dark: boolean) {
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-}
+// Apply data-theme on startup (respects localStorage override, else OS pref)
+document.documentElement.setAttribute("data-theme", getTheme());
 
-const mq = window.matchMedia("(prefers-color-scheme: dark)");
-applyTheme(mq.matches);
-mq.addEventListener("change", (e) => applyTheme(e.matches));
+// On OS preference change, only follow it when no manual override is set
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+  if (!localStorage.getItem("dib-theme"))
+    document.documentElement.setAttribute("data-theme", e.matches ? "dark" : "light");
+});
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

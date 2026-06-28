@@ -134,6 +134,7 @@ export function Sidebar({
         onTableSelect={onTableSelect}
         onRefreshScripts={refreshScripts}
         onDeleteConnection={deleteConn}
+        onEditConnection={onEditConnection}
         onUndoDelete={undoDelete}
         undoStack={undoStack}
         onContextMenu={handleContextMenu}

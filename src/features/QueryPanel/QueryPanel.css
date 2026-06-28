@@ -21,7 +21,7 @@
 }
 
 .qp-resize-handle:hover {
-  background: var(--brand-turquoise);
+  background: var(--color-teal);
 }
 
 .qp-tables-header {
@@ -48,13 +48,13 @@
 
 .qp-disconnect-btn:hover {
   background: var(--color-bg-hover);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 .qp-db-name {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   overflow: hidden;
@@ -88,8 +88,8 @@
 }
 
 .qp-table-item:hover {
-  background-color: rgba(25, 177, 180, 0.05);
-  border-left-color: var(--comic-cyan, #19b1b4);
+  background-color: var(--color-bg-hover);
+  border-left-color: var(--color-teal);
 }
 
 .qp-table-item--active {
@@ -101,7 +101,7 @@
 
 .qp-table-icon {
   font-size: 11px;
-  color: var(--neon-green);
+  color: var(--color-green);
   flex-shrink: 0;
 }
 
@@ -135,7 +135,7 @@
 }
 
 .qp-chevron:hover {
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
 }
 
 .qp-chevron--open svg {
@@ -182,8 +182,8 @@
 }
 
 .qp-col-icon { flex-shrink: 0; }
-.qp-col-icon--pk   { color: var(--brand-pale-yellow); }
-.qp-col-icon--num  { color: var(--brand-turquoise); }
+.qp-col-icon--pk   { color: var(--color-orange); }
+.qp-col-icon--num  { color: var(--color-teal); }
 .qp-col-icon--date { color: var(--color-green); }
 .qp-col-icon--text { color: var(--color-text-tertiary); }
 
@@ -240,7 +240,7 @@
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--brand-turquoise);
+  color: var(--color-teal);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: transparent;
@@ -290,13 +290,13 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--color-text-secondary, #787c99);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
 .qp-structure-btn:hover {
-  background: color-mix(in srgb, var(--semantic-info, #7aa2f7) 15%, transparent);
-  color: var(--semantic-info, #7aa2f7);
+  background: color-mix(in srgb, var(--color-blue) 15%, transparent);
+  color: var(--color-blue);
 }
 
 .qp-footer-row {
@@ -310,10 +310,10 @@
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  border: 1px solid color-mix(in srgb, var(--semantic-info, #7aa2f7) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-blue) 30%, transparent);
   border-radius: 4px;
-  background: color-mix(in srgb, var(--semantic-info, #7aa2f7) 8%, transparent);
-  color: var(--semantic-info, #7aa2f7);
+  background: color-mix(in srgb, var(--color-blue) 8%, transparent);
+  color: var(--color-blue);
   font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
@@ -321,17 +321,17 @@
   margin-right: 8px;
 }
 .qp-structure-footer-btn:hover {
-  background: color-mix(in srgb, var(--semantic-info, #7aa2f7) 18%, transparent);
+  background: color-mix(in srgb, var(--color-blue) 18%, transparent);
 }
 
 .qp-structure-footer-btn--active {
-  border-color: var(--neon-cyan, #67E8F9);
-  background: rgba(103, 232, 249, 0.12);
-  color: var(--neon-cyan, #67E8F9);
+  border-color: var(--color-teal);
+  background: color-mix(in srgb, var(--color-teal) 12%, transparent);
+  color: var(--color-teal);
 }
 
 .qp-structure-footer-btn--active:hover {
-  background: rgba(103, 232, 249, 0.20);
+  background: color-mix(in srgb, var(--color-teal) 20%, transparent);
 }
 
 .qp-grid-wrap {
@@ -363,7 +363,7 @@
 
 .qp-page-btn:hover:not(:disabled) {
   background: var(--color-bg-hover);
-  border-color: var(--brand-turquoise);
+  border-color: var(--color-teal);
 }
 
 .qp-page-btn:disabled {

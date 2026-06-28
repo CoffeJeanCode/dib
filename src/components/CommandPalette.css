@@ -14,12 +14,9 @@
 .palette {
   width: 540px;
   max-height: 420px;
-  background: #1A1A1E;
-  border: 1px solid #2A2A30;
+  background: var(--bg-elevated);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow:
-    0 0 0 1px rgba(0, 238, 255, 0.08),
-    0 24px 48px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -31,11 +28,11 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-bottom: 1px solid #2A2A30;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .palette-input-icon {
-  color: var(--neon-cyan);
+  color: var(--color-teal);
   flex-shrink: 0;
 }
 
@@ -46,9 +43,9 @@
   background: transparent;
   font-family: var(--font-sans);
   font-size: 20px;
-  font-weight: 400;
-  color: #FFFFFF;
-  caret-color: var(--neon-cyan);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-primary);
+  caret-color: var(--color-teal);
 }
 
 .palette-input:focus {
@@ -58,7 +55,7 @@
 }
 
 .palette-input::placeholder {
-  color: #444450;
+  color: var(--text-muted);
   font-size: var(--font-size-sm);
 }
 
@@ -67,21 +64,21 @@
   overflow-y: auto;
   padding: var(--space-2);
   scrollbar-width: thin;
-  scrollbar-color: #2A2A30 transparent;
+  scrollbar-color: var(--border-subtle) transparent;
 }
 
 .palette-empty {
   padding: var(--space-6) var(--space-4);
   text-align: center;
-  color: #555560;
+  color: var(--text-muted);
   font-size: var(--font-size-sm);
 }
 
 /* ── Group header ───────────────────────────────────────── */
 .palette-group-header {
   font-size: 10px;
-  font-weight: 700;
-  color: #555560;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
   padding: 8px 14px 4px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -100,10 +97,14 @@
   border: 1px solid transparent;
 }
 
-.palette-item:hover,
+.palette-item:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-teal);
+}
+
 .palette-item--selected {
-  background: rgba(0, 238, 255, 0.06);
-  border-color: var(--neon-cyan);
+  background: var(--color-bg-active);
+  border-color: var(--color-teal);
 }
 
 /* ── Item icon ──────────────────────────────────────────── */
@@ -114,28 +115,28 @@
   width: 26px;
   height: 26px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-bg-hover);
   /* table icon = neon green */
-  color: var(--neon-green);
+  color: var(--color-green);
   flex-shrink: 0;
   transition: background var(--transition-fastest), color var(--transition-fastest);
 }
 
 /* action / database icons = neon magenta */
 .palette-item-icon--action {
-  color: var(--neon-magenta);
+  color: var(--color-purple);
 }
 
 .palette-item:hover .palette-item-icon,
 .palette-item--selected .palette-item-icon {
-  background: rgba(0, 255, 102, 0.12);
-  color: var(--neon-green);
+  background: var(--neon-green-dim);
+  color: var(--color-green);
 }
 
 .palette-item:hover .palette-item-icon--action,
 .palette-item--selected .palette-item-icon--action {
-  background: rgba(255, 0, 255, 0.12);
-  color: var(--neon-magenta);
+  background: var(--neon-magenta-dim);
+  color: var(--color-purple);
 }
 
 /* ── Item label ─────────────────────────────────────────── */
@@ -143,7 +144,7 @@
   flex: 1;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: #FFFFFF;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -153,12 +154,12 @@
 .palette-item-alias {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #555560;
+  color: var(--text-muted);
   flex-shrink: 0;
   padding: 1px 5px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #2A2A30;
+  background: var(--color-bg-hover);
+  border: 1px solid var(--border-subtle);
   letter-spacing: 0.02em;
 }
 
@@ -169,37 +170,30 @@
   align-items: center;
   padding: 2px 6px;
   border-radius: 3px;
-  background: #0E0E12;
-  border: 1px solid #2A2A30;
-  color: var(--neon-cyan);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.04em;
   white-space: nowrap;
   flex-shrink: 0;
-  opacity: 0.7;
-  transition: opacity var(--transition-fastest);
-}
-
-.palette-item:hover .palette-item-shortcut,
-.palette-item--selected .palette-item-shortcut {
-  opacity: 1;
 }
 
 /* ── Category badge (kept for compatibility) ────────────── */
 .palette-item-category {
   font-size: var(--font-size-xs);
-  color: var(--neon-cyan);
+  color: var(--color-teal);
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: var(--radius-sm);
-  background: rgba(0, 238, 255, 0.08);
+  background: var(--color-bg-active);
 }
 
 .palette-item-category--action {
-  color: var(--neon-magenta);
-  background: rgba(255, 0, 255, 0.08);
+  color: var(--color-purple);
+  background: var(--neon-magenta-dim);
 }
 
 /* ── DROP TABLE danger variant ──────────────────────────── */
@@ -209,7 +203,7 @@
 
 .palette-item--danger .palette-item-category {
   color: var(--color-red);
-  background: rgba(239, 68, 68, 0.10);
+  background: var(--color-danger-bg);
 }
 
 .palette-item--danger:hover .palette-item-label,
@@ -220,7 +214,7 @@
 .palette-item--danger:hover,
 .palette-item--danger.palette-item--selected {
   border-color: var(--color-red);
-  background: rgba(239, 68, 68, 0.05);
+  background: var(--color-danger-bg);
 }
 
 /* ── Hints (empty state) ────────────────────────────────── */
@@ -242,8 +236,8 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: #0E0E12;
-  border: 1px solid #2A2A30;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
 }
 
@@ -255,16 +249,91 @@
   padding: 2px 6px;
   border-radius: 3px;
   background: transparent;
-  border: 1px solid var(--neon-cyan);
-  color: var(--neon-cyan);
+  border: 1px solid var(--color-teal);
+  color: var(--color-teal);
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .palette-hint-desc {
   font-size: var(--font-size-xs);
-  color: #888888;
+  color: var(--text-secondary);
+}
+
+/* ── DDL sub-mode bar ───────────────────────────────────────── */
+.palette-ddl-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.palette-ddl-bar--danger {
+  background: var(--color-danger-bg);
+  color: var(--color-red-dark);
+  border-bottom-color: var(--color-danger-border);
+}
+
+.palette-ddl-bar--alter {
+  background: var(--neon-purple-dim);
+  color: var(--color-purple);
+  border-bottom-color: var(--color-border-dark);
+}
+
+.palette-ddl-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity var(--transition-fastest), border-color var(--transition-fastest);
+  flex-shrink: 0;
+}
+
+.palette-ddl-back:hover {
+  opacity: 1;
+  border-color: currentColor;
+}
+
+.palette-ddl-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.palette-ddl-label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.palette-ddl-hint {
+  opacity: 0.5;
+  font-weight: var(--font-weight-normal);
+}
+
+/* ── DDL action item (Drop Table…, Truncate…, Alter…) ───────── */
+.palette-item--ddl .palette-item-icon {
+  color: var(--color-purple);
+}
+
+.palette-item--ddl .palette-item-label {
+  color: var(--color-text-secondary);
+}
+
+.palette-item--ddl:hover .palette-item-label,
+.palette-item--ddl.palette-item--selected .palette-item-label {
+  color: var(--color-purple);
 }

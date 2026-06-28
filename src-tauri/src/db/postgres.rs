@@ -235,10 +235,12 @@ fn split_statements(sql: &str) -> Vec<String> {
 
 fn pg_value_to_json(row: &sqlx::postgres::PgRow, i: usize) -> Value {
     match row.columns()[i].type_info().name() {
-        "INT2" | "INT4" | "INT8" | "OID" => {
-            row.try_get::<i64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null)
-        }
-        "FLOAT4" | "FLOAT8" | "NUMERIC" => {
+        "INT2" => row.try_get::<i16, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        "INT4" => row.try_get::<i32, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        "INT8" => row.try_get::<i64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        "OID"  => row.try_get::<i64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        "FLOAT4" => row.try_get::<f32, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        "FLOAT8" | "NUMERIC" => {
             row.try_get::<f64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null)
         }
         "BOOL" => row.try_get::<bool, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),

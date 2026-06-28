@@ -1,8 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    theme.css  —  DiB Design Tokens
-   Dark mode is the default (Neon Dark-Dash).
-   Light mode overrides via @media (prefers-color-scheme: light)
-   AND via [data-theme="light"] for programmatic switching.
+   Dark mode is the default (Neon Dark-Dash) via :root,[data-theme="dark"].
+   Light mode via [data-theme="light"] — always set programmatically by main.tsx.
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Invariant tokens (same in all themes) ──────────────────── */
@@ -10,25 +9,23 @@
   /* Typography */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
-  --font-size-xs:   0.75rem;
-  --font-size-sm:   0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg:   1.125rem;
-  --font-size-xl:   1.25rem;
-  --font-size-2xl:  1.5rem;
+  --font-size-xs:       0.75rem;
+  --font-size-sm:       0.875rem;
+  --font-size-base:     1rem;
+  --font-size-lg:       1.125rem;
+  --font-size-2xl:      1.5rem;
   --font-weight-normal:   400;
   --font-weight-medium:   500;
   --font-weight-semibold: 600;
 
   /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
   --space-12: 3rem;
 
   /* Border radius */
@@ -41,25 +38,27 @@
   --transition-fastest: 80ms ease;
   --transition-normal:  200ms ease;
 
-  /* Focus ring (disabled globally) */
-  --focus-ring: none;
-
   /* Layout */
   --sidebar-width:           260px;
   --sidebar-width-collapsed: 48px;
 
-  /* ── PASTEL ACCENT PALETTE (constant across themes) ────── */
-  --neon-magenta:     #C084FC;
+  /* ── Accent palette (invariant) ──────────────────────────────── */
   --neon-green:       #6EE7B7;
   --neon-purple:      #A78BFA;
   --neon-cyan:        #67E8F9;
   --neon-yellow:      #FDE68A;
-
-  /* Dimmed pastels for background tints */
   --neon-magenta-dim: rgba(192, 132, 252, 0.12);
   --neon-green-dim:   rgba(110, 231, 183, 0.10);
   --neon-purple-dim:  rgba(167, 139, 250, 0.12);
-  --neon-cyan-dim:    rgba(103, 232, 249, 0.10);
+
+  /* ── Semantic aliases (lazily resolve from themed tokens below) ── */
+  --bg-base:        var(--color-bg);
+  --bg-surface:     var(--color-bg-sidebar);
+  --bg-elevated:    var(--color-bg-elevated);
+  --text-primary:   var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted:     var(--color-text-tertiary);
+  --border-subtle:  var(--color-border);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -81,7 +80,6 @@
   /* Borders */
   --color-border:       #2A2A30;
   --color-border-dark:  #333340;
-  --color-border-focus: var(--neon-cyan);
 
   /* Text — strict hierarchy, no text-shadow */
   --color-text-primary:   #FFFFFF;
@@ -98,17 +96,10 @@
   --color-suggest-focus-bg: rgba(103, 232, 249, 0.08);
   --color-suggest-focus-text: #FFFFFF;
 
-  /* Database engine colors */
-  --color-db-postgres:       #2a6fdb;
-  --color-db-postgres-light: #0f1d35;
-  --color-db-sqlite:         #6EE7B7;
-  --color-db-sqlite-light:   #0c1a14;
-
   /* Functional */
   --color-danger-bg:     #1a0c0c;
   --color-danger-border: #5c2e2e;
   --color-danger-text:   #f5a5a5;
-  --color-hover:         rgba(103, 232, 249, 0.05);
 
   /* Semantic */
   --color-red:          #ef4444;
@@ -117,7 +108,6 @@
 
   --color-orange:       #f59e0b;
   --color-orange-light: #1a1508;
-  --color-orange-dark:  #fcd34d;
 
   --color-green:        var(--neon-green);
   --color-green-light:  #0c1a14;
@@ -125,137 +115,25 @@
 
   --color-blue:         #2a6fdb;
   --color-blue-light:   #0f1d35;
-  --color-blue-dark:    #81e9e6;
 
   --color-purple:       var(--neon-purple);
   --color-purple-light: #15102a;
-  --color-purple-dark:  #c4b5fd;
 
   --color-teal:         var(--neon-cyan);
   --color-teal-light:   #0c1a20;
-  --color-teal-dark:    #81e9e6;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.7), 0 2px 4px -2px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
 
-  /* Legacy brand aliases */
-  --brand-deep-blue:   #1E1E22;
-  --brand-bright-blue: var(--neon-cyan);
-  --brand-turquoise:   var(--neon-cyan);
-  --brand-light-cyan:  var(--neon-cyan);
-  --brand-pale-yellow: var(--neon-yellow);
-  --dt-dark:      #121215;
-  --dt-light:     #FFFFFF;
-  --dt-turquoise: var(--neon-cyan);
-  --dt-orange:    var(--neon-yellow);
-  --comic-red:    #ef4444;
-  --comic-yellow: var(--neon-yellow);
-  --comic-cyan:   var(--neon-cyan);
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LIGHT MODE TOKENS
-   Strategy:
-   - Backgrounds: clean warm whites / very light greys.
-   - Neon accents are preserved but used only for interactive
-     indicators; text-on-white uses deeper variants for WCAG AA.
-   - Yellows/greens that fail contrast on white are shifted to
-     deeper, more saturated variants (amber, forest green).
+   LIGHT MODE TOKENS  (applied via data-theme="light" on <html>)
+   Backgrounds: clean warm whites / very light greys.
+   Accents: shifted to deeper variants for WCAG AA on white
+   (neon-green → forest green, neon-yellow → amber, etc.)
    ═══════════════════════════════════════════════════════════════ */
-@media (prefers-color-scheme: light) {
-  :root {
-    /* Backgrounds */
-    --color-bg:           #FAFAFA;
-    --color-bg-sidebar:   #F4F4F6;
-    --color-bg-secondary: #F0F0F3;
-    --color-bg-hover:     rgba(0, 0, 0, 0.04);
-    --color-bg-active:    rgba(0, 0, 0, 0.07);
-    --color-bg-elevated:  #FFFFFF;
-
-    /* Monaco seamless background */
-    --color-monaco-bg:    #FAFAFA;
-
-    /* Borders */
-    --color-border:       #DCDCE0;
-    --color-border-dark:  #C8C8CE;
-    --color-border-focus: #0068C9;
-
-    /* Text */
-    --color-text-primary:   #111118;
-    --color-text-secondary: #5A5A6A;
-    --color-text-tertiary:  #9090A0;
-
-    /* Highlight / Focus — deep blue for AA on white */
-    --color-highlight: #0068C9;
-    --color-focus:     #0068C9;
-
-    /* Suggest widget surface */
-    --color-suggest-bg:       #FFFFFF;
-    --color-suggest-border:   #DCDCE0;
-    --color-suggest-focus-bg: rgba(0, 104, 201, 0.08);
-    --color-suggest-focus-text: #111118;
-
-    /* Database engine colors (deeper for light bg) */
-    --color-db-postgres:       #1a56a8;
-    --color-db-postgres-light: #dbeafe;
-    --color-db-sqlite:         #14803c;
-    --color-db-sqlite-light:   #dcfce7;
-
-    /* Functional */
-    --color-danger-bg:     #fff0f0;
-    --color-danger-border: #fca5a5;
-    --color-danger-text:   #b91c1c;
-    --color-hover:         rgba(0, 104, 201, 0.05);
-
-    /* Semantic — shifted for AA contrast on light bg */
-    --color-red:          #dc2626;   /* deeper red */
-    --color-red-light:    #fff0f0;
-    --color-red-dark:     #991b1b;
-
-    --color-orange:       #b45309;   /* amber — yellow was unreadable on white */
-    --color-orange-light: #fffbeb;
-    --color-orange-dark:  #92400e;
-
-    --color-green:        #15803d;   /* forest green — neon-green fails AA on white */
-    --color-green-light:  #f0fdf4;
-    --color-green-dark:   #14532d;
-
-    --color-blue:         #1d4ed8;
-    --color-blue-light:   #eff6ff;
-    --color-blue-dark:    #1e3a8a;
-
-    --color-purple:       #7c3aed;
-    --color-purple-light: #f5f3ff;
-    --color-purple-dark:  #4c1d95;
-
-    --color-teal:         #0e7490;
-    --color-teal-light:   #f0f9ff;
-    --color-teal-dark:    #164e63;
-
-    /* Shadows (subtle on light) */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.10);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.10);
-
-    /* Legacy brand aliases — light mode */
-    --brand-deep-blue:   #FFFFFF;
-    --brand-bright-blue: #1d4ed8;
-    --brand-turquoise:   #0e7490;
-    --brand-light-cyan:  #0e7490;
-    --brand-pale-yellow: #b45309;
-    --dt-dark:      #FAFAFA;
-    --dt-light:     #111118;
-    --dt-turquoise: #0e7490;
-    --dt-orange:    #b45309;
-    --comic-red:    #dc2626;
-    --comic-yellow: #b45309;
-    --comic-cyan:   #0e7490;
-  }
-}
-
-/* Programmatic light theme (applied via data-theme="light" on <html>) */
 [data-theme="light"] {
   /* Backgrounds */
   --color-bg:           #FAFAFA;
@@ -269,7 +147,6 @@
 
   --color-border:       #DCDCE0;
   --color-border-dark:  #C8C8CE;
-  --color-border-focus: #0068C9;
 
   --color-text-primary:   #111118;
   --color-text-secondary: #5A5A6A;
@@ -283,15 +160,9 @@
   --color-suggest-focus-bg: rgba(0, 104, 201, 0.08);
   --color-suggest-focus-text: #111118;
 
-  --color-db-postgres:       #1a56a8;
-  --color-db-postgres-light: #dbeafe;
-  --color-db-sqlite:         #14803c;
-  --color-db-sqlite-light:   #dcfce7;
-
   --color-danger-bg:     #fff0f0;
   --color-danger-border: #fca5a5;
   --color-danger-text:   #b91c1c;
-  --color-hover:         rgba(0, 104, 201, 0.05);
 
   --color-red:          #dc2626;
   --color-red-light:    #fff0f0;
@@ -299,7 +170,6 @@
 
   --color-orange:       #b45309;
   --color-orange-light: #fffbeb;
-  --color-orange-dark:  #92400e;
 
   --color-green:        #15803d;
   --color-green-light:  #f0fdf4;
@@ -307,34 +177,17 @@
 
   --color-blue:         #1d4ed8;
   --color-blue-light:   #eff6ff;
-  --color-blue-dark:    #1e3a8a;
 
   --color-purple:       #7c3aed;
   --color-purple-light: #f5f3ff;
-  --color-purple-dark:  #4c1d95;
 
   --color-teal:         #0e7490;
   --color-teal-light:   #f0f9ff;
-  --color-teal-dark:    #164e63;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.10);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.10);
 
-  --brand-deep-blue:   #FFFFFF;
-  --brand-bright-blue: #1d4ed8;
-  --brand-turquoise:   #0e7490;
-  --brand-light-cyan:  #0e7490;
-  --brand-pale-yellow: #b45309;
-  --dt-dark:      #FAFAFA;
-  --dt-light:     #111118;
-  --dt-turquoise: #0e7490;
-  --dt-orange:    #b45309;
-  --comic-red:    #dc2626;
-  --comic-yellow: #b45309;
-  --comic-cyan:   #0e7490;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL RESET
@@ -427,45 +280,6 @@ a:focus-visible {
   white-space: nowrap;
 }
 
-/* ── Neon Badge ──────────────────────────────────────────────── */
-.badge-neon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 9px;
-  font-size: 10px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  background: var(--neon-magenta);
-  color: #000;
-  line-height: 1;
-}
-
-.badge-neon--green  { background: var(--neon-green);  color: #000; }
-.badge-neon--purple { background: var(--neon-purple); color: #fff; }
-
-/* ── Neon Button ─────────────────────────────────────────────── */
-.btn-neon {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--neon-cyan);
-  background: transparent;
-  color: var(--neon-cyan);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.btn-neon:hover            { background: var(--neon-cyan);    color: #000; }
-.btn-neon--primary         { background: var(--neon-magenta); border-color: var(--neon-magenta); color: #000; }
-.btn-neon--primary:hover   { background: #dd00dd;             border-color: #dd00dd;             color: #000; }
 
 /* ── Shortcut Hint Badge ─────────────────────────────────────── */
 .kbd-hint {
@@ -478,31 +292,8 @@ a:focus-visible {
   color: var(--color-focus);
   font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.04em;
-}
-
-/* ── Pattern stubs (no visual patterns in Neon Dark-Dash) ────── */
-.pattern-halftone,
-.pattern-hatching,
-.pattern-grid,
-.bg-pattern-halftone,
-.bg-pattern-action,
-.bg-pattern-hatching {
-  /* intentionally empty */
-}
-
-/* ── Comic Tooltip ───────────────────────────────────────────── */
-.comic-tooltip {
-  position: relative;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-dark);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-sm);
-  font-size: var(--font-size-sm);
-  z-index: 1000;
 }
 
 /* ── Custom Scrollbars ────────────────────────────────────── */

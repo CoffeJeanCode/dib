@@ -1,0 +1,21 @@
+FROM oven/bun:latest
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PATH="/root/.cargo/bin:$PATH"
+
+RUN apt-get update && apt-get install -y \
+    curl build-essential pkg-config file \
+    libssl-dev libwebkit2gtk-4.1-dev \
+    libayatana-appindicator3-dev librsvg2-dev \
+    libsecret-1-dev libdbus-1-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+WORKDIR /app
+COPY . .
+
+RUN bun install && bun run tauri build
+
+# ponytail: copies bundle out; AppImage runs standalone, deb needs install
+RUN cp -r src-tauri/target/release/bundle /output 2>/dev/null || true
