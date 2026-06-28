@@ -1,0 +1,136 @@
+.dba-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dba {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-lg);
+}
+
+.dba--danger {
+  border: 3px solid var(--color-red);
+  box-shadow: 4px 4px 0px var(--color-red);
+}
+
+.dba-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.dba-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dba-input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  outline: none;
+  width: 100%;
+}
+
+.dba-input:focus {
+  border-color: var(--color-focus);
+}
+
+.dba-select {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  outline: none;
+  width: 100%;
+  cursor: pointer;
+}
+
+.dba-select:focus {
+  border-color: var(--color-focus);
+}
+
+.dba-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.dba-btn {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.dba-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dba-btn--cancel {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-dark);
+}
+
+.dba-btn--cancel:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.dba-btn--confirm {
+  background: var(--color-teal);
+  border-color: var(--color-teal);
+  color: #000;
+}
+
+.dba-btn--confirm:hover {
+  filter: brightness(1.1);
+}
+
+.dba-btn--danger {
+  background: var(--color-red);
+  color: var(--text-primary);
+  border: 2px solid var(--color-red-dark);
+  box-shadow: 3px 3px 0px var(--color-red-dark);
+}
+
+.dba-btn--danger:hover {
+  opacity: 0.9;
+}
+
+.dba-btn--danger:active {
+  box-shadow: 1px 1px 0px var(--color-red-dark);
+  transform: translate(2px, 2px);
+}
+
+.dba-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-red);
+}

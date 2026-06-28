@@ -49,7 +49,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
         const value = (row as unknown[])?.[j];
         const isChanged = editState.changes.has(makeKey(pkStr, col));
         const isFk = !!fkMap[col] && value != null;
-        const cssW = `var(--dg-cw-${j})`;
+        const cssW = `var(--dg-cw-${j}, 150px)`;
 
         return (
           <div

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useUiStore } from "@/store/uiStore";
 
-const EVENT = "dib:theme";
-const KEY   = "dib-theme";
+const KEY = "dib-theme";
 
 export function getTheme(): "dark" | "light" {
   const stored = localStorage.getItem(KEY) as "dark" | "light" | null;
@@ -12,7 +12,7 @@ export function getTheme(): "dark" | "light" {
 export function setTheme(t: "dark" | "light") {
   localStorage.setItem(KEY, t);
   document.documentElement.setAttribute("data-theme", t);
-  window.dispatchEvent(new CustomEvent(EVENT, { detail: t }));
+  useUiStore.getState().setTheme(t);
 }
 
 export function clearThemeOverride() {
@@ -20,21 +20,21 @@ export function clearThemeOverride() {
 }
 
 export function useTheme() {
-  const [theme, setT] = useState<"dark" | "light">(getTheme);
+  const theme = useUiStore((s) => s.theme);
+  const storeSetTheme = useUiStore((s) => s.setTheme);
 
   useEffect(() => {
-    const onManual = (e: Event) => setT((e as CustomEvent<"dark" | "light">).detail);
     const onSystem = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem(KEY)) setT(e.matches ? "dark" : "light");
+      if (!localStorage.getItem(KEY)) {
+        const next = e.matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", next);
+        storeSetTheme(next);
+      }
     };
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    window.addEventListener(EVENT, onManual);
     mq.addEventListener("change", onSystem);
-    return () => {
-      window.removeEventListener(EVENT, onManual);
-      mq.removeEventListener("change", onSystem);
-    };
-  }, []);
+    return () => mq.removeEventListener("change", onSystem);
+  }, [storeSetTheme]);
 
   return { theme, setTheme };
 }

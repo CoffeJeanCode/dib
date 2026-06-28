@@ -82,7 +82,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
         <div className="sidebar-item-actions">
           <button
             className="sidebar-item-action-btn"
-            title="Renombrar"
+            title="Rename"
             onClick={(e) => {
               e.stopPropagation();
               startRename();
@@ -92,7 +92,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
           </button>
           <button
             className="sidebar-item-action-btn"
-            title="Exportar como .sql"
+            title="Export as .sql"
             onClick={(e) => {
               e.stopPropagation();
               workspaceService.exportScriptDialog(script.content).catch(console.error);
@@ -102,7 +102,7 @@ export function ScriptItem({ script, isSelected, navIdx, onSelect, onRefreshScri
           </button>
           <button
             className="sidebar-item-action-btn sidebar-item-action-btn--danger"
-            title="Eliminar script (Delete)"
+            title="Delete script (Delete)"
             onClick={(e) => {
               e.stopPropagation();
               workspaceService.deleteInternalScript(script.id)

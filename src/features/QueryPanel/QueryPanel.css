@@ -383,3 +383,103 @@
 .qp-data {
   position: relative;
 }
+
+.qp-page-size-select {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-3);
+  padding-right: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23888888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right var(--space-1) center;
+  transition: border-color var(--transition-fast);
+  cursor: pointer;
+}
+
+.qp-page-size-select:hover,
+.qp-page-size-select:focus {
+  outline: none;
+  border-color: var(--color-teal);
+}
+
+/* ── Save-As dialog ───────────────────────────────────────── */
+.qp-save-as-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.qp-save-as-dialog {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.qp-save-as-label {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.qp-save-as-input {
+  background: var(--color-bg-input, var(--color-bg));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  padding: var(--space-2) var(--space-3);
+  outline: none;
+}
+
+.qp-save-as-input:focus {
+  border-color: var(--color-teal);
+}
+
+.qp-save-as-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.qp-save-as-actions button {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: var(--space-1) var(--space-3);
+}
+
+.qp-save-as-actions button:hover {
+  background: var(--color-bg-hover);
+}
+
+.qp-save-as-actions .qp-save-as-confirm {
+  background: var(--color-teal);
+  border-color: var(--color-teal);
+  color: #000;
+}
+
+.qp-save-as-actions .qp-save-as-confirm:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.qp-save-as-actions .qp-save-as-confirm:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

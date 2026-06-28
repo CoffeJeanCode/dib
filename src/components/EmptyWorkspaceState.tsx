@@ -7,12 +7,12 @@ interface Shortcut {
 }
 
 const SHORTCUTS: Shortcut[] = [
-  { label: "Búsqueda rápida / Comandos",  keys: [["Ctrl", "P"]] },
-  { label: "Alternar Sidebar",            keys: [["Ctrl", "B"]] },
-  { label: "Ejecutar consulta",           keys: [["Ctrl", "Enter"], ["F5"]] },
-  { label: "Autocompletado",              keys: [["Ctrl", "Space"]] },
-  { label: "Cerrar pestaña",             keys: [["Ctrl", "W"]] },
-  { label: "Guardar / Commit",           keys: [["Ctrl", "S"]] },
+  { label: "Quick Search / Commands",  keys: [["Ctrl", "P"]] },
+  { label: "Toggle Sidebar",           keys: [["Ctrl", "B"]] },
+  { label: "Run Query",                keys: [["Ctrl", "Enter"], ["F5"]] },
+  { label: "Autocomplete",             keys: [["Ctrl", "Space"]] },
+  { label: "Close Tab",                keys: [["Ctrl", "W"]] },
+  { label: "Save / Commit",            keys: [["Ctrl", "S"]] },
 ];
 
 function Keys({ groups }: { groups: string[][] }) {

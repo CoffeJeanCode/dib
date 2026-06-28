@@ -38,6 +38,7 @@ export interface TriggerInfo {
 export interface SchemaObjects {
   tables: TableInfo[];
   views: TableInfo[];
+  materialized_views: TableInfo[];
   functions: TableInfo[];
   procedures: TableInfo[];
   triggers: TriggerInfo[];
@@ -82,6 +83,7 @@ export interface SavedConnection {
   db_name: string;
   path: string | null;
   password: string | null;
+  save_password?: boolean;
 }
 
 export type FilterOperator =
@@ -123,6 +125,7 @@ export interface InternalScript {
   content: string;
   created_at: string;
   updated_at: string;
+  connection_id?: string | null;
 }
 
 export interface QueryHistoryEntry {
@@ -145,12 +148,10 @@ export interface SchemaChange {
   default_value?: string;
 }
 
-export interface ExplainPlan {
-  node_type: string;
-  total_cost: number;
-  actual_rows?: number;
-  plans?: ExplainPlan[];
-  [key: string]: unknown;
+export interface DdlResult {
+  name: string;
+  schema: string | null;
+  ddl: string;
 }
 
 /** @deprecated use InternalScript */

@@ -53,6 +53,18 @@ pub trait DatabaseDriver: Send + Sync {
         changes: &[SchemaChange],
     ) -> Result<(), QueryError>;
     async fn list_databases(&self) -> Result<Vec<String>, QueryError>;
+    async fn create_database(&self, name: &str) -> Result<(), QueryError> {
+        let _ = name;
+        Err(QueryError { message: "Creating databases is not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
+    }
+    async fn drop_database(&self, name: &str) -> Result<(), QueryError> {
+        let _ = name;
+        Err(QueryError { message: "Dropping databases is not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
+    }
+    async fn rename_database(&self, old_name: &str, new_name: &str) -> Result<(), QueryError> {
+        let _ = (old_name, new_name);
+        Err(QueryError { message: "Renaming databases is not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
+    }
     /// Run EXPLAIN (ANALYZE, FORMAT JSON) and return a structured plan.
     /// Falls back gracefully to a "not supported" error for SQLite.
     async fn explain_query(&self, sql: &str) -> Result<ExplainPlan, QueryError>;
@@ -70,8 +82,7 @@ pub trait DatabaseDriver: Send + Sync {
         let _ = (trigger_name, schema);
         Err(QueryError { message: "Not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
     }
-    async fn cancel_query(&self, pid: i32) -> Result<bool, QueryError> {
-        let _ = pid;
+    async fn cancel_query(&self) -> Result<bool, QueryError> {
         Err(QueryError { message: "Query cancellation not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
     }
     /// Return full structural anatomy: columns, indexes, foreign keys, triggers.

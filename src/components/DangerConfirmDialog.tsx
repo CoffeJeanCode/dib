@@ -8,7 +8,7 @@ interface Props {
   onCancel: () => void;
 }
 
-export function DangerConfirmDialog({ message, confirmLabel = "Eliminar", onConfirm, onCancel }: Props) {
+export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfirm, onCancel }: Props) {
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function DangerConfirmDialog({ message, confirmLabel = "Eliminar", onConf
         <p className="dcd-message">{message}</p>
         <div className="dcd-actions">
           <button ref={cancelRef} className="dcd-btn dcd-btn--cancel" onClick={onCancel}>
-            Cancelar
+            Cancel
           </button>
           <button className="dcd-btn dcd-btn--confirm" onClick={onConfirm}>
             {confirmLabel}

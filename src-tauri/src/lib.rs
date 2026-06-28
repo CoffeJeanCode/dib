@@ -2,14 +2,15 @@ mod commands;
 mod db;
 mod storage;
 
-use commands::connection::{connect_saved, connect_to_db, disconnect, list_databases, switch_database, test_connection, DbState};
+use commands::connection::{connect_saved, connect_to_db, create_database, disconnect, drop_database, list_databases, rename_database, switch_database, test_connection, DbState};
 use commands::ddl::{apply_schema_changes, drop_table, generate_crud_sql, get_function_ddl, get_trigger_ddl, get_view_ddl};
 use commands::persistence::{delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state};
 use commands::query::{apply_changes, cancel_query, explain_query, fetch_table_data, run_query};
-use commands::schema::{fetch_schema_objects, fetch_table_relations, fetch_table_schema, fetch_tables, get_table_structure};
+use commands::schema::{fetch_schema_objects, fetch_table_relations, fetch_table_schema, get_table_structure};
 use commands::system_status::check_system_status;
 use commands::workspace::{
     delete_internal_script, export_script_dialog, get_internal_scripts, get_next_script_number,
+    update_internal_script,
     get_query_history, import_script_dialog, list_scripts, read_script,
     save_internal_script, save_query_history, save_script,
 };
@@ -38,8 +39,10 @@ pub fn run() {
             test_connection,
             list_databases,
             switch_database,
+            create_database,
+            drop_database,
+            rename_database,
             // schema introspection
-            fetch_tables,
             fetch_schema_objects,
             fetch_table_schema,
             fetch_table_relations,
@@ -72,6 +75,7 @@ pub fn run() {
             save_internal_script,
             get_internal_scripts,
             delete_internal_script,
+            update_internal_script,
             save_query_history,
             get_query_history,
             get_next_script_number,

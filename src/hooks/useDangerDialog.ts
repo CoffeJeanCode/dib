@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { dbService } from "@/services/dbService";
+import { useConnectionStore } from "@/store/connectionStore";
 import type { TableInfo } from "@/types/db";
 
 interface DangerDialog {
@@ -13,6 +14,7 @@ export function useDangerDialog(
   onError: (msg: string) => void,
 ) {
   const [dangerDialog, setDangerDialog] = useState<DangerDialog | null>(null);
+  const triggerReload = useConnectionStore((s) => s.triggerReload);
 
   const handleDropTable = useCallback(
     (table: TableInfo) => {
@@ -26,7 +28,7 @@ export function useDangerDialog(
           try {
             await dbService.dropTable(connId, table.name, table.schema ?? null);
             onInfo(`Tabla "${label}" eliminada`);
-            window.dispatchEvent(new CustomEvent("dib:reload"));
+            triggerReload();
           } catch (e: unknown) {
             const msg = e && typeof e === "object" && "message" in e
               ? String((e as { message: unknown }).message)
@@ -36,7 +38,7 @@ export function useDangerDialog(
         },
       });
     },
-    [activeConnectionId, onInfo, onError],
+    [activeConnectionId, onInfo, onError, triggerReload],
   );
 
   const handleTruncateTable = useCallback(
@@ -54,7 +56,7 @@ export function useDangerDialog(
               : `TRUNCATE TABLE "${table.name}"`;
             await dbService.runQuery(connId, sql);
             onInfo(`Tabla "${label}" truncada`);
-            window.dispatchEvent(new CustomEvent("dib:reload"));
+            triggerReload();
           } catch (e: unknown) {
             const msg = e && typeof e === "object" && "message" in e
               ? String((e as { message: unknown }).message)
@@ -64,7 +66,7 @@ export function useDangerDialog(
         },
       });
     },
-    [activeConnectionId, onInfo, onError],
+    [activeConnectionId, onInfo, onError, triggerReload],
   );
 
   return {

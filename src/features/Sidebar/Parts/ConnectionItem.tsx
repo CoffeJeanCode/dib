@@ -42,14 +42,14 @@ export function ConnectionItem({
       <div className="sidebar-item-actions">
         <button
           className="sidebar-item-action-btn"
-          title="Editar conexión (F2)"
+          title="Edit connection (F2)"
           onClick={(e) => { e.stopPropagation(); onEdit(conn); }}
         >
           <Pencil size={12} />
         </button>
         <button
           className="sidebar-item-action-btn sidebar-item-action-btn--danger"
-          title="Eliminar (Delete)"
+          title="Delete (Delete)"
           onClick={(e) => { e.stopPropagation(); onDelete(conn); }}
         >
           <Trash2 size={12} />

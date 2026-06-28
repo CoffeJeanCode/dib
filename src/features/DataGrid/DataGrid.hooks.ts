@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { PendingChange, ColumnInfo, GridFilter, FilterOperator } from "@/types/db";
 import { ROW_H, OVERSCAN, DEFAULT_COL_W, MIN_COL_W, MAX_HISTORY } from "./DataGrid.constants";
 import { operatorsForType, cellStr, makeKey, cellId, buildRangeSet } from "./DataGrid.utils";
@@ -421,14 +422,11 @@ export function useDataGridState({
     setSelectedCells(new Set(["0:0"]));
   }, [tableName, columns, editState, mutate, colInfoMap, setActiveCell]);
 
-  // Global listener so Ctrl+N fires even when the OS/Tauri intercepts before React's onKeyDown
+  // React to pendingInsertRow from store — replaces dib:insert-row window event
   const insertGhostRowRef = useRef(insertGhostRow);
   insertGhostRowRef.current = insertGhostRow;
-  useEffect(() => {
-    const handler = () => insertGhostRowRef.current();
-    window.addEventListener("dib:insert-row", handler);
-    return () => window.removeEventListener("dib:insert-row", handler);
-  }, []);
+  const pendingInsertRow = useWorkspaceStore((s) => s.pendingInsertRow);
+  useEffect(() => { if (pendingInsertRow > 0) insertGhostRowRef.current(); }, [pendingInsertRow]);
 
 
   // Batch duplicate: all selected rows in one mutate call → no stale closure issue
@@ -576,8 +574,21 @@ export function useDataGridState({
       const parts = id.split(":");
       const r = parseInt(parts[0], 10);
       const c = parseInt(parts[1], 10);
-      if (editState.ghostRowIds.has(r)) continue;
       const col = columns[c];
+      if (editState.ghostRowIds.has(r)) {
+        // Ghost row: clear the cell in the pending insert's new_value
+        const changeId = editState.ghostRowIds.get(r)!;
+        const oldCh = nextChanges.get(changeId);
+        if (oldCh) {
+          const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
+            ? { ...(oldCh.new_value as Record<string, unknown>) }
+            : {} as Record<string, unknown>;
+          prevObj[col] = null;
+          nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
+        }
+        nextRows[r][c] = null;
+        continue;
+      }
       const pkStr = getPkStr(r, editState.rows);
       const key = makeKey(pkStr, col);
       const original = rows[r]?.[c];
@@ -607,25 +618,38 @@ export function useDataGridState({
     for (let dr = 0; dr < pasteRows.length; dr++) {
       const r = activeCell.row + dr;
       if (r >= editState.rows.length) break;
-      if (editState.ghostRowIds.has(r)) continue;
       for (let dc = 0; dc < pasteRows[dr].length; dc++) {
         const c: number = activeCell.col + dc;
         if (c >= columns.length) break;
         const col = columns[c];
         const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
-        const pkStr = getPkStr(r, editState.rows);
-        const key = makeKey(pkStr, col);
-        const original = rows[r]?.[c];
-        if (cellStr(original) !== cellStr(newValue)) {
-          nextChanges.set(key, {
-            id: key, type: "update", table: tableName,
-            row_index: r, column: col,
-            column_type: colInfoMap[col]?.data_type,
-            old_value: original, new_value: newValue,
-            row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
-          } as import("@/types/db").PendingChange);
+        if (editState.ghostRowIds.has(r)) {
+          // Ghost (insert) row — update the pending insert's new_value
+          const changeId = editState.ghostRowIds.get(r)!;
+          const oldCh = nextChanges.get(changeId);
+          if (oldCh) {
+            const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
+              ? { ...(oldCh.new_value as Record<string, unknown>) }
+              : {} as Record<string, unknown>;
+            prevObj[col] = newValue;
+            nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
+          }
+          nextRows[r][c] = newValue;
+        } else {
+          const pkStr = getPkStr(r, editState.rows);
+          const key = makeKey(pkStr, col);
+          const original = rows[r]?.[c];
+          if (cellStr(original) !== cellStr(newValue)) {
+            nextChanges.set(key, {
+              id: key, type: "update", table: tableName,
+              row_index: r, column: col,
+              column_type: colInfoMap[col]?.data_type,
+              old_value: original, new_value: newValue,
+              row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
+            } as import("@/types/db").PendingChange);
+          }
+          nextRows[r][c] = newValue;
         }
-        nextRows[r][c] = newValue;
       }
     }
     mutate({ rows: nextRows, changes: nextChanges });

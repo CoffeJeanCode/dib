@@ -1,22 +1,25 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Database, FileCode2, Clock, Settings, LayoutGrid } from "lucide-react";
+import { Database, FileCode2, Clock, LayoutGrid, Settings } from "lucide-react";
 import { useUiState } from "@/hooks/useUiState";
 import { useKeybindings } from "@/hooks/useKeybindings";
 import { Sidebar } from "@/features/Sidebar";
+import { Titlebar } from "@/components/Titlebar";
 import type { SavedConnection, TableInfo } from "@/types/db";
 import "./Layout.css";
 
 const SIDEBAR_MIN = 160;
 const SIDEBAR_SNAP = 140;
 
-type Panel = "connections" | "scripts" | "history" | "database";
+type Panel = "connections" | "scripts" | "history" | "database" | "files";
 
 const PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
-  { id: "connections", icon: <Database size={20} />,    title: "Conexiones" },
-  { id: "database",    icon: <LayoutGrid size={20} />,  title: "Base de Datos" },
+  { id: "connections", icon: <Database size={20} />,    title: "Connections" },
+  { id: "database",    icon: <LayoutGrid size={20} />,  title: "Database" },
   { id: "scripts",     icon: <FileCode2 size={20} />,   title: "Scripts" },
-  { id: "history",     icon: <Clock size={20} />,       title: "Historial" },
+  { id: "history",     icon: <Clock size={20} />,       title: "History" },
 ];
+
+type DbActionType = "create" | "rename" | "drop";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,9 +33,10 @@ interface LayoutProps {
   onDisconnect?: () => void;
   onEditConnection?: (conn: SavedConnection) => void;
   onSettingsOpen?: () => void;
+  onDbAction?: (action: DbActionType) => void;
 }
 
-export function Layout({ children, activeConnectionId, activeSessionId, connectionName, onConnectionSelect, onScriptOpen, onTableSelect, onDatabaseSwitch, onDisconnect, onEditConnection, onSettingsOpen }: LayoutProps) {
+export function Layout({ children, activeConnectionId, activeSessionId, connectionName, onConnectionSelect, onScriptOpen, onTableSelect, onDatabaseSwitch, onDisconnect, onEditConnection, onSettingsOpen, onDbAction }: LayoutProps) {
   const { state, loaded, updateState } = useUiState();
   const [activePanel, setActivePanel] = useState<Panel>(activeConnectionId ? "database" : "connections");
 
@@ -74,7 +78,6 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
       resizeStartWRef.current = state.sidebar_width ?? 260;
 
       document.body.style.cursor = "col-resize";
-      document.body.style.pointerEvents = "none";
       document.body.style.userSelect = "none";
 
       const onMove = (moveEvt: MouseEvent) => {
@@ -83,11 +86,7 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
         rafRef.current = requestAnimationFrame(() => {
           const delta = moveEvt.clientX - resizeStartXRef.current;
           const newW = resizeStartWRef.current + delta;
-          if (newW < SIDEBAR_SNAP) {
-            cleanup();
-            updateState({ is_sidebar_open: false });
-            return;
-          }
+          // Clamp to min during drag; snap-to-close happens on mouseup
           const clamped = Math.max(SIDEBAR_MIN, newW);
           document.documentElement.style.setProperty("--sidebar-width-dynamic", `${clamped}px`);
         });
@@ -97,7 +96,6 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
         resizingRef.current = false;
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
         document.body.style.cursor = "";
-        document.body.style.pointerEvents = "";
         document.body.style.userSelect = "";
         window.removeEventListener("mousemove", onMove);
         window.removeEventListener("mouseup", onUp);
@@ -106,10 +104,14 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
       const onUp = (upEvt: MouseEvent) => {
         if (!resizingRef.current) return;
         const delta = upEvt.clientX - resizeStartXRef.current;
-        const finalW = Math.max(SIDEBAR_MIN, resizeStartWRef.current + delta);
+        const newW = resizeStartWRef.current + delta;
         cleanup();
         document.documentElement.style.removeProperty("--sidebar-width-dynamic");
-        updateState({ sidebar_width: finalW });
+        if (newW < SIDEBAR_SNAP) {
+          updateState({ is_sidebar_open: false });
+        } else {
+          updateState({ sidebar_width: Math.max(SIDEBAR_MIN, newW) });
+        }
       };
 
       window.addEventListener("mousemove", onMove);
@@ -121,8 +123,11 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
   if (!loaded) {
     return (
       <div className="layout">
-        <div className="main-content" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span className="sidebar-item-text sidebar-item-text--muted">Loading...</span>
+        <Titlebar />
+        <div className="layout-body">
+          <div className="main-content" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span className="sidebar-item-text sidebar-item-text--muted">Loading...</span>
+          </div>
         </div>
       </div>
     );
@@ -132,48 +137,52 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
 
   return (
     <div className="layout">
-      <div className="activity-bar">
-        <div className="activity-bar-top">
-          {PANELS.map(({ id, icon, title }) => (
-            <button
-              key={id}
-              className={`activity-btn${state.is_sidebar_open && activePanel === id ? " activity-btn--active" : ""}`}
-              onClick={() => handleActivityClick(id)}
-              title={title}
-            >
-              {icon}
-            </button>
-          ))}
+      <Titlebar />
+      <div className="layout-body">
+        <div className="activity-bar">
+          <div className="activity-bar-top">
+            {PANELS.map(({ id, icon, title }) => (
+              <button
+                key={id}
+                className={`activity-btn${state.is_sidebar_open && activePanel === id ? " activity-btn--active" : ""}`}
+                onClick={() => handleActivityClick(id)}
+                title={title}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+          <div className="activity-bar-bottom">
+            {onSettingsOpen && (
+              <button className="activity-btn" onClick={onSettingsOpen} title="Settings">
+                <Settings size={20} />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="activity-bar-bottom">
-          {onSettingsOpen && (
-            <button className="activity-btn" onClick={onSettingsOpen} title="Configuración">
-              <Settings size={20} />
-            </button>
-          )}
-        </div>
+
+        {state.is_sidebar_open && (
+          <Sidebar
+            activeView={activePanel}
+            width={sidebarW}
+            activeConnectionId={activeConnectionId}
+            activeSessionId={activeSessionId}
+            onResizeStart={handleResizeStart}
+            connectionName={connectionName}
+            onConnectionSelect={onConnectionSelect}
+            onScriptOpen={onScriptOpen}
+            onTableSelect={onTableSelect}
+            onDatabaseSwitch={onDatabaseSwitch}
+            onDisconnect={onDisconnect}
+            onEditConnection={onEditConnection}
+            onDbAction={onDbAction}
+          />
+        )}
+
+        <main id="dib-main-panel" className="main-content" tabIndex={-1}>
+          {children}
+        </main>
       </div>
-
-      {state.is_sidebar_open && (
-        <Sidebar
-          activeView={activePanel}
-          width={sidebarW}
-          activeConnectionId={activeConnectionId}
-          activeSessionId={activeSessionId}
-          onResizeStart={handleResizeStart}
-          connectionName={connectionName}
-          onConnectionSelect={onConnectionSelect}
-          onScriptOpen={onScriptOpen}
-          onTableSelect={onTableSelect}
-          onDatabaseSwitch={onDatabaseSwitch}
-          onDisconnect={onDisconnect}
-          onEditConnection={onEditConnection}
-        />
-      )}
-
-      <main id="dib-main-panel" className="main-content" tabIndex={-1}>
-        {children}
-      </main>
     </div>
   );
 }

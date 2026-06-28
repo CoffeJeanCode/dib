@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, Row, SqlitePool, TypeInfo};
 
-use crate::db::{ChangeRow, ColumnInfo, DatabaseDriver, ExplainNode, ExplainPlan, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, TableInfo, TableRelation};
+use crate::db::{ChangeRow, ColumnInfo, DatabaseDriver, ExplainNode, ExplainPlan, ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation, TableStructure};
 
 /// Builds ` WHERE ...` clause with ? placeholders for SQLite.
 fn build_where_sqlite(filters: &[GridFilter]) -> (String, Vec<String>) {
@@ -91,6 +91,23 @@ fn sqlite_value_to_json(row: &sqlx::sqlite::SqliteRow, i: usize) -> Value {
             .unwrap_or(Value::Null),
         _ => row.try_get::<String, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
     }
+}
+
+/// Returns the first PK column name for a table, or empty string if unknown.
+/// Used to resolve implicit FK references (PRAGMA foreign_key_list `to` = NULL).
+async fn sqlite_resolve_pk(pool: &SqlitePool, table: &str) -> String {
+    let safe = table.replace('"', "");
+    let sql = format!("PRAGMA table_info(\"{}\")", safe);
+    sqlx::query(&sql)
+        .fetch_all(pool)
+        .await
+        .ok()
+        .and_then(|rows| {
+            rows.into_iter()
+                .find(|r| r.try_get::<i64, _>("pk").unwrap_or(0) == 1)
+                .and_then(|r| r.try_get::<String, _>("name").ok())
+        })
+        .unwrap_or_default()
 }
 
 #[async_trait]
@@ -334,7 +351,6 @@ impl DatabaseDriver for SqliteDriver {
         table_name: &str,
         _schema: Option<&str>,
     ) -> Result<Vec<TableRelation>, QueryError> {
-        // PRAGMA can't use bind params — safe after stripping double-quotes
         let safe = table_name.replace('"', "");
         let sql = format!("PRAGMA foreign_key_list(\"{}\")", safe);
         let rows = sqlx::query(&sql)
@@ -342,15 +358,24 @@ impl DatabaseDriver for SqliteDriver {
             .await
             .map_err(|e| QueryError::from(e.to_string()))?;
 
-        Ok(rows
-            .iter()
-            .map(|r| TableRelation {
+        let mut relations = Vec::with_capacity(rows.len());
+        for row in &rows {
+            let target_table: String = row.try_get("table").unwrap_or_default();
+            let source_column: String = row.try_get("from").unwrap_or_default();
+            // `to` is NULL when the FK implicitly references the target table's PK
+            let to: Option<String> = row.try_get("to").ok().flatten();
+            let target_column = match to.filter(|s| !s.is_empty()) {
+                Some(col) => col,
+                None => sqlite_resolve_pk(&self.pool, &target_table).await,
+            };
+            relations.push(TableRelation {
                 source_table: table_name.to_string(),
-                source_column: r.try_get("from").unwrap_or_default(),
-                target_table: r.try_get("table").unwrap_or_default(),
-                target_column: r.try_get("to").unwrap_or_default(),
-            })
-            .collect())
+                source_column,
+                target_table,
+                target_column,
+            });
+        }
+        Ok(relations)
     }
 
     async fn apply_schema_changes(
@@ -464,6 +489,158 @@ impl DatabaseDriver for SqliteDriver {
         let mut conn = self.pool.acquire().await.map_err(|e| QueryError::from(e.to_string()))?;
         sqlx::query(&sql).execute(&mut *conn).await.map_err(|e| QueryError::from(e.to_string()))?;
         Ok(())
+    }
+
+    async fn get_table_structure(&self, table_name: &str, _schema: Option<&str>) -> Result<TableStructure, QueryError> {
+        let safe = table_name.replace('"', "");
+
+        // Columns via PRAGMA table_info
+        let col_sql = format!("PRAGMA table_info(\"{safe}\")");
+        let col_rows = sqlx::query(&col_sql)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let columns: Vec<StructureColumn> = col_rows.iter().map(|r| {
+            let pk: i64 = r.try_get("pk").unwrap_or(0);
+            let notnull: i64 = r.try_get("notnull").unwrap_or(0);
+            StructureColumn {
+                name: r.try_get("name").unwrap_or_default(),
+                data_type: r.try_get("type").unwrap_or_default(),
+                is_primary_key: pk > 0,
+                is_nullable: notnull == 0,
+                default_value: r.try_get("dflt_value").ok(),
+            }
+        }).collect();
+
+        // Indexes via PRAGMA index_list + index_info
+        let idx_sql = format!("PRAGMA index_list(\"{safe}\")");
+        let idx_rows = sqlx::query(&idx_sql)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let mut indexes: Vec<StructureIndex> = Vec::new();
+        for row in &idx_rows {
+            let idx_name: String = row.try_get("name").unwrap_or_default();
+            let is_unique: bool = {
+                let v: i64 = row.try_get("unique").unwrap_or(0);
+                v != 0
+            };
+            let is_primary: bool = {
+                // origin = "pk" for primary key indexes
+                if let Ok(origin_str) = row.try_get::<String, _>("origin") {
+                    origin_str == "pk"
+                } else {
+                    false
+                }
+            };
+            let index_type: String = row.try_get("origin").unwrap_or_default();
+
+            // Get columns for this index
+            let info_sql = format!("PRAGMA index_info(\"{}\")", &idx_name.replace('"', ""));
+            let info_rows = sqlx::query(&info_sql)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+
+            let idx_cols: Vec<String> = info_rows.iter()
+                .map(|ir| ir.try_get::<String, _>("name").unwrap_or_default())
+                .collect();
+
+            indexes.push(StructureIndex {
+                name: idx_name,
+                columns: idx_cols,
+                is_unique,
+                is_primary,
+                index_type,
+            });
+        }
+
+        // Foreign keys via PRAGMA foreign_key_list
+        let fk_sql = format!("PRAGMA foreign_key_list(\"{safe}\")");
+        let fk_rows = sqlx::query(&fk_sql)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        // Group FK rows by id (multi-column FKs share the same id)
+        use std::collections::BTreeMap;
+        let mut fk_groups: BTreeMap<i64, Vec<&sqlx::sqlite::SqliteRow>> = BTreeMap::new();
+        for row in &fk_rows {
+            let id: i64 = row.try_get("id").unwrap_or(0);
+            fk_groups.entry(id).or_default().push(row);
+        }
+
+        let mut foreign_keys: Vec<ForeignKey> = Vec::new();
+        for group in fk_groups.values() {
+            let first = group[0];
+            let ft: String = first.try_get("table").unwrap_or_default();
+            let name = format!("fk_{}_{}", ft, first.try_get::<i64, _>("id").unwrap_or(0));
+            let cols: Vec<String> = group.iter()
+                .map(|r| r.try_get::<String, _>("from").unwrap_or_default())
+                .collect();
+            // `to` is NULL for implicit PK references; resolve the PK in that case.
+            let mut fcols: Vec<String> = Vec::with_capacity(group.len());
+            for r in group.iter() {
+                let to: Option<String> = r.try_get("to").ok().flatten();
+                let col = match to.filter(|s| !s.is_empty()) {
+                    Some(c) => c,
+                    None => sqlite_resolve_pk(&self.pool, &ft).await,
+                };
+                fcols.push(col);
+            }
+            foreign_keys.push(ForeignKey {
+                name,
+                columns: cols,
+                foreign_table: ft,
+                foreign_schema: None,
+                foreign_columns: fcols,
+                on_delete: first.try_get("on_delete").unwrap_or_default(),
+                on_update: first.try_get("on_update").unwrap_or_default(),
+            });
+        }
+
+        // Triggers via sqlite_master
+        let trig_sql = format!("SELECT name, sql FROM sqlite_master WHERE type='trigger' AND tbl_name=\"{safe}\"");
+        let trig_rows = sqlx::query(&trig_sql)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let triggers: Vec<StructureTrigger> = trig_rows.iter().map(|r| {
+            let name: String = r.try_get("name").unwrap_or_default();
+            let trigger_sql: Option<String> = r.try_get("sql").ok();
+            let (timing, event) = trigger_sql.as_ref()
+                .map(|s| {
+                    let upper = s.to_uppercase();
+                    let timing = if upper.contains("INSTEAD OF") { "INSTEAD OF".to_string() }
+                        else if upper.contains("BEFORE") { "BEFORE".to_string() }
+                        else if upper.contains("AFTER") { "AFTER".to_string() }
+                        else { String::new() };
+                    let event = if upper.contains(" INSERT ") { "INSERT".to_string() }
+                        else if upper.contains(" DELETE ") { "DELETE".to_string() }
+                        else if upper.contains(" UPDATE ") { "UPDATE".to_string() }
+                        else { String::new() };
+                    (timing, event)
+                })
+                .unwrap_or_default();
+            StructureTrigger {
+                name,
+                timing,
+                event,
+                function_name: String::new(),
+            }
+        }).collect();
+
+        Ok(TableStructure {
+            table_name: table_name.to_string(),
+            schema: None,
+            columns,
+            indexes,
+            foreign_keys,
+            triggers,
+        })
     }
 
     fn driver_name(&self) -> &'static str {

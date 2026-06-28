@@ -7,57 +7,57 @@ interface KeyboardCheatSheetProps {
 
 const SECTIONS = [
   {
-    title: "Navegación global",
+    title: "Global Navigation",
     rows: [
-      ["Ctrl+P / Ctrl+K", "Abrir Command Palette"],
-      ["Ctrl+1", "Enfocar sidebar"],
-      ["Ctrl+2", "Enfocar panel principal"],
-      ["Ctrl+R", "Recargar datos activos"],
-      ["Ctrl+Shift+R", "Recargar aplicación"],
+      ["Ctrl+P / Ctrl+K", "Open Command Palette"],
+      ["Ctrl+1", "Focus sidebar"],
+      ["Ctrl+2", "Focus main panel"],
+      ["Ctrl+R", "Reload active data"],
+      ["Ctrl+Shift+R", "Reload app"],
     ],
   },
   {
-    title: "Pestañas",
+    title: "Tabs",
     rows: [
-      ["Ctrl+T", "Nueva pestaña SQL"],
-      ["Ctrl+W", "Cerrar pestaña activa"],
-      ["Ctrl+Shift+W", "Cerrar TODAS las pestañas"],
-      ["Ctrl+Shift+T", "Restaurar última pestaña"],
-      ["Ctrl+Tab", "Siguiente pestaña"],
-      ["Ctrl+Shift+Tab", "Pestaña anterior"],
+      ["Ctrl+T", "New SQL tab"],
+      ["Ctrl+W", "Close active tab"],
+      ["Ctrl+Shift+W", "Close ALL tabs"],
+      ["Ctrl+Shift+T", "Restore last tab"],
+      ["Ctrl+Tab", "Next tab"],
+      ["Ctrl+Shift+Tab", "Previous tab"],
     ],
   },
   {
-    title: "DataGrid — Edición",
+    title: "DataGrid — Editing",
     rows: [
-      ["Enter / F2", "Editar celda"],
-      ["Escape", "Cancelar edición"],
-      ["Tab / Shift+Tab", "Siguiente / anterior celda"],
-      ["Ctrl+S", "Guardar cambios"],
-      ["Ctrl+Z", "Deshacer"],
-      ["Ctrl+Y / Ctrl+Shift+Z", "Rehacer"],
-      ["Ctrl+N", "Nueva fila"],
-      ["Ctrl+D", "Duplicar fila"],
-      ["Delete / Backspace", "Marcar fila para eliminar"],
+      ["Enter / F2", "Edit cell"],
+      ["Escape", "Cancel editing"],
+      ["Tab / Shift+Tab", "Next / previous cell"],
+      ["Ctrl+S", "Save changes"],
+      ["Ctrl+Z", "Undo"],
+      ["Ctrl+Y / Ctrl+Shift+Z", "Redo"],
+      ["Ctrl+N", "New row"],
+      ["Ctrl+D", "Duplicate row"],
+      ["Delete / Backspace", "Mark row for deletion"],
     ],
   },
   {
-    title: "DataGrid — Selección",
+    title: "DataGrid — Selection",
     rows: [
-      ["Flechas", "Mover celda activa"],
-      ["Shift+Flechas", "Extender selección"],
-      ["Ctrl+A", "Seleccionar todo"],
-      ["Ctrl+C", "Copiar selección (TSV)"],
-      ["Ctrl+Click (FK)", "Navegar a tabla padre"],
+      ["Arrows", "Move active cell"],
+      ["Shift+Arrows", "Extend selection"],
+      ["Ctrl+A", "Select all"],
+      ["Ctrl+C", "Copy selection (TSV)"],
+      ["Ctrl+Click (FK)", "Navigate to parent table"],
     ],
   },
   {
-    title: "Editor SQL",
+    title: "SQL Editor",
     rows: [
-      ["Ctrl+Enter", "Ejecutar query"],
-      ["Ctrl+S", "Guardar script"],
-      ["Ctrl+L", "Enfocar editor / grid"],
-      ["Ctrl+O", "Importar script"],
+      ["Ctrl+Enter", "Run query"],
+      ["Ctrl+S", "Save script"],
+      ["Ctrl+L", "Focus editor / grid"],
+      ["Ctrl+O", "Import script"],
     ],
   },
 ];
@@ -73,7 +73,7 @@ export function KeyboardCheatSheet({ onClose }: KeyboardCheatSheetProps) {
     <div className="kcs-backdrop" onClick={onClose}>
       <div className="kcs" onClick={(e) => e.stopPropagation()}>
         <div className="kcs-header">
-          <span className="kcs-title">Atajos de teclado</span>
+          <span className="kcs-title">Keyboard Shortcuts</span>
           <button className="kcs-close" onClick={onClose}>✕</button>
         </div>
         <div className="kcs-body">

@@ -1,6 +1,5 @@
-use std::collections::HashMap;
+use std::sync::Arc;
 use tauri::State;
-use tokio::sync::Mutex;
 
 use crate::db::{
     create_driver, ConnectionInfo, ConnectionStatus, DatabaseDriver,
@@ -8,16 +7,18 @@ use crate::db::{
 };
 use crate::storage::AppDb;
 
+use dashmap::DashMap;
+
 pub struct DbState {
-    pub(crate) connections: Mutex<HashMap<String, Box<dyn DatabaseDriver>>>,
-    pub(crate) configs: Mutex<HashMap<String, DbConfig>>,
+    pub(crate) connections: DashMap<String, Arc<dyn DatabaseDriver>>,
+    pub(crate) configs: DashMap<String, DbConfig>,
 }
 
 impl DbState {
     pub fn new() -> Self {
         Self {
-            connections: Mutex::new(HashMap::new()),
-            configs: Mutex::new(HashMap::new()),
+            connections: DashMap::new(),
+            configs: DashMap::new(),
         }
     }
 }
@@ -34,11 +35,8 @@ pub async fn connect_to_db(config: DbConfig, state: State<'_, DbState>) -> Resul
         status: ConnectionStatus::Connected,
     };
 
-    let mut connections = state.connections.lock().await;
-    connections.insert(id.clone(), driver);
-    drop(connections);
-    let mut configs = state.configs.lock().await;
-    configs.insert(id, config);
+    state.connections.insert(id.clone(), Arc::from(driver));
+    state.configs.insert(id, config);
 
     Ok(info)
 }
@@ -53,10 +51,8 @@ pub async fn test_connection(config: DbConfig) -> Result<String, String> {
         .map_err(|e| e.message)
 }
 
-// Reconnects a saved connection: fetches metadata from local SQLite,
-// retrieves the password from the OS keyring — never from the frontend.
-// If keyring lookup fails and `password` is provided, uses it and stores for next time.
-// If keyring lookup fails and no password is provided, returns "password_required".
+// Reconnects a saved connection: fetches metadata + password from local SQLite.
+// If save_password=true the password is already in the DB; otherwise prompts the user.
 #[tauri::command]
 pub async fn connect_saved(
     saved_id: String,
@@ -66,29 +62,27 @@ pub async fn connect_saved(
     db_state: State<'_, DbState>,
 ) -> Result<ConnectionInfo, QueryError> {
     let saved_id = saved_id.trim_matches('"').to_string();
-    let should_save = save_password.unwrap_or(true);
 
     let saved = app_db
         .get_connection_by_id(&saved_id)
         .map_err(QueryError::from)?;
 
-    let keyring_password = app_db.get_password_for(&saved_id);
-
-    // Determine effective password: keyring first, then fallback to provided password.
-    let effective_password = match keyring_password {
+    // Password comes from the DB when save_password=true, otherwise from the caller.
+    let saved_pw = saved.password.as_deref().filter(|p| !p.is_empty()).map(str::to_owned);
+    let effective_password = match saved_pw {
         Some(pw) => Some(pw),
-        None => match password {
-            Some(pw) if !pw.is_empty() => {
-                if should_save {
-                    app_db.upsert_password_for(&saved_id, &pw);
+        None => match password.filter(|p| !p.is_empty()) {
+            Some(pw) => {
+                // If the user checked "remember" on this prompt, persist immediately.
+                if save_password.unwrap_or(false) {
+                    let mut updated = saved.clone();
+                    updated.password = Some(pw.clone());
+                    updated.save_password = true;
+                    let _ = app_db.save_connection(&updated);
                 }
                 Some(pw)
             }
-            _ => {
-                println!(
-                    "[dib] connect_saved: id={} engine={} keyring_password=not found, no password provided",
-                    saved_id, saved.engine,
-                );
+            None => {
                 return Err(QueryError {
                     message: "password_required".to_string(),
                     code: Some("PASSWORD_REQUIRED".to_string()),
@@ -97,13 +91,6 @@ pub async fn connect_saved(
             }
         },
     };
-
-    println!(
-        "[dib] connect_saved: id={} engine={} password={}",
-        saved_id,
-        saved.engine,
-        if effective_password.is_some() { "retrieved" } else { "none" }
-    );
 
     let is_sqlite = saved.engine == "sqlite";
     let config = DbConfig {
@@ -136,55 +123,69 @@ pub async fn connect_saved(
         status: ConnectionStatus::Connected,
     };
 
-    let mut connections = db_state.connections.lock().await;
-    connections.insert(new_id.clone(), driver);
-    drop(connections);
-    let mut configs = db_state.configs.lock().await;
-    configs.insert(new_id, config);
+    db_state.connections.insert(new_id.clone(), Arc::from(driver));
+    db_state.configs.insert(new_id, config);
 
     Ok(info)
 }
 
 #[tauri::command]
 pub async fn disconnect(connection_id: String, state: State<'_, DbState>) -> Result<(), String> {
-    let mut connections = state.connections.lock().await;
-    connections.remove(&connection_id);
-    drop(connections);
-    let mut configs = state.configs.lock().await;
-    configs.remove(&connection_id);
+    state.connections.remove(&connection_id);
+    state.configs.remove(&connection_id);
     Ok(())
 }
 
 #[tauri::command]
 pub async fn list_databases(connection_id: String, state: State<'_, DbState>) -> Result<Vec<String>, QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.list_databases().await
 }
 
 #[tauri::command]
 pub async fn switch_database(connection_id: String, db_name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
-    let base_config = {
-        let configs = state.configs.lock().await;
-        configs.get(&connection_id).cloned().ok_or_else(|| QueryError {
-            message: format!("Connection config not found: {}", connection_id),
-            code: None,
-            severity: Some("ERROR".to_string()),
-        })?
-    };
+    let base_config = state.configs.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection config not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
     let new_config = DbConfig { database: Some(db_name), ..base_config };
     let new_driver = create_driver(&new_config).await?;
-    {
-        let mut connections = state.connections.lock().await;
-        connections.insert(connection_id.clone(), new_driver);
-    }
-    {
-        let mut configs = state.configs.lock().await;
-        configs.insert(connection_id, new_config);
-    }
+    state.connections.insert(connection_id.clone(), Arc::from(new_driver));
+    state.configs.insert(connection_id, new_config);
     Ok(())
+}
+
+#[tauri::command]
+pub async fn create_database(connection_id: String, name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
+    driver.create_database(&name).await
+}
+
+#[tauri::command]
+pub async fn drop_database(connection_id: String, name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
+    driver.drop_database(&name).await
+}
+
+#[tauri::command]
+pub async fn rename_database(connection_id: String, old_name: String, new_name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
+    driver.rename_database(&old_name, &new_name).await
 }

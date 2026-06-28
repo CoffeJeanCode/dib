@@ -13,19 +13,18 @@ pub async fn run_query(
     let start = std::time::Instant::now();
 
     let result = {
-        let connections = state.connections.lock().await;
-        let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+        let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
             message: format!("Connection not found: {}", connection_id),
             code: None,
             severity: Some("ERROR".to_string()),
-        })?;
+        })?.clone();
         driver.execute_query(&sql).await
     };
 
     if result.is_ok() {
         let elapsed_ms = start.elapsed().as_millis() as i64;
         let db = app_handle.state::<crate::storage::AppDb>();
-        let _ = db.save_query_history_internal(&connection_id, &sql, true, elapsed_ms);
+        let _ = db.save_query_history_internal(&connection_id, &sql, true, elapsed_ms, 500);
     }
 
     result
@@ -39,13 +38,11 @@ pub async fn apply_changes(
     changes: Vec<ChangeRow>,
     state: State<'_, DbState>,
 ) -> Result<u64, QueryError> {
-    let connections = state.connections.lock().await;
-
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
 
     driver.apply_changes(&table, &primary_key_column, &changes).await
 }
@@ -61,12 +58,11 @@ pub async fn fetch_table_data(
     filters: Option<Vec<GridFilter>>,
     state: State<'_, DbState>,
 ) -> Result<PagedResult, QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.fetch_page(&table_name, schema.as_deref(), offset, limit, filters.as_deref().unwrap_or(&[])).await
 }
 
@@ -76,26 +72,23 @@ pub async fn explain_query(
     sql: String,
     state: State<'_, DbState>,
 ) -> Result<ExplainPlan, QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.explain_query(&sql).await
 }
 
 #[tauri::command]
 pub async fn cancel_query(
     connection_id: String,
-    pid: i32,
     state: State<'_, DbState>,
 ) -> Result<bool, QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
-    driver.cancel_query(pid).await
+    })?.clone();
+    driver.cancel_query().await
 }

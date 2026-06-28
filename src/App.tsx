@@ -7,6 +7,9 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 import { ToastContainer } from "@/components/Toast";
 import { KeyboardCheatSheet } from "@/components/KeyboardCheatSheet";
 import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
+import { RenameDialog } from "@/components/RenameDialog";
+import { DbActionDialog } from "@/components/DbActionDialog";
+import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useUiState } from "@/hooks/useUiState";
 import { useToast } from "@/hooks/useToast";
@@ -14,6 +17,8 @@ import { useConnectionManager } from "@/hooks/useConnectionManager";
 import { useAppKeybindings } from "@/hooks/useAppKeybindings";
 import { useDangerDialog } from "@/hooks/useDangerDialog";
 import { DDL_TEMPLATE } from "@/constants/ddlTemplates";
+import { useUiStore } from "@/store/uiStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { TableInfo, SavedConnection } from "@/types/db";
 import type { NavTable, OpenScript } from "@/types/workspace";
 import "./App.css";
@@ -38,21 +43,25 @@ function App() {
     handleDatabaseSwitch, handlePasswordSubmit, handlePasswordCancel,
   } = useConnectionManager({ connections, savePassword: uiState.save_password, onError: error, onInfo: info });
 
-  const [paletteOpen, setPaletteOpen]           = useState(false);
-  const [navigateTo, setNavigateTo]              = useState<NavTable | null>(null);
-  const [openScript, setOpenScript]              = useState<OpenScript | null>(null);
-  const [editingConn, setEditingConn]            = useState<SavedConnection | null>(null);
-  const [showNewConnection, setShowNewConnection] = useState(false);
-  const [settingsOpen, setSettingsOpen]          = useState(false);
-  const [cheatSheetOpen, setCheatSheetOpen]      = useState(false);
+  // UI state from stores
+  const paletteOpen     = useUiStore((s) => s.paletteOpen);
+  const settingsOpen    = useUiStore((s) => s.settingsOpen);
+  const cheatSheetOpen  = useUiStore((s) => s.cheatSheetOpen);
+  const showNewConnection = useUiStore((s) => s.showNewConnection);
+  const editingConn     = useUiStore((s) => s.editingConn);
+  const { togglePalette, setSettingsOpen, setCheatSheetOpen, setShowNewConnection, setEditingConn } = useUiStore.getState();
+
+  const navigateTo  = useWorkspaceStore((s) => s.navigateTo);
+  const openScript  = useWorkspaceStore((s) => s.openScript);
+  const { setNavigateTo, setOpenScript } = useWorkspaceStore.getState();
 
   const { dangerDialog, handleDropTable, handleTruncateTable, clearDangerDialog } =
     useDangerDialog(active?.activeId ?? null, info, error);
 
-  const handleTogglePalette    = useCallback(() => setPaletteOpen((p) => !p), []);
-  const handleToggleCheatSheet = useCallback(() => setCheatSheetOpen((v) => !v), []);
+  const handleTogglePalette    = useCallback(() => togglePalette(), [togglePalette]);
+  const handleToggleCheatSheet = useCallback(() => setCheatSheetOpen(!cheatSheetOpen), [cheatSheetOpen, setCheatSheetOpen]);
   const handleBackendError     = useCallback((cmd: string, msg: string) => {
-    error(`Backend no disponible — ${cmd}: ${msg}. Reinicia la aplicación si persiste.`);
+    error(`Backend unavailable — ${cmd}: ${msg}. Restart the app if it persists.`);
   }, [error]);
 
   useAppKeybindings({
@@ -64,26 +73,51 @@ function App() {
 
   useEffect(() => {
     if (!active) { setNavigateTo(null); setOpenScript(null); }
-  }, [active]);
+  }, [active, setNavigateTo, setOpenScript]);
 
-  const handleTableSelect    = useCallback((table: TableInfo) => setNavigateTo({ table, v: Date.now() }), []);
-  const handleScriptOpen     = useCallback((sql: string, name: string, id?: string) =>
-    setOpenScript({ sql, name, id: id ?? `ext-${Date.now()}`, v: Date.now() }), []);
-  const handleEditConnection = useCallback((conn: SavedConnection) => setEditingConn(conn), []);
+  const handleTableSelect = useCallback(
+    (table: TableInfo) => setNavigateTo({ table, v: Date.now() } as NavTable),
+    [setNavigateTo],
+  );
+  const handleScriptOpen = useCallback(
+    (sql: string, name: string, id?: string) =>
+      setOpenScript({ sql, name, id: id ?? `ext-${Date.now()}`, v: Date.now() } as OpenScript),
+    [setOpenScript],
+  );
+  const handleEditConnection = useCallback(
+    (conn: SavedConnection) => setEditingConn(conn),
+    [setEditingConn],
+  );
+
+  const [renameTarget, setRenameTarget] = useState<TableInfo | null>(null);
+  const [alterTarget, setAlterTarget] = useState<TableInfo | null>(null);
+  const [dbAction, setDbAction] = useState<"create" | "rename" | "drop" | null>(null);
+
+  const handleRenameTable = useCallback((table: TableInfo) => {
+    setRenameTarget(table);
+    togglePalette();
+  }, [togglePalette]);
 
   const handleAlterTable = useCallback((table: TableInfo) => {
-    const label = table.schema ? `${table.schema}.${table.name}` : table.name;
-    const sql = `ALTER TABLE ${label}\n  ADD COLUMN new_column TEXT;`;
-    handleScriptOpen(sql, `ALTER ${label}.sql`);
-  }, [handleScriptOpen]);
+    setAlterTarget(table);
+    togglePalette();
+  }, [togglePalette]);
+
+  const handleDbAction = useCallback((action: "create" | "rename" | "drop") => {
+    togglePalette();
+    setDbAction(action);
+  }, [togglePalette]);
 
   const paletteActions = [
     ...(active ? [
-      { id: "disconnect",          label: "Desconectar",       onAction: handleDisconnect },
-      { id: "nueva-plantilla-ddl", label: "Nueva Plantilla DDL", onAction: () => { setPaletteOpen(false); handleScriptOpen(DDL_TEMPLATE, "Nueva Plantilla DDL.sql"); } },
+      { id: "disconnect",          label: "Disconnect",       onAction: handleDisconnect },
+      { id: "ddl-template",        label: "New DDL Template", onAction: () => { togglePalette(); handleScriptOpen(DDL_TEMPLATE, "New DDL Template.sql"); } },
+      { id: "create-db",           label: "Create Database…", onAction: () => handleDbAction("create") },
+      { id: "rename-db",           label: "Rename Database…", onAction: () => handleDbAction("rename") },
+      { id: "drop-db",             label: "Delete Database…", onAction: () => handleDbAction("drop") },
     ] : []),
-    { id: "new-connection", label: "Nueva Conexión",              onAction: () => { setPaletteOpen(false); setShowNewConnection(true); } },
-    { id: "cheat-sheet",    label: "Atajos de teclado (Ctrl+/)", onAction: () => { setPaletteOpen(false); setCheatSheetOpen(true); } },
+    { id: "new-connection", label: "New Connection",              onAction: () => { togglePalette(); setShowNewConnection(true); } },
+    { id: "cheat-sheet",    label: "Keyboard Shortcuts (Ctrl+/)", onAction: () => { togglePalette(); setCheatSheetOpen(true); } },
   ];
 
   const toast = { info, error, warn };
@@ -101,17 +135,20 @@ function App() {
         onDisconnect={handleDisconnect}
         onEditConnection={handleEditConnection}
         onSettingsOpen={() => setSettingsOpen(true)}
+        onDbAction={handleDbAction}
       >
         <CommandPalette
           open={paletteOpen}
-          onClose={() => setPaletteOpen(false)}
+          onClose={() => togglePalette()}
           connectionId={active?.activeId ?? null}
           onTableSelect={handleTableSelect}
           onScriptOpen={handleScriptOpen}
           onDatabaseSwitch={handleDatabaseSwitch}
           onDropTable={handleDropTable}
           onTruncateTable={handleTruncateTable}
+          onRenameTable={handleRenameTable}
           onAlterTable={handleAlterTable}
+          onDbAction={handleDbAction}
           actions={paletteActions}
         />
         {connecting && <div className="app-connecting">Connecting…</div>}
@@ -143,6 +180,30 @@ function App() {
           message={dangerDialog.message}
           onConfirm={dangerDialog.onConfirm}
           onCancel={clearDangerDialog}
+        />
+      )}
+      {renameTarget && active?.activeId && (
+        <RenameDialog
+          connectionId={active.activeId}
+          entityType="table"
+          entityName={renameTarget.name}
+          schema={renameTarget.schema}
+          onClose={() => setRenameTarget(null)}
+        />
+      )}
+      {dbAction && active?.activeId && (
+        <DbActionDialog
+          action={dbAction}
+          connectionId={active.activeId}
+          onClose={() => setDbAction(null)}
+        />
+      )}
+      {alterTarget && active?.activeId && (
+        <SchemaChangeWizard
+          connectionId={active.activeId}
+          tableName={alterTarget.name}
+          schema={alterTarget.schema}
+          onClose={() => setAlterTarget(null)}
         />
       )}
       <ToastContainer toasts={toasts} onDismiss={remove} />

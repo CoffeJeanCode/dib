@@ -1,7 +1,9 @@
-import { useState, useCallback, useEffect, useRef, useContext } from "react";
+import { useState, useCallback, useEffect, useRef, useContext, useMemo } from "react";
+import { useConnectionStore } from "@/store/connectionStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import {
   ChevronRight, Table2, Eye, Zap, Cog, Activity,
-  Network, Pencil, Trash2, Layers,
+  Network, Pencil, Trash2, Layers, Workflow,
   Key, Hash, Type, Calendar,
 } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
@@ -9,6 +11,8 @@ import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/
 import { ToastContext } from "@/App";
 import { ContextMenu } from "@/components/ContextMenu";
 import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
+import { RenameDialog } from "@/components/RenameDialog";
+import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { useContextMenu } from "@/hooks/useContextMenu";
 
 interface DatabaseCategoriesProps {
@@ -18,10 +22,10 @@ interface DatabaseCategoriesProps {
 }
 
 const CATEGORIES = [
-  { key: "tables",     label: "Tablas",        Icon: Table2,   color: "#60a5fa", kind: "table"     },
-  { key: "views",      label: "Vistas",         Icon: Eye,      color: "#a78bfa", kind: "view"      },
-  { key: "functions",  label: "Funciones",      Icon: Zap,      color: "#fbbf24", kind: "function"  },
-  { key: "procedures", label: "Procedimientos", Icon: Cog,      color: "#34d399", kind: "procedure" },
+  { key: "tables",     label: "Tables",        Icon: Table2,   color: "#60a5fa", kind: "table"     },
+  { key: "views",      label: "Views",          Icon: Eye,      color: "#a78bfa", kind: "view"      },
+  { key: "functions",  label: "Functions",      Icon: Zap,      color: "#fbbf24", kind: "function"  },
+  { key: "procedures", label: "Procedures",     Icon: Cog,      color: "#34d399", kind: "procedure" },
   { key: "triggers",   label: "Triggers",       Icon: Activity, color: "#f87171", kind: "trigger"   },
 ] as const;
 
@@ -68,38 +72,38 @@ export function DatabaseCategories({
   const [colLoadingSet, setColLoadingSet] = useState<Set<string>>(new Set());
   const [activeTable, setActiveTable] = useState<{ name: string; schema: string | null } | null>(null);
   const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [alterTable, setAlterTable] = useState<{ name: string; schema: string | null } | null>(null);
 
   const { menuState, openMenu, closeMenu } = useContextMenu();
   const [contextItem, setContextItem] = useState<TableInfo | null>(null);
+  const [renameTarget, setRenameTarget] = useState<{ name: string; schema: string | null; kind: CatKind } | null>(null);
 
-  // Track active table tab from QueryPanel
-  useEffect(() => {
-    const handler = (e: Event) => {
-      setActiveTable((e as CustomEvent<{ name: string; schema: string | null } | null>).detail);
-    };
-    window.addEventListener("dib:active-table", handler);
-    return () => window.removeEventListener("dib:active-table", handler);
-  }, []);
+  const nonTableMenu = useContextMenu();
+  const [nonTableContextItem, setNonTableContextItem] = useState<{ name: string; schema: string | null; kind: CatKind } | null>(null);
+
+  // Track active table tab from workspaceStore — replaces dib:active-table
+  const storeActiveTable = useWorkspaceStore((s) => s.activeTable);
+  useEffect(() => { setActiveTable(storeActiveTable); }, [storeActiveTable]);
 
   const toggle = useCallback((cat: string) => {
     setOpen((prev) => ({ ...prev, [cat]: !prev[cat] }));
   }, []);
 
+  // Reload schema when sessionId changes or reloadVersion increments — replaces dib:reload
+  const reloadVersion = useConnectionStore((s) => s.reloadVersion);
+  const reloadKey = useMemo(() => `${sessionId}:${reloadVersion}`, [sessionId, reloadVersion]);
   useEffect(() => {
     if (!sessionId) { setObjects(null); return; }
     let cancelled = false;
-    const load = () => {
-      setObjects(null);
-      setLoading(true);
-      invoke<SchemaObjects>("fetch_schema_objects", { connectionId: sessionId })
-        .then((o) => { if (!cancelled) setObjects(o); })
-        .catch((e) => { if (!cancelled) toastRef.current.error(fmtErr(e)); })
-        .finally(() => { if (!cancelled) setLoading(false); });
-    };
-    load();
-    window.addEventListener("dib:reload", load);
-    return () => { cancelled = true; window.removeEventListener("dib:reload", load); };
-  }, [sessionId]);
+    setObjects(null);
+    setLoading(true);
+    invoke<SchemaObjects>("fetch_schema_objects", { connectionId: sessionId })
+      .then((o) => { if (!cancelled) setObjects(o); })
+      .catch((e) => { if (!cancelled) toastRef.current.error(fmtErr(e)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reloadKey]);
 
   useEffect(() => {
     setColumnMap({});
@@ -134,7 +138,7 @@ export function DatabaseCategories({
 
   const handleItemClick = useCallback(async (kind: CatKind, item: TableInfo | TriggerInfo) => {
     if (!sessionId) return;
-    if (kind === "table" || kind === "view") {
+    if (kind === "table") {
       onTableSelect?.(item as TableInfo);
       return;
     }
@@ -147,9 +151,14 @@ export function DatabaseCategories({
       if (kind === "trigger") {
         const res = await invoke<{ ddl: string }>("get_trigger_ddl", { connectionId: sessionId, triggerName: name, schema });
         ddl = res.ddl;
-      } else {
+      } else if (kind === "function") {
         const res = await invoke<{ ddl: string }>("get_function_ddl", { connectionId: sessionId, functionName: name, schema });
         ddl = res.ddl;
+      } else if (kind === "view") {
+        const res = await invoke<{ ddl: string }>("get_view_ddl", { connectionId: sessionId, viewName: name, schema });
+        ddl = res.ddl;
+      } else {
+        return;
       }
       onScriptOpen?.(ddl, name, `ddl-${kind}-${name}-${Date.now()}`);
     } catch (e) {
@@ -158,13 +167,6 @@ export function DatabaseCategories({
       setDdlLoading(null);
     }
   }, [sessionId, onTableSelect, onScriptOpen]);
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, item: TableInfo) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextItem(item);
-    openMenu(e);
-  }, [openMenu]);
 
   const handleGenerateSql = useCallback((action: string) => {
     const item = contextItem;
@@ -188,7 +190,7 @@ export function DatabaseCategories({
     return (
       <div className="sidebar-db-categories">
         <span className="sidebar-item-text sidebar-item-text--muted" style={{ padding: "12px 16px", display: "block" }}>
-          Sin conexión activa
+          No active connection
         </span>
       </div>
     );
@@ -225,10 +227,10 @@ export function DatabaseCategories({
               <div className="sidebar-db-category-items">
                 {loading ? (
                   <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 24 }}>
-                    Cargando…
+                    Loading…
                   </span>
                 ) : (
-                  items.map((it) => {
+                  items.map((it, idx) => {
                     const name = displayName(it);
                     const schema = "schema" in it ? (it as TableInfo).schema : null;
                     const isLoading = ddlLoading === `${cat.kind}-${name}`;
@@ -237,12 +239,22 @@ export function DatabaseCategories({
                     const cols = columnMap[name];
                     const colsLoading = colLoadingSet.has(name);
                     return (
-                      <div key={`${schema ?? ""}.${name}`}>
+                      <div key={`${schema ?? ""}.${name}.${idx}`}>
                         <div
                           className={`sidebar-db-item${isActive ? " sidebar-db-item--active" : ""}`}
                           title={schema ? `${schema}.${name}` : name}
                           onClick={() => !isLoading && handleItemClick(cat.kind, it)}
-                          onContextMenu={canExpand ? (e) => handleContextMenu(e, it as TableInfo) : undefined}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (canExpand) {
+                              setContextItem(it as TableInfo);
+                              openMenu(e);
+                            } else if (cat.kind !== "trigger") {
+                              setNonTableContextItem({ name, schema, kind: cat.kind as CatKind });
+                              nonTableMenu.openMenu(e);
+                            }
+                          }}
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
@@ -303,35 +315,62 @@ export function DatabaseCategories({
         items={[
           {
             icon: <Layers size={14} />,
-            label: "Ver Estructura",
+            label: "View Structure",
             onClick: () => {
               const t = contextItem; setContextItem(null); closeMenu();
-              if (t) window.dispatchEvent(new CustomEvent("dib:open-table-structure", { detail: t }));
+              if (t) useWorkspaceStore.getState().openTableStructure(t);
             },
           },
           {
             icon: <Network size={14} />,
-            label: "Visualizar Relaciones",
+            label: "View Relations",
             onClick: () => {
               const t = contextItem; setContextItem(null); closeMenu();
-              if (t) window.dispatchEvent(new CustomEvent("dib:open-table-relations", { detail: t }));
+              if (t) useWorkspaceStore.getState().openTableRelations(t);
             },
           },
-          { icon: <Table2 size={14} />,  label: "Generar SELECT",            onClick: () => handleGenerateSql("select") },
-          { icon: <Table2 size={14} />,  label: "Generar DDL (CREATE TABLE)", onClick: () => handleGenerateSql("ddl")    },
-          { icon: <Pencil size={14} />,  label: "Generar INSERT",             onClick: () => handleGenerateSql("insert") },
-          { icon: <Pencil size={14} />,  label: "Generar UPDATE",             onClick: () => handleGenerateSql("update") },
+          {
+            icon: <Pencil size={14} />,
+            label: "Rename",
+            onClick: () => {
+              const t = contextItem; setContextItem(null); closeMenu();
+              if (t && sessionId) setRenameTarget({ name: t.name, schema: t.schema, kind: "table" });
+            },
+          },
+          {
+            icon: <Workflow size={14} />,
+            label: "Alter Table (Schema)",
+            onClick: () => {
+              const t = contextItem; setContextItem(null); closeMenu();
+              if (t && sessionId) setAlterTable(t);
+            },
+          },
+          { icon: <Table2 size={14} />,  label: "Generate SELECT",            onClick: () => handleGenerateSql("select") },
+          { icon: <Table2 size={14} />,  label: "Generate DDL (CREATE TABLE)", onClick: () => handleGenerateSql("ddl")    },
+          { icon: <Pencil size={14} />,  label: "Generate INSERT",             onClick: () => handleGenerateSql("insert") },
+          { icon: <Pencil size={14} />,  label: "Generate UPDATE",             onClick: () => handleGenerateSql("update") },
           {
             icon: <Trash2 size={14} />,
-            label: "Vaciar Tabla (TRUNCATE)",
+            label: "Truncate Table (TRUNCATE)",
             danger: true,
             onClick: () => {
               const t = contextItem; setContextItem(null); closeMenu();
-              if (t) onScriptOpen?.(
-                `TRUNCATE TABLE ${t.schema ? `"${t.schema}".` : ""}"${t.name}";`,
-                `TRUNCATE ${t.name}`,
-                `truncate-${t.name}-${Date.now()}`,
-              );
+              if (!t || !sessionId) return;
+              const label = t.schema ? `"${t.schema}"."${t.name}"` : `"${t.name}"`;
+              setDangerDialog({
+                message: `Truncate table "${label}"? This will delete ALL rows.`,
+                onConfirm: async () => {
+                  setDangerDialog(null);
+                  try {
+                    await invoke("run_query", {
+                      connectionId: sessionId,
+                      sql: `TRUNCATE TABLE ${label}`,
+                    });
+                    toastRef.current.info(`Table "${label}" truncated`);
+                    useConnectionStore.getState().triggerReload();
+                  } catch (e) { toastRef.current.error(fmtErr(e)); }
+                },
+              });
             },
           },
           {
@@ -343,13 +382,13 @@ export function DatabaseCategories({
               if (!t || !sessionId) return;
               const label = t.schema ? `${t.schema}.${t.name}` : t.name;
               setDangerDialog({
-                message: `¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`,
+                message: `Delete table "${label}"? This action cannot be undone.`,
                 onConfirm: () => {
                   setDangerDialog(null);
                   invoke("drop_table", { connectionId: sessionId, tableName: t.name, schema: t.schema })
                     .then(() => {
-                      toastRef.current.info(`Tabla "${label}" eliminada`);
-                      window.dispatchEvent(new CustomEvent("dib:reload"));
+                      toastRef.current.info(`Table "${label}" deleted`);
+                      useConnectionStore.getState().triggerReload();
                     })
                     .catch((e) => toastRef.current.error(fmtErr(e)));
                 },
@@ -359,11 +398,80 @@ export function DatabaseCategories({
         ]}
         onClose={() => { setContextItem(null); closeMenu(); }}
       />
+
+      {/* Non-table object context menu (views, functions, procedures) */}
+      <ContextMenu
+        open={nonTableMenu.menuState.open}
+        x={nonTableMenu.menuState.x}
+        y={nonTableMenu.menuState.y}
+        items={[
+          {
+            icon: <Eye size={14} />,
+            label: "View DDL",
+            onClick: () => {
+              const item = nonTableContextItem; setNonTableContextItem(null); nonTableMenu.closeMenu();
+              if (item && sessionId) handleItemClick(item.kind, item as unknown as TableInfo & TriggerInfo);
+            },
+          },
+          {
+            icon: <Pencil size={14} />,
+            label: "Rename",
+            onClick: () => {
+              const item = nonTableContextItem; setNonTableContextItem(null); nonTableMenu.closeMenu();
+              if (item && sessionId) setRenameTarget(item);
+            },
+          },
+          {
+            icon: <Trash2 size={14} />,
+            label: "Drop",
+            danger: true,
+            onClick: () => {
+              const item = nonTableContextItem; setNonTableContextItem(null); nonTableMenu.closeMenu();
+              if (!item || !sessionId) return;
+              const label = item.schema ? `"${item.schema}"."${item.name}"` : `"${item.name}"`;
+              const dropVerb = item.kind === "view" ? "VIEW" : item.kind === "function" ? "FUNCTION" : "PROCEDURE";
+              setDangerDialog({
+                message: `Drop ${item.kind} "${label}"? This action cannot be undone.`,
+                onConfirm: async () => {
+                  setDangerDialog(null);
+                  try {
+                    await invoke("run_query", {
+                      connectionId: sessionId,
+                      sql: `DROP ${dropVerb} IF EXISTS ${label}`,
+                    });
+                    toastRef.current.info(`${dropVerb} "${label}" dropped`);
+                    useConnectionStore.getState().triggerReload();
+                  } catch (e) { toastRef.current.error(fmtErr(e)); }
+                },
+              });
+            },
+          },
+        ]}
+        onClose={() => { setNonTableContextItem(null); nonTableMenu.closeMenu(); }}
+      />
+
       {dangerDialog && (
         <DangerConfirmDialog
           message={dangerDialog.message}
           onConfirm={dangerDialog.onConfirm}
           onCancel={() => setDangerDialog(null)}
+        />
+      )}
+      {renameTarget && sessionId && (
+        <RenameDialog
+          connectionId={sessionId}
+          entityType={renameTarget.kind}
+          entityName={renameTarget.name}
+          schema={renameTarget.schema}
+          onClose={() => setRenameTarget(null)}
+        />
+      )}
+      {alterTable && sessionId && (
+        <SchemaChangeWizard
+          connectionId={sessionId}
+          tableName={alterTable.name}
+          schema={alterTable.schema}
+          onClose={() => setAlterTable(null)}
         />
       )}
     </div>

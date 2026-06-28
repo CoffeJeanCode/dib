@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Copy, X, AlertTriangle, Info } from "lucide-react";
 import type { Toast as ToastType } from "@/hooks/useToast";
@@ -13,13 +12,6 @@ function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: str
   const handleCopy = () => {
     navigator.clipboard.writeText(toast.message).catch(() => {});
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onDismiss(toast.id);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [toast.id, onDismiss]);
 
   const Icon = toast.type === "error" || toast.type === "warning" ? AlertTriangle : Info;
 

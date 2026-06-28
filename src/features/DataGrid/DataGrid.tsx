@@ -51,8 +51,11 @@ export const DataGrid = memo(function DataGrid({
   disableAutoFocus,
   footerRight,
 }: DataGridProps) {
+  // For empty tables the query result has no column names; fall back to schema info.
+  const effectiveCols = columns.length > 0 ? columns : (columnInfos?.map(c => c.name) ?? []);
+
   const state = useDataGridState({
-    columns,
+    columns: effectiveCols,
     rows,
     tableName,
     primaryKeyColumn,
@@ -72,10 +75,10 @@ export const DataGrid = memo(function DataGrid({
   });
 
   if (loading) return <div className="dg-empty dg-loading">Loading…</div>;
-  if (!columns.length) return <div className="dg-empty">No data</div>;
+  if (!effectiveCols.length) return <div className="dg-empty">No data</div>;
 
   return (
-    <DataGridContext.Provider value={{ ...state, columns, filters, footerRight }}>
+    <DataGridContext.Provider value={{ ...state, columns: effectiveCols, filters, footerRight }}>
       <div
         className="dg-wrap"
         role="table"

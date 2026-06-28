@@ -1,14 +1,7 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { connectionService } from "@/services/connectionService";
+import { useConnectionStore } from "@/store/connectionStore";
 import type { ConnectionInfo, SavedConnection } from "@/types/db";
-
-export interface ActiveConn {
-  activeId: string;
-  savedId: string;
-  name: string;
-  engine: string;
-  dbVersion: number;
-}
 
 interface Options {
   connections: SavedConnection[];
@@ -18,12 +11,11 @@ interface Options {
 }
 
 export function useConnectionManager({ connections, savePassword, onError, onInfo }: Options) {
-  const [active, setActive] = useState<ActiveConn | null>(null);
-  const [connecting, setConnecting] = useState(false);
-  const [passwordPrompt, setPasswordPrompt] = useState<{ savedId: string; name: string } | null>(null);
+  const { active, connecting, passwordPrompt,
+    setActive, setConnecting, setPasswordPrompt, triggerReload } = useConnectionStore();
 
   const handleConnectionSelect = useCallback(
-    async (savedId: string, password?: string) => {
+    async (savedId: string, password?: string): Promise<boolean> => {
       setConnecting(true);
       try {
         const connInfo = await connectionService.connectSaved(savedId, password ?? null, savePassword);
@@ -35,7 +27,8 @@ export function useConnectionManager({ connections, savePassword, onError, onInf
           engine: connInfo.config.db_type,
           dbVersion: 0,
         });
-        window.dispatchEvent(new CustomEvent("dib:reload"));
+        triggerReload();
+        return true;
       } catch (e: unknown) {
         const err = e as { code?: string; message?: string };
         if (err?.code === "PASSWORD_REQUIRED") {
@@ -44,11 +37,12 @@ export function useConnectionManager({ connections, savePassword, onError, onInf
         } else {
           onError(err?.message || String(e));
         }
+        return false;
       } finally {
         setConnecting(false);
       }
     },
-    [connections, savePassword, onError],
+    [connections, savePassword, onError, setActive, setConnecting, setPasswordPrompt, triggerReload],
   );
 
   const handleNewConnection = useCallback((connInfo: ConnectionInfo) => {
@@ -59,20 +53,20 @@ export function useConnectionManager({ connections, savePassword, onError, onInf
       engine: connInfo.config.db_type,
       dbVersion: 0,
     });
-  }, []);
+  }, [setActive]);
 
   const handleDisconnect = useCallback(async () => {
     if (active) await connectionService.disconnect(active.activeId).catch(() => {});
     setActive(null);
-  }, [active]);
+  }, [active, setActive]);
 
   const handleDatabaseSwitch = useCallback(
     async (dbName: string) => {
       if (!active) return;
       try {
         await connectionService.switchDatabase(active.activeId, dbName);
-        setActive((prev) => prev ? { ...prev, name: dbName, dbVersion: prev.dbVersion + 1 } : prev);
-        window.dispatchEvent(new CustomEvent("dib:reload"));
+        setActive({ ...active, name: dbName, dbVersion: active.dbVersion + 1 });
+        triggerReload();
         onInfo(`Conectado a "${dbName}"`);
       } catch (e: unknown) {
         const msg = e && typeof e === "object" && "message" in e
@@ -81,19 +75,21 @@ export function useConnectionManager({ connections, savePassword, onError, onInf
         onError(msg);
       }
     },
-    [active, onInfo, onError],
+    [active, onInfo, onError, setActive, triggerReload],
   );
 
   const handlePasswordSubmit = useCallback(
-    (password: string) => {
-      const prompt = passwordPrompt;
-      setPasswordPrompt(null);
-      if (prompt) handleConnectionSelect(prompt.savedId, password);
+    async (password: string) => {
+      if (!passwordPrompt) return;
+      const success = await handleConnectionSelect(passwordPrompt.savedId, password);
+      if (success) {
+        setPasswordPrompt(null);
+      }
     },
-    [passwordPrompt, handleConnectionSelect],
+    [passwordPrompt, handleConnectionSelect, setPasswordPrompt],
   );
 
-  const handlePasswordCancel = useCallback(() => setPasswordPrompt(null), []);
+  const handlePasswordCancel = useCallback(() => setPasswordPrompt(null), [setPasswordPrompt]);
 
   return {
     active,

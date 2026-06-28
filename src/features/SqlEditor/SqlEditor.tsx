@@ -1,6 +1,6 @@
 import { useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
-import { Play, Upload, Download, Zap, Lock } from "lucide-react";
+import { Play, Upload, Download, Zap, Lock, Square } from "lucide-react";
 import type { QueryResult, PendingChange, ColumnInfo } from "@/types/db";
 import { dbService } from "@/services/dbService";
 import { useSqlEditor, THEME_DARK, THEME_LIGHT } from "@/hooks/useSqlEditor";
@@ -38,6 +38,7 @@ export function SqlEditor({
     queryResult,
     queryError,
     loading,
+    cancelling,
     explainResult,
     explainLoading,
     editorTheme,
@@ -46,6 +47,7 @@ export function SqlEditor({
     handleImport,
     runQuery,
     runExplain,
+    handleCancel,
     handleMount,
     handleChange,
   } = useSqlEditor({
@@ -109,12 +111,11 @@ export function SqlEditor({
     <div className="sqleditor">
       <div className="sqleditor-toolbar">
         <div className="sqleditor-toolbar-left">
-          {connectionName && (
-            <span className="sqleditor-connection">{connectionName}</span>
-          )}
-          <span className="sqleditor-hint">Ctrl+Enter · F5 todo · Ctrl+Shift+Enter bloque · Ctrl+Shift+E explain</span>
+          {connectionName && <span className="sqleditor-connection">{connectionName}</span>}
           {fileStatus && (
-            <span className={`sqleditor-status${fileStatus.ok ? " sqleditor-status--ok" : " sqleditor-status--err"}`}>
+            <span
+              className={`sqleditor-status${fileStatus.ok ? " sqleditor-status--ok" : " sqleditor-status--err"}`}
+            >
               {fileStatus.msg}
             </span>
           )}
@@ -128,11 +129,7 @@ export function SqlEditor({
             <Upload size={13} />
             <span>Importar</span>
           </button>
-          <button
-            className="sqleditor-file-btn"
-            onClick={handleExport}
-            title="Exportar Script"
-          >
+          <button className="sqleditor-file-btn" onClick={handleExport} title="Exportar Script">
             <Download size={13} />
             <span>Exportar</span>
           </button>
@@ -145,18 +142,29 @@ export function SqlEditor({
             <Zap size={14} />
             <span>{explainLoading ? "Analizando…" : "Explain"}</span>
           </button>
-          <button
-            className="sqleditor-run"
-            onClick={() => runQuery(sql)}
-            disabled={loading}
-            title="Ejecutar Consulta"
-          >
-            <Play size={14} />
-            <span>{loading ? "Ejecutando…" : "Ejecutar Consulta"}</span>
-          </button>
+          {loading ? (
+            <button
+              className="sqleditor-cancel"
+              onClick={handleCancel}
+              disabled={cancelling}
+              title="Cancel Query"
+            >
+              <Square size={14} />
+              <span>{cancelling ? "Cancelling…" : "Cancel"}</span>
+            </button>
+          ) : (
+            <button
+              className="sqleditor-run"
+              onClick={() => runQuery(sql)}
+              disabled={loading}
+              title="Ejecutar Consulta"
+            >
+              <Play size={14} />
+              <span>Ejecutar Consulta</span>
+            </button>
+          )}
         </div>
       </div>
-
       <div className="sqleditor-body" ref={editorContainerRef}>
         <Editor
           language="sql"
@@ -169,7 +177,7 @@ export function SqlEditor({
             scrollBeyondLastLine: false,
             fontSize: 14,
             wordWrap: "on",
-            lineNumbers: "on",
+            lineNumbers: "off",
             glyphMargin: false,
             folding: false,
             lineDecorationsWidth: 0,
@@ -188,11 +196,24 @@ export function SqlEditor({
         />
       </div>
 
+      <div className="sqleditor-hint-container">
+        <div className="sqleditor-hint">
+          <kbd>Ctrl</kbd>+<kbd>Enter</kbd>
+          <span>Ejecutar</span>
+        </div>
+        <div className="sqleditor-hint">
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd>
+          <span>Bloquear Consulta</span>
+        </div>
+        <div className="sqleditor-hint">
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd>
+          <span>Visual EXPLAIN</span>
+        </div>
+      </div>
+
       <div className="sqleditor-resizer" onMouseDown={handleResizeStart} />
 
-      {queryError && (
-        <div className="sqleditor-error">{queryError}</div>
-      )}
+      {queryError && <div className="sqleditor-error">{queryError}</div>}
 
       {/* Visual EXPLAIN results — rendered in a dedicated panel */}
       {explainResult && (
@@ -207,40 +228,46 @@ export function SqlEditor({
             {(queryResult as QueryResult).rows_affected > 0
               ? `${(queryResult as QueryResult).rows_affected} rows affected`
               : `${(queryResult as QueryResult).rows.length} rows returned`}
-            {!(queryResult as QueryResult).is_updatable && (queryResult as QueryResult).columns.length > 0 && (
-              <span className="sqleditor-readonly-badge" title="JOIN, expresión calculada, o sin PK — modo solo lectura">
-                <Lock size={11} />
-                <span>Solo lectura</span>
-              </span>
-            )}
+            {!(queryResult as QueryResult).is_updatable &&
+              (queryResult as QueryResult).columns.length > 0 && (
+                <span
+                  className="sqleditor-readonly-badge"
+                  title="JOIN, computed expression, or no PK — read-only mode"
+                >
+                  <Lock size={11} />
+                  <span>Read-only</span>
+                </span>
+              )}
           </div>
-          {(queryResult as QueryResult).columns.length > 0 && (() => {
-            const qr = queryResult as QueryResult;
-            const pkMeta = qr.column_metadata.find((m) => m.is_primary_key);
-            const tableName = qr.column_metadata.find((m) => m.table_name)?.table_name ?? undefined;
-            const columnInfos: ColumnInfo[] = qr.column_metadata.map((m) => ({
-              name: m.column_name,
-              data_type: "",
-              is_primary_key: m.is_primary_key,
-              is_nullable: true,
-            }));
-            const handleResultSave = async (changes: PendingChange[]): Promise<void> => {
-              if (!qr.is_updatable || !tableName || !pkMeta) return;
-              await dbService.applyChanges(connectionId, tableName, pkMeta.column_name, changes);
-            };
-            return (
-              <DataGrid
-                columns={qr.columns}
-                rows={qr.rows as unknown[][]}
-                loading={false}
-                disableAutoFocus={true}
-                tableName={qr.is_updatable ? tableName : undefined}
-                primaryKeyColumn={qr.is_updatable && pkMeta ? pkMeta.column_name : undefined}
-                columnInfos={qr.is_updatable ? columnInfos : undefined}
-                onSave={qr.is_updatable ? handleResultSave : undefined}
-              />
-            );
-          })()}
+          {(queryResult as QueryResult).columns.length > 0 &&
+            (() => {
+              const qr = queryResult as QueryResult;
+              const pkMeta = qr.column_metadata.find((m) => m.is_primary_key);
+              const tableName =
+                qr.column_metadata.find((m) => m.table_name)?.table_name ?? undefined;
+              const columnInfos: ColumnInfo[] = qr.column_metadata.map((m) => ({
+                name: m.column_name,
+                data_type: "",
+                is_primary_key: m.is_primary_key,
+                is_nullable: true,
+              }));
+              const handleResultSave = async (changes: PendingChange[]): Promise<void> => {
+                if (!qr.is_updatable || !tableName || !pkMeta) return;
+                await dbService.applyChanges(connectionId, tableName, pkMeta.column_name, changes);
+              };
+              return (
+                <DataGrid
+                  columns={qr.columns}
+                  rows={qr.rows as unknown[][]}
+                  loading={false}
+                  disableAutoFocus={true}
+                  tableName={qr.is_updatable ? tableName : undefined}
+                  primaryKeyColumn={qr.is_updatable && pkMeta ? pkMeta.column_name : undefined}
+                  columnInfos={qr.is_updatable ? columnInfos : undefined}
+                  onSave={qr.is_updatable ? handleResultSave : undefined}
+                />
+              );
+            })()}
         </div>
       )}
     </div>

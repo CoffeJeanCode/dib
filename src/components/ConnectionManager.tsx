@@ -1,8 +1,11 @@
 import { useState, useEffect, useContext } from "react";
+import { Loader2 } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
 import type { ConnectionInfo, DbConfig, SavedConnection } from "@/types/db";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { useConnectionStore } from "@/store/connectionStore";
 import { ToastContext } from "@/App";
+import { PasswordInput } from "@/components/PasswordInput";
 import "./ConnectionManager.css";
 
 interface ConnectionManagerProps {
@@ -14,12 +17,14 @@ interface ConnectionManagerProps {
 export function ConnectionManager({ onConnected, editing, onEditSaved }: ConnectionManagerProps) {
   const { save } = useSavedConnections();
   const toast = useContext(ToastContext);
+  const globalConnecting = useConnectionStore((s) => s.connecting);
   const [name, setName] = useState("");
-  const [dbType, setDbType] = useState("sqlite");
+  const [dbType, setDbType] = useState("postgres");
   const [host, setHost] = useState("localhost");
   const [port, setPort] = useState("5432");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [savePassword, setSavePassword] = useState(true);
   const [database, setDatabase] = useState("");
   // Pre-fill fields when editing an existing connection
   useEffect(() => {
@@ -90,7 +95,10 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           username: isSqlite ? "" : username,
           db_name: isSqlite ? "" : database,
           path: isSqlite ? database : null,
-          password: password || null, // null = preserve existing keyring entry
+          // If save_password is true but user left the field blank, keep the existing stored password.
+          // If save_password is false, send null to explicitly clear any stored password.
+          password: savePassword ? (password || editing.password || null) : null,
+          save_password: savePassword,
         });
         onEditSaved?.();
       } catch (err) {
@@ -117,7 +125,8 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         username: isSqlite ? "" : username,
         db_name: isSqlite ? "" : database,
         path: isSqlite ? database : null,
-        password: isSqlite ? null : password || null,
+        password: isSqlite ? null : savePassword ? (password || null) : null,
+        save_password: savePassword,
       });
 
       setSuccess(result);
@@ -206,15 +215,24 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
               </div>
               <div className="cm-field cm-field--flex">
                 <label className="cm-field-label" htmlFor="password">Password</label>
-                <input
+                <PasswordInput
                   id="password"
-                  className="cm-input"
-                  type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   placeholder="••••••••"
                 />
               </div>
+            </div>
+            
+            <div className="cm-field cm-field--checkbox">
+              <label className="cm-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={savePassword}
+                  onChange={(e) => setSavePassword(e.target.checked)}
+                />
+                Remember password
+              </label>
             </div>
           </>
         )}
@@ -276,9 +294,12 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           <button
             type="submit"
             className="cm-button cm-button--primary"
-            disabled={loading || testing || !database}
+            disabled={loading || testing || globalConnecting || !database}
           >
-            {loading ? "Saving…" : editing ? "Save Changes" : "Connect"}
+            {(loading || globalConnecting) && (
+              <Loader2 size={13} className="cm-spinner" />
+            )}
+            {loading ? "Saving…" : globalConnecting ? "Connecting…" : editing ? "Save Changes" : "Connect"}
           </button>
         </div>
       </form>

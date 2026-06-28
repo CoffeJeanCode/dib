@@ -2,11 +2,11 @@ import { safeInvoke as invoke } from "@/utils/ipc";
 import type { InternalScript } from "@/types/db";
 
 export const workspaceService = {
-  getInternalScripts: () =>
-    invoke<InternalScript[]>("get_internal_scripts"),
+  getInternalScripts: (connectionId?: string | null) =>
+    invoke<InternalScript[]>("get_internal_scripts", { connectionId: connectionId ?? null }),
 
-  saveInternalScript: (id: string, title: string, content: string) =>
-    invoke<void>("save_internal_script", { id, title, content }),
+  saveInternalScript: (id: string, title: string, content: string, connectionId?: string | null) =>
+    invoke<void>("save_internal_script", { id, title, content, connectionId: connectionId ?? null }),
 
   deleteInternalScript: (id: string) =>
     invoke<void>("delete_internal_script", { id }),

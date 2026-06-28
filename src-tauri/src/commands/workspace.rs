@@ -145,15 +145,25 @@ pub fn save_internal_script(
     id: String,
     title: String,
     content: String,
+    connection_id: Option<String>,
 ) -> Result<(), String> {
     let db = app_handle.state::<crate::storage::AppDb>();
-    db.save_script_internal(&id, &title, &content)
+    db.save_script_internal(&id, &title, &content, connection_id.as_deref())
 }
 
 #[tauri::command]
-pub fn get_internal_scripts(app_handle: tauri::AppHandle) -> Result<Vec<InternalScript>, String> {
+pub fn get_internal_scripts(
+    app_handle: tauri::AppHandle,
+    connection_id: Option<String>,
+) -> Result<Vec<InternalScript>, String> {
     let db = app_handle.state::<crate::storage::AppDb>();
-    db.get_scripts_internal()
+    db.get_scripts_internal(connection_id.as_deref())
+}
+
+#[tauri::command]
+pub fn update_internal_script(app_handle: tauri::AppHandle, id: String, title: String) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.update_script_internal(&id, &title)
 }
 
 #[tauri::command]
@@ -171,9 +181,10 @@ pub fn save_query_history(
     query_text: String,
     success: bool,
     execution_time_ms: i64,
+    history_limit: Option<u32>,
 ) -> Result<(), String> {
     let db = app_handle.state::<crate::storage::AppDb>();
-    db.save_query_history_internal(&connection_id, &query_text, success, execution_time_ms)
+    db.save_query_history_internal(&connection_id, &query_text, success, execution_time_ms, history_limit.unwrap_or(500))
 }
 
 #[tauri::command]

@@ -1,0 +1,102 @@
+.rd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rd {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-lg);
+}
+
+.rd-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.rd-entity {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  word-break: break-all;
+}
+
+.rd-input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  outline: none;
+  width: 100%;
+}
+
+.rd-input:focus {
+  border-color: var(--color-focus);
+}
+
+.rd-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.rd-btn {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.rd-btn--cancel {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-dark);
+}
+
+.rd-btn--cancel:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.rd-btn--confirm {
+  background: var(--color-teal);
+  border-color: var(--color-teal);
+  color: #000;
+}
+
+.rd-btn--confirm:hover {
+  filter: brightness(1.1);
+}
+
+.rd-btn--confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rd-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-red);
+}

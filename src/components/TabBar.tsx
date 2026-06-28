@@ -88,7 +88,10 @@ export function TabBar({ tabs, activeId, onSelect, onClose, onReorder, onSchemaO
     <div className="tabbar">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]}>
         <SortableContext items={tabs.map((t) => t.id)} strategy={horizontalListSortingStrategy}>
-          <div className="tabbar-tabs">
+          <div
+            className="tabbar-tabs"
+            onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY || e.deltaX; }}
+          >
             {tabs.map((tab) => (
               <SortableTab
                 key={tab.id}

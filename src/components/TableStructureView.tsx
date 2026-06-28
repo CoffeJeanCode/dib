@@ -206,7 +206,7 @@ export function TableStructureView({ connectionId, table }: Props) {
                     ? (
                       <tr>
                         <td colSpan={6} className="sv2-empty-cell">
-                          {colSearch ? "Sin resultados para la búsqueda" : "Sin columnas"}
+                          {colSearch ? "No results for search" : "No columns"}
                         </td>
                       </tr>
                     )
@@ -252,7 +252,7 @@ export function TableStructureView({ connectionId, table }: Props) {
             {!loading && counts.indexes === 0 ? (
               <div className="sv2-empty">
                 <Fingerprint size={32} className="sv2-empty-icon" />
-                <p>No hay índices definidos</p>
+                <p>No indexes defined</p>
               </div>
             ) : (
               <table className="sv2-table" aria-label="Índices de la tabla">
@@ -309,8 +309,8 @@ export function TableStructureView({ connectionId, table }: Props) {
             {!loading && counts.foreign_keys === 0 ? (
               <div className="sv2-empty">
                 <Link2 size={32} className="sv2-empty-icon" />
-                <p>Sin claves foráneas</p>
-                <span className="sv2-empty-hint">Esta tabla no tiene relaciones FK definidas</span>
+                <p>No foreign keys</p>
+                <span className="sv2-empty-hint">This table has no FK relationships</span>
               </div>
             ) : (
               <div className="sv2-fk-list">
@@ -409,11 +409,11 @@ export function TableStructureView({ connectionId, table }: Props) {
       {structure && !loading && (
         <div className="sv2-footer">
           <span className="sv2-footer-stat">
-            {structure.columns.length} columnas
+            {structure.columns.length} columns
           </span>
           <span className="sv2-footer-sep">·</span>
           <span className="sv2-footer-stat">
-            {structure.indexes.length} índices
+            {structure.indexes.length} indexes
           </span>
           <span className="sv2-footer-sep">·</span>
           <span className="sv2-footer-stat">

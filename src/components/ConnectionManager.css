@@ -33,10 +33,53 @@
 
 .cm-field--flex {
   flex: 1;
+  min-width: 0;
 }
 
 .cm-field--small {
   width: 100px;
+}
+
+.cm-field--password {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  transition: border-color var(--transition-fast);
+}
+
+.cm-field--password:focus-within {
+  border-color: var(--color-teal);
+}
+
+.cm-field--password .cm-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.cm-field--password .cm-input:focus {
+  border-color: transparent;
+}
+
+.cm-eye {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  background: none;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.cm-eye:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
 }
 
 .cm-field-label {
@@ -56,6 +99,14 @@
   transition: border-color var(--transition-fast);
 }
 
+.cm-select {
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23888888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right var(--space-1) center;
+  padding-right: var(--space-6);
+}
+
 .cm-input:focus,
 .cm-select:focus {
   outline: none;
@@ -64,6 +115,53 @@
 
 .cm-input::placeholder {
   color: var(--color-text-tertiary);
+}
+
+.cm-field--checkbox {
+  margin-top: var(--space-1);
+}
+
+.cm-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.cm-checkbox-label input[type="checkbox"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.cm-checkbox-label input[type="checkbox"]:checked {
+  background: var(--color-teal);
+  border-color: var(--color-teal);
+}
+
+.cm-checkbox-label input[type="checkbox"]:checked::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  border: solid var(--color-bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.cm-checkbox-label:hover input[type="checkbox"]:not(:checked) {
+  border-color: var(--color-teal);
 }
 
 .cm-error {
@@ -108,6 +206,21 @@
   margin-top: var(--space-2);
 }
 
+.cm-spinner {
+  animation: cm-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes cm-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cm-button--primary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .cm-button {
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
@@ -116,7 +229,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-bg);
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }

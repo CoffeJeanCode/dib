@@ -4,6 +4,9 @@ import type { TableInfo, ColumnInfo, QueryResult, ExplainPlan } from "@/types/db
 import { dbService } from "@/services/dbService";
 import { workspaceService } from "@/services/workspaceService";
 import { ToastContext } from "@/App";
+import { useUiStore } from "@/store/uiStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useUiState } from "@/hooks/useUiState";
 
 function fmtErr(e: unknown): string {
   if (typeof e === "string") return e;
@@ -189,6 +192,7 @@ export function useSqlEditor({
   const DEFAULT_SQL = "SELECT * FROM ";
 
   const [sql, setSql] = useState(initialSql ?? DEFAULT_SQL);
+  const { state: uiState } = useUiState();
   const initialSqlRef = useRef(initialSql ?? DEFAULT_SQL);
   const wasDirtyRef = useRef(false);
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
@@ -237,33 +241,31 @@ export function useSqlEditor({
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const cancelledRef = useRef(false);
   const [explainResult, setExplainResult] = useState<ExplainPlan | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
   const [editorTheme, setEditorTheme] = useState<"light" | "dark">(getSystemTheme);
   const [fileStatus, setFileStatus] = useState<{ msg: string; ok: boolean } | null>(null);
+  // Holds reference to the monaco namespace so setTheme can be called from effects
+  const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
 
+  // Sync Monaco theme from uiStore — replaces dib:theme window event
+  const storeTheme = useUiStore((s) => s.theme);
   useEffect(() => {
-    const applyTheme = (next: "dark" | "light") => {
-      setEditorTheme(next);
-      editorRef.current?.updateOptions({});
-      document.documentElement.setAttribute("data-theme", next);
-    };
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onSystem = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem("dib-theme")) applyTheme(e.matches ? "dark" : "light");
-    };
-    const onManual = (e: Event) => applyTheme((e as CustomEvent<"dark" | "light">).detail);
-    mq.addEventListener("change", onSystem);
-    window.addEventListener("dib:theme", onManual);
-    return () => {
-      mq.removeEventListener("change", onSystem);
-      window.removeEventListener("dib:theme", onManual);
-    };
-  }, []);
+    setEditorTheme(storeTheme); // keeps the Editor component's theme prop in sync
+    monacoRef.current?.editor.setTheme(storeTheme === "dark" ? THEME_DARK : THEME_LIGHT);
+  }, [storeTheme]);
 
 
+  /** columns per table, populated lazily on first dot-trigger */
   const schemaRef = useRef<Record<string, ColumnInfo[]>>({});
+  /** table/view names fetched eagerly on connect for top-level autocomplete */
+  const tableNamesRef = useRef<{ name: string; schema: string | null }[]>([]);
+  /** tracks which tables have had their columns fetched */
+  const colsFetchedRef = useRef<Set<string>>(new Set());
   const completionDisposable = useRef<{ dispose(): void } | null>(null);
+  const fetchColumnsLazyRef = useRef<(tableName: string) => Promise<ColumnInfo[]>>(() => Promise.resolve([]));
   const runQueryRef = useRef<((sqlText: string) => void) | null>(null);
   const onSaveScriptRef = useRef(onSaveScript);
   onSaveScriptRef.current = onSaveScript;
@@ -277,21 +279,26 @@ export function useSqlEditor({
     return () => { completionDisposable.current?.dispose(); };
   }, []);
 
+  // Lazy schema: only fetch table names on connect; columns fetched on demand
   useEffect(() => {
     schemaRef.current = {};
+    colsFetchedRef.current = new Set();
+    tableNamesRef.current = [];
     if (!connectionId) return;
-
-    dbService.fetchTables(connectionId)
-      .then((tables: TableInfo[]) =>
-        Promise.all(
-          tables.map(async (t: TableInfo) => {
-            const cols = await dbService.fetchTableSchema(connectionId, t.name, t.schema ?? null)
-              .catch(() => [] as ColumnInfo[]);
-            schemaRef.current[t.name.toLowerCase()] = cols;
-          }),
-        ),
-      )
+    dbService.fetchSchemaObjects(connectionId)
+      .then((obj) => { tableNamesRef.current = [...obj.tables, ...obj.views]; })
       .catch(console.error);
+  }, [connectionId]);
+
+  const fetchColumnsLazy = useCallback(async (tableName: string): Promise<ColumnInfo[]> => {
+    const key = tableName.toLowerCase();
+    if (colsFetchedRef.current.has(key)) return schemaRef.current[key] ?? [];
+    colsFetchedRef.current.add(key);
+    const t = tableNamesRef.current.find((x) => x.name.toLowerCase() === key);
+    if (!t) return [];
+    const cols = await dbService.fetchTableSchema(connectionId, t.name, t.schema ?? null).catch(() => [] as ColumnInfo[]);
+    schemaRef.current[key] = cols;
+    return cols;
   }, [connectionId]);
 
   const showStatus = useCallback((msg: string, ok: boolean) => {
@@ -330,6 +337,8 @@ export function useSqlEditor({
 
   const runQuery = useCallback(
     async (sqlText: string) => {
+      if (!connectionId) return;
+      cancelledRef.current = false;
       setQueryError(null);
       setQueryResult(null);
       setExplainResult(null);
@@ -338,19 +347,21 @@ export function useSqlEditor({
       let success = true;
       try {
         const result = await dbService.runQuery(connectionId, sqlText);
+        if (cancelledRef.current) return;
         setQueryResult(result);
       } catch (e) {
         success = false;
+        if (cancelledRef.current) return;
         const msg = fmtErr(e);
         setQueryError(msg);
         toast.error(msg);
       } finally {
-        setLoading(false);
-        dbService.saveQueryHistory(connectionId, sqlText, success, Date.now() - t0)
-          .then(() => window.dispatchEvent(new Event("dib:query-executed")))
+        if (!cancelledRef.current) {
+          setLoading(false);
+        }
+        dbService.saveQueryHistory(connectionId, sqlText, success, Date.now() - t0, uiState.history_limit)
+          .then(() => useWorkspaceStore.getState().incrementQueryVersion())
           .catch(() => {});
-        // CRITERIO 2: Return focus to Monaco immediately after query resolves
-        // so the cursor keeps blinking in the current editor line.
         requestAnimationFrame(() => {
           editorRef.current?.focus();
         });
@@ -384,16 +395,34 @@ export function useSqlEditor({
   );
 
   runQueryRef.current = runQuery;
+  fetchColumnsLazyRef.current = fetchColumnsLazy;
   // runExplainRef must be declared BEFORE handleMount because the keybinding reads it.
   const runExplainRef = useRef<((sqlText: string) => void) | null>(null);
   runExplainRef.current = runExplain;
 
+  const handleCancel = useCallback(async () => {
+    if (!loading || cancelling) return;
+    cancelledRef.current = true;
+    setCancelling(true);
+    try {
+      await dbService.cancelQuery(connectionId);
+      setQueryResult(null);
+      setQueryError("Consulta cancelada por el usuario");
+    } catch (e) {
+      toast.error(`Error al cancelar: ${fmtErr(e)}`);
+    } finally {
+      setCancelling(false);
+      setLoading(false);
+    }
+  }, [connectionId, loading, cancelling, toast]);
+
   const handleMount: OnMount = useCallback((editor, monacoInstance) => {
     editorRef.current = editor;
+    monacoRef.current = monacoInstance;
     defineDibThemes(monacoInstance);
 
-    const currentTheme = getSystemTheme();
-    editor.updateOptions({ theme: currentTheme === "dark" ? THEME_DARK : THEME_LIGHT });
+    const currentTheme = useUiStore.getState().theme;
+    monacoInstance.editor.setTheme(currentTheme === "dark" ? THEME_DARK : THEME_LIGHT);
 
     const executeQuery = () => {
       const selectionObj = editor.getSelection();
@@ -492,19 +521,17 @@ export function useSqlEditor({
 
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyP,
-      () => { window.dispatchEvent(new CustomEvent("dib:open-palette")); },
+      () => { useUiStore.getState().togglePalette(); },
     );
 
-    // Global tab shortcuts — dispatch custom events so QueryPanel can handle them
-    // even when Monaco has focus (belt-and-suspenders alongside the useKeybindings fix)
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyW,
-      () => { window.dispatchEvent(new CustomEvent("dib:close-tab")); },
+      () => { useWorkspaceStore.getState().dispatchTabAction("close"); },
     );
 
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyT,
-      () => { window.dispatchEvent(new CustomEvent("dib:new-tab")); },
+      () => { useWorkspaceStore.getState().dispatchTabAction("new"); },
     );
 
     // Ctrl+Shift+E — run Visual EXPLAIN for the current query
@@ -519,7 +546,7 @@ export function useSqlEditor({
     const disposable = monacoInstance.languages.registerCompletionItemProvider("sql", {
       triggerCharacters: [".", " "],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      provideCompletionItems: (model: any, position: any) => {
+      provideCompletionItems: async (model: any, position: any) => {
         const word = model.getWordUntilPosition(position);
         const range = {
           startLineNumber: position.lineNumber,
@@ -534,7 +561,8 @@ export function useSqlEditor({
         const dotMatch = textBefore.match(/(\w+)\.\s*$/);
 
         if (dotMatch) {
-          const cols = schemaRef.current[dotMatch[1].toLowerCase()] ?? [];
+          // Lazy-fetch columns for this table on first dot-trigger
+          const cols = await fetchColumnsLazyRef.current(dotMatch[1]);
           return {
             suggestions: cols.map((col: ColumnInfo) => ({
               label: col.name,
@@ -547,13 +575,15 @@ export function useSqlEditor({
           };
         }
 
-        const tableNames = Object.keys(schemaRef.current);
+        // Top-level: table names from the names list (no columns needed)
+        const tableNames = tableNamesRef.current.map((t) => t.name.toLowerCase());
         const fullText: string = model.getValue();
         const contextTables = new Set<string>();
         for (const m of fullText.matchAll(/(?:FROM|JOIN|UPDATE)\s+(?:[\w]+\.)?(\w+)/gi)) {
           contextTables.add(m[1].toLowerCase());
         }
 
+        // Use already-loaded columns for context tables (no blocking fetch here)
         const contextCols: { name: string; tableName: string; info: ColumnInfo }[] = [];
         for (const tblName of contextTables) {
           const cols = schemaRef.current[tblName] ?? [];
@@ -630,6 +660,7 @@ export function useSqlEditor({
     queryResult,
     queryError,
     loading,
+    cancelling,
     explainResult,
     explainLoading,
     editorTheme,
@@ -639,6 +670,7 @@ export function useSqlEditor({
     handleImport,
     runQuery,
     runExplain,
+    handleCancel,
     handleMount,
     handleChange,
   };

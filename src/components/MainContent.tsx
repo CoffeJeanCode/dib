@@ -1,8 +1,9 @@
+import { ArrowLeft } from "lucide-react";
 import { ConnectionManager } from "./ConnectionManager";
 import { QueryPanel } from "@/features/QueryPanel";
 import { HomeView } from "./HomeView";
 import type { ConnectionInfo, SavedConnection } from "@/types/db";
-import type { ActiveConn } from "@/hooks/useConnectionManager";
+import type { ActiveConn } from "@/store/connectionStore";
 import type { NavTable, OpenScript } from "@/types/workspace";
 
 interface Props {
@@ -29,9 +30,12 @@ export function MainContent({ editingConn, showNewConnection, connecting, active
   }
   if (showNewConnection) {
     return (
-      <div className="app-container">
+      <div className="app-centered">
+        <button className="app-back-btn" onClick={onBack}>
+          <ArrowLeft size={14} />
+          Back
+        </button>
         <ConnectionManager onConnected={onConnected} />
-        <button className="app-back-btn" onClick={onBack}>Back</button>
       </div>
     );
   }

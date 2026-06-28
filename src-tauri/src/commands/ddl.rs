@@ -11,12 +11,11 @@ pub async fn apply_schema_changes(
     changes: Vec<SchemaChange>,
     state: State<'_, DbState>,
 ) -> Result<(), QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.apply_schema_changes(&table_name, schema.as_deref(), &changes).await
 }
 
@@ -27,12 +26,11 @@ pub async fn drop_table(
     schema: Option<String>,
     state: State<'_, DbState>,
 ) -> Result<(), QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.drop_table(&table_name, schema.as_deref()).await
 }
 
@@ -43,12 +41,11 @@ pub async fn get_view_ddl(
     schema: Option<String>,
     state: State<'_, DbState>,
 ) -> Result<DdlResult, QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.get_view_ddl(&view_name, schema.as_deref()).await
 }
 
@@ -59,12 +56,11 @@ pub async fn get_function_ddl(
     schema: Option<String>,
     state: State<'_, DbState>,
 ) -> Result<DdlResult, QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.get_function_ddl(&function_name, schema.as_deref()).await
 }
 
@@ -75,12 +71,11 @@ pub async fn get_trigger_ddl(
     schema: Option<String>,
     state: State<'_, DbState>,
 ) -> Result<DdlResult, QueryError> {
-    let connections = state.connections.lock().await;
-    let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
-    })?;
+    })?.clone();
     driver.get_trigger_ddl(&trigger_name, schema.as_deref()).await
 }
 
@@ -93,12 +88,11 @@ pub async fn generate_crud_sql(
     state: State<'_, DbState>,
 ) -> Result<String, QueryError> {
     let cols: Vec<ColumnInfo> = {
-        let connections = state.connections.lock().await;
-        let driver = connections.get(&connection_id).ok_or_else(|| QueryError {
+        let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
             message: format!("Connection not found: {}", connection_id),
             code: None,
             severity: Some("ERROR".to_string()),
-        })?;
+        })?.clone();
         driver.get_table_schema(&table_name, schema.as_deref()).await?
     };
 

@@ -4,10 +4,11 @@ import { ConnectionItem } from "./ConnectionItem";
 import { ScriptItem } from "./ScriptItem";
 import { QueryHistoryPanel } from "./QueryHistoryPanel";
 import { DatabaseCategories } from "./DatabaseCategories";
+import { SavedScriptsPanel } from "./SavedScriptsPanel";
 import type { InternalScript, SavedConnection, TableInfo } from "@/types/db";
 
 interface SidebarNavProps {
-  activeView: "connections" | "scripts" | "history" | "database";
+  activeView: "connections" | "scripts" | "history" | "database" | "files";
   activeSessionId?: string | null;
   connections: SavedConnection[];
   scripts: InternalScript[];
@@ -57,11 +58,13 @@ export function SidebarNav({
     return items;
   }, [connections, scripts, activeView]);
 
+  // Clamp selectedIdx when items shrink — run only when length changes, not on every selectedIdx change.
   useEffect(() => {
     if (selectedIdx >= navItems.length) {
       setSelectedIdx(Math.max(-1, navItems.length - 1));
     }
-  }, [navItems.length, selectedIdx]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navItems.length]);
 
   const handleConnectionSelect = useCallback((navIdx: number, connId: string) => {
     setSelectedIdx(navIdx);
@@ -182,6 +185,8 @@ export function SidebarNav({
               activeConnectionId={activeConnectionId}
               onScriptOpen={onScriptOpen}
             />
+          ) : activeView === "files" ? (
+            <SavedScriptsPanel onScriptOpen={onScriptOpen} />
           ) : (
             <>
               {scriptsLoading ? (

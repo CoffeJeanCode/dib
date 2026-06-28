@@ -18,7 +18,7 @@ export const GridHeader = memo(function GridHeader() {
     <div ref={headerRef} className="dg-header" role="row">
       {columns.map((col, ci) => {
         const info = colInfoMap[col];
-        const cssW = `var(--dg-cw-${ci})`;
+        const cssW = `var(--dg-cw-${ci}, 150px)`;
         const activeFilter = filters?.find((f) => f.column === col);
         return (
           <div

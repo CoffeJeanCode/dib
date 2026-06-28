@@ -52,6 +52,23 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               <span className="sp-toggle-track" />
             </label>
           </div>
+          <div className="sp-option">
+            <div className="sp-option-info">
+              <span className="sp-option-title">History limit</span>
+              <span className="sp-option-desc">
+                Max queries kept per session (0 = unlimited)
+              </span>
+            </div>
+            <input
+              type="number"
+              className="sp-number-input"
+              min={0}
+              max={10000}
+              step={100}
+              value={state.history_limit}
+              onChange={(e) => updateState({ history_limit: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+            />
+          </div>
         </div>
         <div className="sp-footer">
           <button className="sp-button sp-button--primary" onClick={onClose}>

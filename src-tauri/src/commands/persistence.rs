@@ -7,6 +7,7 @@ use crate::storage::SavedConnection;
 
 fn default_true() -> bool { true }
 fn default_sidebar_width() -> u32 { 260 }
+fn default_history_limit() -> u32 { 500 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UiState {
@@ -15,6 +16,8 @@ pub struct UiState {
     pub save_password: bool,
     #[serde(default = "default_sidebar_width")]
     pub sidebar_width: u32,
+    #[serde(default = "default_history_limit")]
+    pub history_limit: u32,
 }
 
 fn get_data_path(app_handle: &tauri::AppHandle, filename: &str) -> Result<PathBuf, String> {

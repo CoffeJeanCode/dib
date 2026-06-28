@@ -1,10 +1,5 @@
 import { safeInvoke as invoke } from "@/utils/ipc";
-
-interface UiState {
-  is_sidebar_open: boolean;
-  save_password: boolean;
-  sidebar_width: number;
-}
+import type { UiState } from "@/hooks/useUiState";
 
 export const persistenceService = {
   loadUiState: () =>

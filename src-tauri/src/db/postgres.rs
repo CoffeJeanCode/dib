@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, PgPool, Row, TypeInfo};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicI32, Ordering};
 
 use crate::db::{
     ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, DdlResult, ExplainNode,
@@ -105,6 +107,7 @@ fn parse_explain_node(node: &serde_json::Value, root_cost: f64) -> ExplainNode {
 
 pub struct PostgresDriver {
     pool: PgPool,
+    current_pid: Arc<AtomicI32>,
 }
 
 /// Maps an information_schema data_type string to a Postgres cast suffix.
@@ -158,7 +161,7 @@ impl PostgresDriver {
 
         PgPool::connect_with(opts)
             .await
-            .map(|pool| Self { pool })
+            .map(|pool| Self { pool, current_pid: Arc::new(AtomicI32::new(0)) })
             .map_err(|e| QueryError::from(e.to_string()))
     }
 }
@@ -185,7 +188,7 @@ fn split_statements(sql: &str) -> Vec<String> {
         if in_single_quote {
             if c == '\'' {
                 if chars.peek() == Some(&'\'') {
-                    current.push(chars.next().unwrap());
+                    if let Some(nc) = chars.next() { current.push(nc); }
                 } else {
                     in_single_quote = false;
                 }
@@ -193,14 +196,14 @@ fn split_statements(sql: &str) -> Vec<String> {
         } else if in_double_quote {
             if c == '"' {
                 if chars.peek() == Some(&'"') {
-                    current.push(chars.next().unwrap());
+                    if let Some(nc) = chars.next() { current.push(nc); }
                 } else {
                     in_double_quote = false;
                 }
             }
         } else if in_block_comment {
             if c == '*' && chars.peek() == Some(&'/') {
-                current.push(chars.next().unwrap());
+                if let Some(nc) = chars.next() { current.push(nc); }
                 in_block_comment = false;
             }
         } else if in_line_comment {
@@ -213,10 +216,10 @@ fn split_statements(sql: &str) -> Vec<String> {
             } else if c == '"' {
                 in_double_quote = true;
             } else if c == '-' && chars.peek() == Some(&'-') {
-                current.push(chars.next().unwrap());
+                if let Some(nc) = chars.next() { current.push(nc); }
                 in_line_comment = true;
             } else if c == '/' && chars.peek() == Some(&'*') {
-                current.push(chars.next().unwrap());
+                if let Some(nc) = chars.next() { current.push(nc); }
                 in_block_comment = true;
             } else if c == ';' {
                 stmts.push(current.trim().to_string());
@@ -240,11 +243,34 @@ fn pg_value_to_json(row: &sqlx::postgres::PgRow, i: usize) -> Value {
         "INT8" => row.try_get::<i64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
         "OID"  => row.try_get::<i64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
         "FLOAT4" => row.try_get::<f32, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
-        "FLOAT8" | "NUMERIC" => {
-            row.try_get::<f64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null)
-        }
+        "FLOAT8" => row.try_get::<f64, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        // Send NUMERIC as string to preserve full precision in JS
+        "NUMERIC" => row
+            .try_get::<rust_decimal::Decimal, _>(i)
+            .map(|v| json!(v.to_string()))
+            .unwrap_or(Value::Null),
         "BOOL" => row.try_get::<bool, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
-        _ => row.try_get::<String, _>(i).map(|v| json!(v)).unwrap_or(Value::Null),
+        // JSON/JSONB decoded directly as serde_json::Value (requires sqlx "json" feature)
+        "JSON" | "JSONB" => row
+            .try_get::<serde_json::Value, _>(i)
+            .unwrap_or(Value::Null),
+        "DATE" => row.try_get::<chrono::NaiveDate, _>(i)
+            .map(|v| json!(v.format("%Y-%m-%d").to_string()))
+            .unwrap_or(Value::Null),
+        "TIME" | "TIMETZ" => row.try_get::<chrono::NaiveTime, _>(i)
+            .map(|v| json!(v.format("%H:%M:%S").to_string()))
+            .unwrap_or(Value::Null),
+        "TIMESTAMP" => row.try_get::<chrono::NaiveDateTime, _>(i)
+            .map(|v| json!(v.format("%Y-%m-%d %H:%M:%S").to_string()))
+            .unwrap_or(Value::Null),
+        "TIMESTAMPTZ" => row.try_get::<chrono::DateTime<chrono::Utc>, _>(i)
+            .map(|v| json!(v.format("%Y-%m-%d %H:%M:%S%z").to_string()))
+            .unwrap_or(Value::Null),
+        // Graceful fallback: try String, then raw bytes → lossy UTF-8, never null
+        _ => row.try_get::<String, _>(i)
+            .map(|v| json!(v))
+            .or_else(|_| row.try_get::<Vec<u8>, _>(i).map(|b| json!(String::from_utf8_lossy(&b).to_string())))
+            .unwrap_or(Value::Null),
     }
 }
 
@@ -253,6 +279,138 @@ fn qualified(table_name: &str, schema: Option<&str>) -> String {
     match schema.map(|s| s.replace('"', "")) {
         Some(s) if !s.is_empty() => format!("\"{s}\".\"{t}\""),
         _ => format!("\"{t}\""),
+    }
+}
+
+async fn execute_query_inner(
+    pool: &PgPool,
+    stmts: &[String],
+) -> Result<QueryResult, QueryError> {
+    let mut tx = pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
+    let mut total_affected = 0u64;
+
+    for i in 0..stmts.len() - 1 {
+        let stmt = &stmts[i];
+        let result = sqlx::query(stmt)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        total_affected += result.rows_affected();
+    }
+
+    let last_stmt = &stmts[stmts.len() - 1];
+
+    if is_select(last_stmt) {
+        use std::collections::HashSet;
+
+        let rows = sqlx::query(last_stmt)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let columns: Vec<String> = rows
+            .first()
+            .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
+            .unwrap_or_default();
+
+        let (column_metadata, is_updatable) = if let Some(first_row) = rows.first() {
+            let pg_cols = first_row.columns();
+
+            let unique_oids: HashSet<u32> = pg_cols
+                .iter()
+                .filter_map(|c| c.relation_id().map(|o| o.0))
+                .collect();
+
+            if unique_oids.len() != 1 {
+                let meta = pg_cols.iter().map(|c| ColumnMetadata {
+                    table_name: None,
+                    column_name: c.name().to_string(),
+                    is_primary_key: false,
+                }).collect();
+                (meta, false)
+            } else if let Some(&raw_oid) = unique_oids.iter().next() {
+                let table_oid = raw_oid as i64;
+
+                let table_name_opt: Option<String> = sqlx::query(
+                    "SELECT n.nspname AS schema, c.relname AS table_name \
+                     FROM pg_catalog.pg_class c \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
+                     WHERE c.oid = $1::oid"
+                )
+                .bind(table_oid)
+                .fetch_optional(&mut *tx)
+                .await
+                .ok()
+                .flatten()
+                .map(|r| {
+                    let schema: String = r.try_get("schema").unwrap_or_default();
+                    let name: String = r.try_get("table_name").unwrap_or_default();
+                    if schema == "public" { name } else { format!("{}.{}", schema, name) }
+                });
+
+                let pk_attnums: HashSet<i16> = sqlx::query(
+                    "SELECT a.attnum \
+                     FROM pg_catalog.pg_constraint con \
+                     JOIN pg_catalog.pg_attribute a \
+                       ON a.attrelid = con.conrelid AND a.attnum = ANY(con.conkey) \
+                     WHERE con.conrelid = $1::oid AND con.contype = 'p'"
+                )
+                .bind(table_oid)
+                .fetch_all(&mut *tx)
+                .await
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|r| r.try_get::<i16, _>("attnum").ok())
+                .collect();
+
+                let meta: Vec<ColumnMetadata> = pg_cols.iter().map(|c| {
+                    let is_pk = c.relation_attribute_no()
+                        .map(|n| pk_attnums.contains(&n))
+                        .unwrap_or(false);
+                    ColumnMetadata {
+                        table_name: table_name_opt.clone(),
+                        column_name: c.name().to_string(),
+                        is_primary_key: is_pk,
+                    }
+                }).collect();
+
+                let has_pk = meta.iter().any(|m| m.is_primary_key);
+                (meta, has_pk)
+            } else {
+                (vec![], false)
+            }
+        } else {
+            (vec![], false)
+        };
+
+        tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
+
+        Ok(QueryResult {
+            rows: rows
+                .iter()
+                .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
+                .collect(),
+            columns,
+            rows_affected: total_affected,
+            column_metadata,
+            is_updatable,
+        })
+    } else {
+        let result = sqlx::query(last_stmt)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        total_affected += result.rows_affected();
+
+        tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
+
+        Ok(QueryResult {
+            columns: vec![],
+            rows: vec![],
+            rows_affected: total_affected,
+            column_metadata: vec![],
+            is_updatable: false,
+        })
     }
 }
 
@@ -403,132 +561,101 @@ impl DatabaseDriver for PostgresDriver {
             });
         }
 
-        let mut tx = self.pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
-        let mut total_affected = 0u64;
+        // Track backend PID for cancellation
+        let pid_row = sqlx::query("SELECT pg_backend_pid() AS pid")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        let pid: i32 = pid_row.get("pid");
+        self.current_pid.store(pid, Ordering::SeqCst);
 
-        // Execute all but the last statement
-        for i in 0..stmts.len() - 1 {
-            let stmt = &stmts[i];
-            let result = sqlx::query(stmt)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| QueryError::from(e.to_string()))?;
-            total_affected += result.rows_affected();
+        // Ensure PID is cleared on every exit path
+        let result = execute_query_inner(&self.pool, &stmts).await;
+        self.current_pid.store(0, Ordering::SeqCst);
+        result
+    }
+
+    async fn get_function_ddl(&self, function_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
+        let schema_str = schema.unwrap_or("public");
+        let row = sqlx::query(
+            "SELECT pg_get_functiondef(p.oid) AS ddl \
+             FROM pg_proc p \
+             JOIN pg_namespace n ON p.pronamespace = n.oid \
+             WHERE p.proname = $1 AND n.nspname = $2 \
+             LIMIT 1",
+        )
+        .bind(function_name)
+        .bind(schema_str)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .ok_or_else(|| QueryError::from(format!("Function '{}.{}' not found", schema_str, function_name)))?;
+
+        let ddl: String = row.try_get("ddl").map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(DdlResult { name: function_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
+    }
+
+    async fn get_trigger_ddl(&self, trigger_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
+        let row = sqlx::query(
+            "SELECT pg_get_triggerdef(t.oid) AS ddl \
+             FROM pg_trigger t \
+             WHERE t.tgname = $1 AND NOT t.tgisinternal \
+             LIMIT 1",
+        )
+        .bind(trigger_name)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .ok_or_else(|| QueryError::from(format!("Trigger '{}' not found", trigger_name)))?;
+
+        let ddl: String = row.try_get("ddl").map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(DdlResult { name: trigger_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
+    }
+
+    async fn cancel_query(&self) -> Result<bool, QueryError> {
+        let pid = self.current_pid.load(Ordering::SeqCst);
+        if pid == 0 {
+            return Err(QueryError {
+                message: "No hay una consulta activa para cancelar".into(),
+                code: Some("NO_ACTIVE_QUERY".into()),
+                severity: Some("WARNING".into()),
+            });
         }
+        sqlx::query("SELECT pg_cancel_backend($1)")
+            .bind(pid)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(true)
+    }
 
-        let last_stmt = &stmts[stmts.len() - 1];
+    async fn get_view_ddl(&self, view_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
+        let schema_str = schema.unwrap_or("public");
+        let row = sqlx::query(
+            "SELECT pg_get_viewdef(c.oid, true) AS definition \
+             FROM pg_class c \
+             JOIN pg_namespace n ON n.oid = c.relnamespace \
+             WHERE c.relkind = 'v' AND c.relname = $1 AND n.nspname = $2 \
+             LIMIT 1",
+        )
+        .bind(view_name)
+        .bind(schema_str)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?
+        .ok_or_else(|| QueryError::from(format!("Vista '{}.{}' no encontrada", schema_str, view_name)))?;
 
-        if is_select(last_stmt) {
-            use std::collections::HashSet;
+        let definition: String = row.try_get("definition").map_err(|e| QueryError::from(e.to_string()))?;
+        let qualified = match schema {
+            Some(s) => format!("\"{}\".\"{}\"", s, view_name),
+            None => format!("\"{}\"", view_name),
+        };
+        let ddl = format!("CREATE OR REPLACE VIEW {} AS\n{}", qualified, definition);
+        Ok(DdlResult { name: view_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
+    }
 
-            let rows = sqlx::query(last_stmt)
-                .fetch_all(&mut *tx)
-                .await
-                .map_err(|e| QueryError::from(e.to_string()))?;
-
-            let columns: Vec<String> = rows
-                .first()
-                .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
-                .unwrap_or_default();
-
-            // ── Updatability analysis via PgColumn provenance ─────────────────
-            let (column_metadata, is_updatable) = if let Some(first_row) = rows.first() {
-                let pg_cols = first_row.columns();
-
-                let unique_oids: HashSet<u32> = pg_cols
-                    .iter()
-                    .filter_map(|c| c.relation_id().map(|o| o.0))
-                    .collect();
-
-                if unique_oids.len() != 1 {
-                    let meta = pg_cols.iter().map(|c| ColumnMetadata {
-                        table_name: None,
-                        column_name: c.name().to_string(),
-                        is_primary_key: false,
-                    }).collect();
-                    (meta, false)
-                } else {
-                    let table_oid = *unique_oids.iter().next().unwrap() as i64;
-
-                    let table_name_opt: Option<String> = sqlx::query(
-                        "SELECT n.nspname AS schema, c.relname AS table_name \
-                         FROM pg_catalog.pg_class c \
-                         JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
-                         WHERE c.oid = $1::oid"
-                    )
-                    .bind(table_oid)
-                    .fetch_optional(&mut *tx)
-                    .await
-                    .ok()
-                    .flatten()
-                    .map(|r| {
-                        let schema: String = r.try_get("schema").unwrap_or_default();
-                        let name: String = r.try_get("table_name").unwrap_or_default();
-                        if schema == "public" { name } else { format!("{}.{}", schema, name) }
-                    });
-
-                    let pk_attnums: HashSet<i16> = sqlx::query(
-                        "SELECT a.attnum \
-                         FROM pg_catalog.pg_constraint con \
-                         JOIN pg_catalog.pg_attribute a \
-                           ON a.attrelid = con.conrelid AND a.attnum = ANY(con.conkey) \
-                         WHERE con.conrelid = $1::oid AND con.contype = 'p'"
-                    )
-                    .bind(table_oid)
-                    .fetch_all(&mut *tx)
-                    .await
-                    .unwrap_or_default()
-                    .iter()
-                    .filter_map(|r| r.try_get::<i16, _>("attnum").ok())
-                    .collect();
-
-                    let meta: Vec<ColumnMetadata> = pg_cols.iter().map(|c| {
-                        let is_pk = c.relation_attribute_no()
-                            .map(|n| pk_attnums.contains(&n))
-                            .unwrap_or(false);
-                        ColumnMetadata {
-                            table_name: table_name_opt.clone(),
-                            column_name: c.name().to_string(),
-                            is_primary_key: is_pk,
-                        }
-                    }).collect();
-
-                    let has_pk = meta.iter().any(|m| m.is_primary_key);
-                    (meta, has_pk)
-                }
-            } else {
-                (vec![], false)
-            };
-
-            tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
-
-            Ok(QueryResult {
-                rows: rows
-                    .iter()
-                    .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
-                    .collect(),
-                columns,
-                rows_affected: total_affected,
-                column_metadata,
-                is_updatable,
-            })
-        } else {
-            let result = sqlx::query(last_stmt)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| QueryError::from(e.to_string()))?;
-            total_affected += result.rows_affected();
-
-            tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
-
-            Ok(QueryResult {
-                columns: vec![],
-                rows: vec![],
-                rows_affected: total_affected,
-                column_metadata: vec![],
-                is_updatable: false,
-            })
-        }
+    fn driver_name(&self) -> &'static str {
+        "postgresql"
     }
 
     async fn fetch_page(
@@ -765,6 +892,34 @@ impl DatabaseDriver for PostgresDriver {
         Ok(rows.iter().map(|r| r.get::<String, _>(0)).collect())
     }
 
+    async fn create_database(&self, name: &str) -> Result<(), QueryError> {
+        let safe = name.replace("'", "''");
+        sqlx::query(&format!("CREATE DATABASE \"{}\"", safe))
+            .execute(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn drop_database(&self, name: &str) -> Result<(), QueryError> {
+        let safe = name.replace("'", "''");
+        sqlx::query(&format!("DROP DATABASE IF EXISTS \"{}\"", safe))
+            .execute(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn rename_database(&self, old_name: &str, new_name: &str) -> Result<(), QueryError> {
+        let old_safe = old_name.replace("'", "''");
+        let new_safe = new_name.replace("'", "''");
+        sqlx::query(&format!("ALTER DATABASE \"{}\" RENAME TO \"{}\"", old_safe, new_safe))
+            .execute(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(())
+    }
+
     async fn explain_query(&self, sql: &str) -> Result<ExplainPlan, QueryError> {
         // Sanitise: only allow SELECT/WITH queries for EXPLAIN.
         let trimmed = sql.trim();
@@ -970,46 +1125,5 @@ impl DatabaseDriver for PostgresDriver {
             foreign_keys,
             triggers,
         })
-    }
-
-    async fn get_function_ddl(&self, function_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
-        let schema_str = schema.unwrap_or("public");
-        let row = sqlx::query(
-            "SELECT pg_get_functiondef(p.oid) AS ddl \
-             FROM pg_proc p \
-             JOIN pg_namespace n ON p.pronamespace = n.oid \
-             WHERE p.proname = $1 AND n.nspname = $2 \
-             LIMIT 1",
-        )
-        .bind(function_name)
-        .bind(schema_str)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| QueryError::from(e.to_string()))?
-        .ok_or_else(|| QueryError::from(format!("Function '{}.{}' not found", schema_str, function_name)))?;
-
-        let ddl: String = row.try_get("ddl").map_err(|e| QueryError::from(e.to_string()))?;
-        Ok(DdlResult { name: function_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
-    }
-
-    async fn get_trigger_ddl(&self, trigger_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
-        let row = sqlx::query(
-            "SELECT pg_get_triggerdef(t.oid) AS ddl \
-             FROM pg_trigger t \
-             WHERE t.tgname = $1 AND NOT t.tgisinternal \
-             LIMIT 1",
-        )
-        .bind(trigger_name)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| QueryError::from(e.to_string()))?
-        .ok_or_else(|| QueryError::from(format!("Trigger '{}' not found", trigger_name)))?;
-
-        let ddl: String = row.try_get("ddl").map_err(|e| QueryError::from(e.to_string()))?;
-        Ok(DdlResult { name: trigger_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
-    }
-
-    fn driver_name(&self) -> &'static str {
-        "postgresql"
     }
 }

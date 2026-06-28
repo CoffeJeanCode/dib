@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useConnectionStore } from "@/store/connectionStore";
 import { ChevronDown, LogOut, Database as DbIcon } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
 import { getEngineIcon, getDbName } from "./utils";
@@ -47,16 +48,14 @@ export function DatabaseSelector({
     return () => { cancelled = true; };
   }, [activeSessionId]);
 
+  // Re-fetch DB list on reload — replaces dib:reload window event
+  const reloadVersion = useConnectionStore((s) => s.reloadVersion);
   useEffect(() => {
     if (!activeSessionId) return;
-    const reload = () => {
-      invoke<string[]>("list_databases", { connectionId: activeSessionId })
-        .then(setDatabases)
-        .catch(() => {});
-    };
-    window.addEventListener("dib:reload", reload);
-    return () => window.removeEventListener("dib:reload", reload);
-  }, [activeSessionId]);
+    invoke<string[]>("list_databases", { connectionId: activeSessionId })
+      .then(setDatabases)
+      .catch(() => {});
+  }, [activeSessionId, reloadVersion]);
 
   useEffect(() => {
     if (!open) return;
@@ -137,16 +136,7 @@ export function DatabaseSelector({
 
   // ── Early return after all hooks ───────────────────────────
   if (!activeConn) {
-    return (
-      <div className="sidebar-db-selector">
-        <div className="sidebar-db-selector-btn sidebar-db-selector-btn--empty">
-          <DbIcon size={14} className="sidebar-db-selector-icon" />
-          <span className="sidebar-db-selector-info">
-            <span className="sidebar-db-selector-name sidebar-db-selector-name--muted">Sin conexión</span>
-          </span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const primaryLabel = connectionName || getDbName(activeConn) || activeConn.name;
@@ -167,7 +157,7 @@ export function DatabaseSelector({
         <span className="sidebar-db-selector-icon">{getEngineIcon(activeConn.engine, 14)}</span>
         <span className="sidebar-db-selector-info">
           <span className="sidebar-db-selector-name">{primaryLabel}</span>
-          {subtitle && <span className="sidebar-db-selector-detail">en {subtitle}</span>}
+          {subtitle && <span className="sidebar-db-selector-detail">on {subtitle}</span>}
         </span>
         {hasMultipleDbOrConns && (
           <ChevronDown
@@ -178,9 +168,9 @@ export function DatabaseSelector({
       </button>
 
       {open && (
-        <div className="sidebar-db-dropdown" role="listbox" aria-label="Seleccionar base de datos o conexión">
+        <div className="sidebar-db-dropdown" role="listbox" aria-label="Select database or connection">
           {dbsLoading && databases.length <= 1 && (
-            <div className="sidebar-db-dropdown-loading">Cargando…</div>
+            <div className="sidebar-db-dropdown-loading">Loading…</div>
           )}
           {dropdownItems.map((item, idx) => {
             const isFocused = focusedIndex === idx;
@@ -191,7 +181,7 @@ export function DatabaseSelector({
                 <div key={`db-${item.value}`}>
                   {isFirst && (
                     <div className="sidebar-db-dropdown-section-header">
-                      <DbIcon size={10} /> Bases de datos
+                      <DbIcon size={10} /> Databases
                     </div>
                   )}
                   <button
@@ -220,7 +210,7 @@ export function DatabaseSelector({
                 <div key={`conn-${item.value.id}`}>
                   {isFirst && (
                     <div className="sidebar-db-dropdown-section-header sidebar-db-dropdown-section-header--connections">
-                      Otras conexiones
+                      Other connections
                     </div>
                   )}
                   <button
@@ -253,7 +243,7 @@ export function DatabaseSelector({
                 >
                   <LogOut size={12} className="sidebar-db-option-icon sidebar-db-option-icon--danger" />
                   <div className="sidebar-db-option-info">
-                    <span className="sidebar-db-option-name sidebar-db-option-name--danger">Desconectar</span>
+                    <span className="sidebar-db-option-name sidebar-db-option-name--danger">Disconnect</span>
                   </div>
                 </button>
               </div>

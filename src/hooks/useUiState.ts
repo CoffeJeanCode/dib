@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { persistenceService } from "@/services/persistenceService";
 
-interface UiState {
+export interface UiState {
   is_sidebar_open: boolean;
   save_password: boolean;
   sidebar_width: number;
+  history_limit: number;
 }
 
 const DEFAULT_STATE: UiState = {
   is_sidebar_open: true,
   save_password: true,
   sidebar_width: 260,
+  history_limit: 500,
 };
 
 export function useUiState() {

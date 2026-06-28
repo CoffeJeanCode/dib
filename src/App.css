@@ -3,6 +3,21 @@
   padding: var(--space-8);
 }
 
+.app-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-3);
+  padding: var(--space-8);
+}
+
+.app-centered > .notion-block {
+  width: 100%;
+  max-width: 480px;
+}
+
 .app-connecting {
   display: flex;
   align-items: center;
@@ -33,8 +48,12 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: var(--space-2) 0;
-  margin-top: var(--space-3);
+  padding: var(--space-1) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  max-width: 480px;
   transition: color var(--transition-fast);
 }
 

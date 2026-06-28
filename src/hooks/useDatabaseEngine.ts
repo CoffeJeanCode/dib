@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { dbService } from "@/services/dbService";
 import type { TableInfo, ColumnInfo, PagedResult, GridFilter, TableRelation, PendingChange } from "@/types/db";
 
-export const PAGE_SIZE = 100;
+export const DEFAULT_PAGE_SIZE = 100;
 
 export function useDatabaseEngine(connectionId: string) {
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -15,16 +15,16 @@ export function useDatabaseEngine(connectionId: string) {
     setTables([]);
     setColumnMap({});
     tableRelationsRef.current = {};
-    dbService.fetchTables(connectionId)
-      .then((data) => { if (mounted) setTables(data); })
+    dbService.fetchSchemaObjects(connectionId)
+      .then((obj) => { if (mounted) setTables(obj.tables); })
       .catch(() => {});
     return () => { mounted = false; };
   }, [connectionId]);
 
   // Pure fetch — callers own state updates
   const fetchTablePage = useCallback(
-    (table: TableInfo, offset: number, filters: GridFilter[] | null): Promise<PagedResult> =>
-      dbService.fetchTableData(connectionId, table.name, table.schema ?? null, offset, PAGE_SIZE, filters),
+    (table: TableInfo, offset: number, pageSize: number, filters: GridFilter[] | null): Promise<PagedResult> =>
+      dbService.fetchTableData(connectionId, table.name, table.schema ?? null, offset, pageSize, filters),
     [connectionId],
   );
 

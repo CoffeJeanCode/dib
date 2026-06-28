@@ -246,40 +246,64 @@ function RelationView({
         };
 
         const uniqueTargets = [...new Set(relations.map((r) => r.target_table))];
-        setHasRelations(uniqueTargets.length > 0);
+        const hasRel = uniqueTargets.length > 0;
+        setHasRelations(hasRel);
 
-        const relatedNodes: Node<TableNodeData>[] = uniqueTargets.map((tgt, i) => ({
-          id: tgt,
-          type: "tableNode",
-          position: { x: i * 290, y: 400 },
-          data: { tableName: tgt, engine, columns: [] },
-        }));
+        if (!hasRel) {
+          if (!cancelled) {
+            setNodes([centerNode]);
+            setEdges([]);
+            setLoading(false);
+          }
+          return;
+        }
 
-        const builtEdges: Edge[] = relations.map((r, i) => ({
-          id: `e-${i}`,
-          source: r.source_table,
-          target: r.target_table,
-          label: `${r.source_column} → ${r.target_column}`,
-          animated: false,
-          style: { stroke: "var(--color-teal)", strokeWidth: 1.5, opacity: 0.85 },
-          labelStyle: { fill: "#888", fontSize: 9, fontFamily: "JetBrains Mono, monospace" },
-          labelBgStyle: { fill: "#1A1A1E", fillOpacity: 0.9 },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: "var(--color-teal)",
-            width: 14,
-            height: 14,
-          },
-        }));
+        Promise.all(
+          uniqueTargets.map((tgt) =>
+            invoke<ColumnInfo[]>("fetch_table_schema", {
+              connectionId,
+              tableName: tgt,
+              schema: null,
+            }).catch(() => [] as ColumnInfo[])
+          )
+        ).then((tgtColsArray) => {
+          if (cancelled) return;
 
-        setNodes([centerNode, ...relatedNodes]);
-        setEdges(builtEdges);
+          const relatedNodes: Node<TableNodeData>[] = uniqueTargets.map((tgt, i) => ({
+            id: tgt,
+            type: "tableNode",
+            position: { x: i * 290, y: 400 },
+            data: { tableName: tgt, engine, columns: tgtColsArray[i] ?? [] },
+          }));
+
+          const builtEdges: Edge[] = relations.map((r, i) => ({
+            id: `e-${i}`,
+            source: r.source_table,
+            target: r.target_table,
+            label: `${r.source_column} → ${r.target_column}`,
+            animated: false,
+            style: { stroke: "var(--color-teal)", strokeWidth: 1.5, opacity: 0.85 },
+            labelStyle: { fill: "#888", fontSize: 9, fontFamily: "JetBrains Mono, monospace" },
+            labelBgStyle: { fill: "#1A1A1E", fillOpacity: 0.9 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "var(--color-teal)",
+              width: 14,
+              height: 14,
+            },
+          }));
+
+          setNodes([centerNode, ...relatedNodes]);
+          setEdges(builtEdges);
+        }).finally(() => {
+          if (!cancelled) setLoading(false);
+        });
       })
       .catch(() => {
-        if (!cancelled) setHasRelations(false);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setHasRelations(false);
+          setLoading(false);
+        }
       });
 
     return () => {
