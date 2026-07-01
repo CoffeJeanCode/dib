@@ -68,7 +68,8 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             username      TEXT NOT NULL DEFAULT '',
             db_name       TEXT NOT NULL DEFAULT '',
             path          TEXT,
-            save_password INTEGER NOT NULL DEFAULT 1
+            save_password INTEGER NOT NULL DEFAULT 1,
+            password      TEXT
         );
         CREATE TABLE IF NOT EXISTS saved_scripts (
             id            TEXT PRIMARY KEY,
@@ -81,9 +82,8 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         ",
     )?;
     
-    // Clean up exposed plain-text passwords if they exist from older schema.
-    // Ignore errors since the column might not exist.
-    let _ = conn.execute_batch("UPDATE saved_connections SET password = NULL;");
+    // Add password column to existing DBs (keyring fallback; silently ignored if already present).
+    let _ = conn.execute_batch("ALTER TABLE saved_connections ADD COLUMN password TEXT;");
 
     Ok(())
 }
@@ -105,11 +105,26 @@ impl AppDb {
     }
 
     pub fn save_connection(&self, conn: &SavedConnection) -> Result<(), String> {
+        // Try keyring; if it fails (e.g. no daemon on WSL/Linux), fall back to SQLite column.
+        let mut sqlite_pw: Option<String> = None;
+        if conn.save_password {
+            if let Some(pw) = conn.password.as_deref().filter(|p| !p.is_empty()) {
+                let keyring_ok = keyring::Entry::new("dib_connections", &conn.id)
+                    .map(|e| e.set_password(pw).is_ok())
+                    .unwrap_or(false);
+                if !keyring_ok {
+                    sqlite_pw = Some(pw.to_owned());
+                }
+            }
+        } else if let Ok(entry) = keyring::Entry::new("dib_connections", &conn.id) {
+            let _ = entry.delete_credential();
+        }
+
         let db = self.0.lock().map_err(|e| e.to_string())?;
         db.execute(
             "INSERT OR REPLACE INTO saved_connections
-             (id, name, engine, host, port, username, db_name, path, save_password)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+             (id, name, engine, host, port, username, db_name, path, save_password, password)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
             params![
                 conn.id,
                 conn.name,
@@ -120,21 +135,10 @@ impl AppDb {
                 conn.db_name,
                 conn.path,
                 conn.save_password as i64,
+                sqlite_pw,
             ],
         )
         .map_err(|e| e.to_string())?;
-
-        // Handle keyring password
-        let entry_res = keyring::Entry::new("dib_connections", &conn.id);
-        if let Ok(entry) = entry_res {
-            if conn.save_password {
-                if let Some(pw) = conn.password.as_deref().filter(|p| !p.is_empty()) {
-                    let _ = entry.set_password(pw);
-                }
-            } else {
-                let _ = entry.delete_credential();
-            }
-        }
 
         Ok(())
     }
@@ -143,7 +147,7 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         let mut stmt = db
             .prepare(
-                "SELECT id, name, engine, host, port, username, db_name, path, save_password
+                "SELECT id, name, engine, host, port, username, db_name, path, save_password, password
                  FROM saved_connections ORDER BY name",
             )
             .map_err(|e| e.to_string())?;
@@ -152,11 +156,15 @@ impl AppDb {
             .query_map([], |r| {
                 let id: String = r.get(0)?;
                 let save_password = r.get::<_, i64>(8)? != 0;
-                
+                let sqlite_pw: Option<String> = r.get(9)?;
+
                 let mut password = None;
                 if save_password {
                     if let Ok(entry) = keyring::Entry::new("dib_connections", &id) {
                         password = entry.get_password().ok();
+                    }
+                    if password.is_none() {
+                        password = sqlite_pw.filter(|p| !p.is_empty());
                     }
                 }
 
@@ -184,7 +192,7 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         let mut stmt = db
             .prepare(
-                "SELECT id, name, engine, host, port, username, db_name, path, save_password \
+                "SELECT id, name, engine, host, port, username, db_name, path, save_password, password \
                  FROM saved_connections WHERE id = ?1",
             )
             .map_err(|e| e.to_string())?;
@@ -192,11 +200,15 @@ impl AppDb {
         stmt.query_row([id], |r| {
             let id_str: String = r.get(0)?;
             let save_password = r.get::<_, i64>(8)? != 0;
-            
+            let sqlite_pw: Option<String> = r.get(9)?;
+
             let mut password = None;
             if save_password {
                 if let Ok(entry) = keyring::Entry::new("dib_connections", &id_str) {
                     password = entry.get_password().ok();
+                }
+                if password.is_none() {
+                    password = sqlite_pw.filter(|p| !p.is_empty());
                 }
             }
 

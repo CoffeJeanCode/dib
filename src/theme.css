@@ -29,9 +29,9 @@
   --space-12: 3rem;
 
   /* Border radius */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
   /* Transitions */
   --transition-fast:    120ms ease;
@@ -39,14 +39,14 @@
   --transition-normal:  200ms ease;
 
   /* Layout */
-  --sidebar-width:           260px;
-  --sidebar-width-collapsed: 48px;
+  --sidebar-width:           250px;
+  --sidebar-width-collapsed: 45px;
 
   /* ── Accent palette (invariant) ──────────────────────────────── */
-  --neon-green:       #6EE7B7;
-  --neon-purple:      #A78BFA;
-  --neon-cyan:        #67E8F9;
-  --neon-yellow:      #FDE68A;
+  --neon-green:       #51b990;
+  --neon-purple:      #5f43b3;
+  --neon-cyan:        #00a4b9;
+  --neon-yellow:      #f5d249;
   --neon-magenta-dim: rgba(192, 132, 252, 0.12);
   --neon-green-dim:   rgba(110, 231, 183, 0.10);
   --neon-purple-dim:  rgba(167, 139, 250, 0.12);

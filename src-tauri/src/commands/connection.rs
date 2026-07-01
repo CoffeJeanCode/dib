@@ -73,11 +73,10 @@ pub async fn connect_saved(
         Some(pw) => Some(pw),
         None => match password.filter(|p| !p.is_empty()) {
             Some(pw) => {
-                // If the user checked "remember" on this prompt, persist immediately.
-                if save_password.unwrap_or(false) {
+                // Persist the entered password if this connection has save_password=true.
+                if saved.save_password {
                     let mut updated = saved.clone();
                     updated.password = Some(pw.clone());
-                    updated.save_password = true;
                     let _ = app_db.save_connection(&updated);
                 }
                 Some(pw)

@@ -105,6 +105,17 @@
   }
 }
 
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+.toast--hiding {
+  animation: toast-out 300ms ease forwards;
+}
+
 .toast-badge {
   display: flex;
   align-items: center;
