@@ -57,7 +57,7 @@ pub async fn test_connection(config: DbConfig) -> Result<String, String> {
 pub async fn connect_saved(
     saved_id: String,
     password: Option<String>,
-    save_password: Option<bool>,
+    _save_password: Option<bool>,
     app_db: State<'_, AppDb>,
     db_state: State<'_, DbState>,
 ) -> Result<ConnectionInfo, QueryError> {
