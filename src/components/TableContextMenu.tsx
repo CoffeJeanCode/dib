@@ -8,7 +8,7 @@ export interface TableInfo {
   schema: string | null;
 }
 
-export type CatKind = "table" | "view" | "function" | "procedure";
+export type CatKind = "table" | "view" | "function" | "procedure" | "trigger";
 
 export interface TableContextMenuProps {
   children: React.ReactNode;

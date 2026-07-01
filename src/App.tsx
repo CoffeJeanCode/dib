@@ -48,7 +48,7 @@ function App() {
   const { setNavigateTo, setOpenScript } = useWorkspaceStore.getState();
 
   const { dangerDialog, handleDropTable, handleTruncateTable, clearDangerDialog } =
-    useDangerDialog(active?.activeId ?? null, info);
+    useDangerDialog(active?.activeId ?? null, info, error);
 
   const handleTogglePalette    = useCallback(() => togglePalette(), [togglePalette]);
   const handleToggleCheatSheet = useCallback(() => setCheatSheetOpen(!cheatSheetOpen), [cheatSheetOpen, setCheatSheetOpen]);

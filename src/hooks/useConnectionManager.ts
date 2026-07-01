@@ -80,11 +80,12 @@ export function useConnectionManager({ connections, savePassword, onError, onInf
 
   const handlePasswordSubmit = useCallback(
     async (password: string) => {
-      if (!passwordPrompt) return;
+      if (!passwordPrompt) return false;
       const success = await handleConnectionSelect(passwordPrompt.savedId, password);
       if (success) {
         setPasswordPrompt(null);
       }
+      return success;
     },
     [passwordPrompt, handleConnectionSelect, setPasswordPrompt],
   );

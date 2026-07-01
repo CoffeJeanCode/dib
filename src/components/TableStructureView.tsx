@@ -16,9 +16,9 @@ interface Props {
 type SubTab = "columns" | "indexes" | "foreign_keys" | "triggers";
 
 const SUB_LABELS: Record<SubTab, string> = {
-  columns:      "Columnas",
-  indexes:      "Índices",
-  foreign_keys: "Relaciones",
+  columns:      "Columns",
+  indexes:      "Indexes",
+  foreign_keys: "Relations",
   triggers:     "Triggers",
 };
 
@@ -129,7 +129,7 @@ export function TableStructureView({ connectionId, table }: Props) {
         <button
           className="sv2-reload-btn"
           onClick={load}
-          title="Recargar estructura"
+          title="Reload structure"
           disabled={loading}
         >
           <RefreshCw size={13} className={loading ? "sv2-spin" : ""} />
@@ -176,10 +176,10 @@ export function TableStructureView({ connectionId, table }: Props) {
                 <input
                   className="sv2-search"
                   type="text"
-                  placeholder="Filtrar columnas…"
+                  placeholder="Filter columns…"
                   value={colSearch}
                   onChange={e => setColSearch(e.target.value)}
-                  aria-label="Filtrar columnas"
+                  aria-label="Filter columns"
                 />
               </div>
               {colSearch && (
@@ -188,14 +188,14 @@ export function TableStructureView({ connectionId, table }: Props) {
                 </span>
               )}
             </div>
-            <table className="sv2-table" aria-label="Columnas de la tabla">
+            <table className="sv2-table" aria-label="Table columns">
               <thead>
                 <tr>
                   <th className="sv2-th sv2-th--ord">#</th>
-                  <th className="sv2-th">Columna</th>
-                  <th className="sv2-th">Tipo</th>
+                  <th className="sv2-th">Column</th>
+                  <th className="sv2-th">Type</th>
                   <th className="sv2-th sv2-th--center">PK</th>
-                  <th className="sv2-th sv2-th--center">Nulo</th>
+                  <th className="sv2-th sv2-th--center">Null</th>
                   <th className="sv2-th">Default</th>
                 </tr>
               </thead>
@@ -206,7 +206,7 @@ export function TableStructureView({ connectionId, table }: Props) {
                     ? (
                       <tr>
                         <td colSpan={6} className="sv2-empty-cell">
-                          {colSearch ? "No results for search" : "No columns"}
+                          {colSearch ? "No results found" : "No columns"}
                         </td>
                       </tr>
                     )
@@ -255,13 +255,13 @@ export function TableStructureView({ connectionId, table }: Props) {
                 <p>No indexes defined</p>
               </div>
             ) : (
-              <table className="sv2-table" aria-label="Índices de la tabla">
+              <table className="sv2-table" aria-label="Table indexes">
                 <thead>
                   <tr>
-                    <th className="sv2-th">Nombre</th>
-                    <th className="sv2-th">Columnas</th>
-                    <th className="sv2-th">Tipo</th>
-                    <th className="sv2-th sv2-th--center">Único</th>
+                    <th className="sv2-th">Name</th>
+                    <th className="sv2-th">Columns</th>
+                    <th className="sv2-th">Type</th>
+                    <th className="sv2-th sv2-th--center">Unique</th>
                     <th className="sv2-th sv2-th--center">PK</th>
                   </tr>
                 </thead>
@@ -310,7 +310,7 @@ export function TableStructureView({ connectionId, table }: Props) {
               <div className="sv2-empty">
                 <Link2 size={32} className="sv2-empty-icon" />
                 <p>No foreign keys</p>
-                <span className="sv2-empty-hint">This table has no FK relationships</span>
+                <span className="sv2-empty-hint">This table has no FK relations defined</span>
               </div>
             ) : (
               <div className="sv2-fk-list">
@@ -336,7 +336,7 @@ export function TableStructureView({ connectionId, table }: Props) {
                         </div>
                         <div className="sv2-fk-card-body">
                           <div className="sv2-fk-side">
-                            <span className="sv2-fk-label">Esta tabla</span>
+                            <span className="sv2-fk-label">This table</span>
                             <div className="sv2-tag-list">
                               {fk.columns.map(c => (
                                 <span key={c} className="sv2-badge sv2-badge--col">{c}</span>
@@ -368,8 +368,8 @@ export function TableStructureView({ connectionId, table }: Props) {
             {!loading && counts.triggers === 0 ? (
               <div className="sv2-empty">
                 <Zap size={32} className="sv2-empty-icon" />
-                <p>Sin triggers</p>
-                <span className="sv2-empty-hint">No hay triggers registrados para esta tabla</span>
+                <p>No triggers</p>
+                <span className="sv2-empty-hint">No triggers registered for this table</span>
               </div>
             ) : (
               <div className="sv2-trig-list">

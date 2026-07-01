@@ -5,12 +5,13 @@ import type { TableInfo } from "@/types/db";
 
 interface DangerDialog {
   message: string;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
 }
 
 export function useDangerDialog(
   activeConnectionId: string | null,
   onInfo: (msg: string) => void,
+  onError: (msg: string) => void,
 ) {
   const [dangerDialog, setDangerDialog] = useState<DangerDialog | null>(null);
   const triggerReload = useConnectionStore((s) => s.triggerReload);
@@ -21,16 +22,23 @@ export function useDangerDialog(
       const label = table.schema ? `${table.schema}.${table.name}` : table.name;
       const connId = activeConnectionId;
       setDangerDialog({
-        message: `¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`,
+        message: `Drop table "${label}"? This action cannot be undone.`,
         onConfirm: async () => {
-          await dbService.dropTable(connId, table.name, table.schema ?? null);
           setDangerDialog(null);
-          onInfo(`Tabla "${label}" eliminada`);
-          triggerReload();
+          try {
+            await dbService.dropTable(connId, table.name, table.schema ?? null);
+            onInfo(`Table "${label}" dropped`);
+            triggerReload();
+          } catch (e: unknown) {
+            const msg = e && typeof e === "object" && "message" in e
+              ? String((e as { message: unknown }).message)
+              : String(e);
+            onError(msg);
+          }
         },
       });
     },
-    [activeConnectionId, onInfo, triggerReload],
+    [activeConnectionId, onInfo, onError, triggerReload],
   );
 
   const handleTruncateTable = useCallback(
@@ -39,19 +47,26 @@ export function useDangerDialog(
       const label = table.schema ? `${table.schema}.${table.name}` : table.name;
       const connId = activeConnectionId;
       setDangerDialog({
-        message: `¿Truncar tabla "${label}"? Se eliminarán TODOS los registros. Esta acción no se puede deshacer.`,
+        message: `Truncate table "${label}"? ALL records will be deleted. This action cannot be undone.`,
         onConfirm: async () => {
-          const sql = table.schema
-            ? `TRUNCATE TABLE "${table.schema}"."${table.name}"`
-            : `TRUNCATE TABLE "${table.name}"`;
-          await dbService.runQuery(connId, sql);
           setDangerDialog(null);
-          onInfo(`Tabla "${label}" truncada`);
-          triggerReload();
+          try {
+            const sql = table.schema
+              ? `TRUNCATE TABLE "${table.schema}"."${table.name}"`
+              : `TRUNCATE TABLE "${table.name}"`;
+            await dbService.runQuery(connId, sql);
+            onInfo(`Table "${label}" truncated`);
+            triggerReload();
+          } catch (e: unknown) {
+            const msg = e && typeof e === "object" && "message" in e
+              ? String((e as { message: unknown }).message)
+              : String(e);
+            onError(msg);
+          }
         },
       });
     },
-    [activeConnectionId, onInfo, triggerReload],
+    [activeConnectionId, onInfo, onError, triggerReload],
   );
 
   return {

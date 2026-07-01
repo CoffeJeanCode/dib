@@ -152,7 +152,7 @@ function FullSchemaView({
   if (loading && nodes.length === 0) {
     return (
       <div className="sv">
-        <div className="sv-loading">Cargando diagrama global…</div>
+        <div className="sv-loading">Loading global diagram…</div>
       </div>
     );
   }
@@ -191,7 +191,7 @@ function FullSchemaView({
         )}
         {!loading && allRelations.length === 0 && tables.length > 0 && (
           <Panel position="bottom-center">
-            <span className="sv-no-relations">Sin relaciones FK detectadas — mostrando todas las tablas</span>
+            <span className="sv-no-relations">No FK relations detected — showing all tables</span>
           </Panel>
         )}
       </ReactFlow>
@@ -316,7 +316,7 @@ function RelationView({
   if (loading) {
     return (
       <div className="sv">
-        <div className="sv-loading">Cargando relaciones…</div>
+        <div className="sv-loading">Loading relations…</div>
       </div>
     );
   }
@@ -347,7 +347,7 @@ function RelationView({
         <Controls showInteractive={false} className="sv-controls" />
         {!hasRelations && (
           <Panel position="bottom-center">
-            <span className="sv-no-relations">No hay relaciones detectadas para esta tabla</span>
+            <span className="sv-no-relations">No relations detected for this table</span>
           </Panel>
         )}
       </ReactFlow>

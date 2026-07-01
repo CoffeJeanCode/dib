@@ -105,7 +105,7 @@ export function TabBar({ tabs, activeId, onSelect, onClose, onReorder, onSchemaO
         </SortableContext>
       </DndContext>
       {onSchemaOpen && (
-        <button className="tabbar-schema-btn" onClick={onSchemaOpen} title="Ver Esquema">
+        <button className="tabbar-schema-btn" onClick={onSchemaOpen} title="View Schema">
           <Network size={14} />
         </button>
       )}

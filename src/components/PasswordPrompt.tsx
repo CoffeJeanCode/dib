@@ -5,7 +5,7 @@ import "./PasswordPrompt.css";
 
 interface PasswordPromptProps {
   connectionName: string;
-  onSubmit: (password: string) => Promise<void> | void;
+  onSubmit: (password: string) => Promise<boolean | void> | boolean | void;
   onCancel: () => void;
 }
 
@@ -23,7 +23,11 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
     if (!password) return;
     setIsConnecting(true);
     try {
-      await onSubmit(password);
+      const success = await onSubmit(password);
+      // Focus again only if explicitly returning false (failure)
+      if (success === false) {
+        setTimeout(() => inputRef.current?.focus(), 50);
+      }
     } finally {
       setIsConnecting(false);
     }

@@ -644,11 +644,11 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
                           id="dib-structure-toggle-btn"
                           className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
                           onClick={() => toggleStructureTab(t)}
-                          title={structureIsOpen ? "Ver datos de la tabla" : "Ver Estructura de tabla (toggle)"}
+                          title={structureIsOpen ? "View table data" : "View table structure (toggle)"}
                           aria-pressed={structureIsOpen}
                         >
                           <Layers size={12} />
-                          {structureIsOpen ? "Datos" : "Structure"}
+                          {structureIsOpen ? "Data" : "Structure"}
                         </button>
                       );
                     })() : undefined

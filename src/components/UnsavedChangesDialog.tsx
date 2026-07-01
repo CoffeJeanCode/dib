@@ -22,8 +22,8 @@ export function UnsavedChangesDialog({ entityName, entityType, onSave, onDiscard
 
   const title = entityType === "script" ? "Unsaved Script" : "Unsaved Changes";
   const message = entityType === "script"
-    ? `Save changes in "${entityName}" before closing?`
-    : `You have modified rows in table "${entityName}". Save changes before closing?`;
+    ? `Do you want to save the changes to "${entityName}" before closing?`
+    : `You have modified rows in the table "${entityName}". Do you want to save the changes before closing?`;
 
   return (
     <div className="ucd-backdrop" onClick={onCancel}>
@@ -38,7 +38,7 @@ export function UnsavedChangesDialog({ entityName, entityType, onSave, onDiscard
             Cancel
           </button>
           <button className="ucd-btn ucd-btn--discard" onClick={onDiscard}>
-            Discard
+            Discard Changes
           </button>
           <button ref={saveRef} className="ucd-btn ucd-btn--save" onClick={onSave}>
             Save

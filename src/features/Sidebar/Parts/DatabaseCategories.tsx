@@ -3,7 +3,6 @@ import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import {
   ChevronRight, Table2, Eye, Zap, Cog, Activity,
-  Network, Pencil, Trash2, Layers, Workflow,
   Key, Hash, Type, Calendar,
 } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
@@ -69,7 +68,7 @@ export function DatabaseCategories({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [colLoadingSet, setColLoadingSet] = useState<Set<string>>(new Set());
   const [activeTable, setActiveTable] = useState<{ name: string; schema: string | null } | null>(null);
-  const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => Promise<void> } | null>(null);
   const [alterTable, setAlterTable] = useState<{ name: string; schema: string | null } | null>(null);
   const [renameTarget, setRenameTarget] = useState<{ name: string; schema: string | null; kind: CatKind } | null>(null);
 

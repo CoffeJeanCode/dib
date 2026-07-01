@@ -62,7 +62,7 @@ export function Tab({ tab, active, onSelect, onClose, dragListeners, dragAttribu
       {tab.closeable && (
         <span
           className={`tab-close${tab.isDirty ? " tab-close--dirty" : ""}`}
-          title={tab.isDirty ? "Cambios sin guardar (Ctrl+S para guardar)" : "Cerrar"}
+          title={tab.isDirty ? "Unsaved changes (Ctrl+S to save)" : "Close"}
           onClick={(e) => {
             e.stopPropagation();
             onClose(tab.id);

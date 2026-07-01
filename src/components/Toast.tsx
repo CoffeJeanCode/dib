@@ -18,11 +18,11 @@ function ToastItem({ toast }: { toast: ToastType }) {
         <Icon size={12} strokeWidth={3} />
       </div>
       <span className="toast-message">{toast.message}</span>
-      <button className="toast-copy-btn" onClick={handleCopy} title="Copiar mensaje">
+      <button className="toast-copy-btn" onClick={handleCopy} title="Copy message">
         <Copy size={14} />
       </button>
       {toast.dismissible && (
-        <button className="toast-close-btn" onClick={() => remove(toast.id)} title="Cerrar">
+        <button className="toast-close-btn" onClick={() => remove(toast.id)} title="Close">
           <X size={14} />
         </button>
       )}
