@@ -236,6 +236,25 @@
   letter-spacing: 0.02em;
 }
 
+.sqleditor-json-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-accent, #8b5cf6) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent, #8b5cf6) 30%, transparent);
+  color: var(--color-accent, #a78bfa);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s;
+}
+
+.sqleditor-json-btn:hover {
+  background: color-mix(in srgb, var(--color-accent, #8b5cf6) 28%, transparent);
+}
+
 /* ── Explain button ────────────────────────────────────────────────── */
 .sqleditor-explain-btn {
   display: flex;

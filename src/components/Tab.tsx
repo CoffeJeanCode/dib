@@ -1,8 +1,8 @@
-import { Table2, Network, FileCode2, Circle, Wrench, Layers } from "lucide-react";
+import { Table2, Network, FileCode2, Circle, Wrench, Layers, Braces, Wand2 } from "lucide-react";
 import type { TableInfo } from "@/types/db";
 import "./Tab.css";
 
-export type TabType = "table" | "script" | "schema" | "table_builder" | "table_structure";
+export type TabType = "table" | "script" | "schema" | "table_builder" | "table_structure" | "json" | "mock_generator";
 
 export interface TabPayload {
   table?: TableInfo;
@@ -13,6 +13,8 @@ export interface TabPayload {
   activeCell?: { row: number; col: number } | null;
   // Hoisted Monaco view state (cursor, scroll, folds) for script tabs
   viewState?: unknown;
+  // JSON viewer content
+  jsonContent?: string;
 }
 
 export interface TabData {
@@ -43,6 +45,8 @@ const ICON_MAP: Record<TabType, React.ReactNode> = {
   schema: <Network size={13} />,
   table_builder: <Wrench size={13} />,
   table_structure: <Layers size={13} />,
+  json: <Braces size={13} />,
+  mock_generator: <Wand2 size={13} />,
 };
 
 export function Tab({ tab, active, onSelect, onClose, dragListeners, dragAttributes, style, dragging }: TabProps) {

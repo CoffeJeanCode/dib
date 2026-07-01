@@ -1,6 +1,6 @@
 import { useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
-import { Play, Upload, Download, Zap, Lock, Square } from "lucide-react";
+import { Play, Upload, Download, Zap, Lock, Square, Braces } from "lucide-react";
 import type { QueryResult, PendingChange, ColumnInfo } from "@/types/db";
 import { dbService } from "@/services/dbService";
 import { useSqlEditor, THEME_DARK, THEME_LIGHT } from "@/hooks/useSqlEditor";
@@ -19,6 +19,7 @@ interface SqlEditorProps {
   viewState?: unknown;
   onSaveViewState?: (tabId: string, viewState: unknown) => void;
   onContentChange?: (sql: string) => void;
+  onViewJson?: (json: string) => void;
 }
 
 export function SqlEditor({
@@ -32,6 +33,7 @@ export function SqlEditor({
   viewState,
   onSaveViewState,
   onContentChange,
+  onViewJson,
 }: SqlEditorProps) {
   const {
     sql,
@@ -228,6 +230,16 @@ export function SqlEditor({
             {(queryResult as QueryResult).rows_affected > 0
               ? `${(queryResult as QueryResult).rows_affected} rows affected`
               : `${(queryResult as QueryResult).rows.length} rows returned`}
+            {onViewJson && (
+              <button
+                className="sqleditor-json-btn"
+                onClick={() => onViewJson(JSON.stringify(queryResult, null, 2))}
+                title="Ver resultado como JSON"
+              >
+                <Braces size={11} />
+                <span>JSON</span>
+              </button>
+            )}
             {!(queryResult as QueryResult).is_updatable &&
               (queryResult as QueryResult).columns.length > 0 && (
                 <span

@@ -28,6 +28,8 @@ dashmap = "6"
 rusqlite = { version = "0.32", features = ["bundled"] }
 keyring = "3"
 rfd = "0.14"
+fake = { version = "2", features = ["derive"] }
+rand = "0.8"
 
 [profile.release]
 panic = "abort"

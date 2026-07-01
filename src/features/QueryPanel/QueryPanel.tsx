@@ -5,7 +5,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { useDatabaseEngine, DEFAULT_PAGE_SIZE } from "@/hooks/useDatabaseEngine";
 import { useWorkspaceService } from "@/hooks/useWorkspaceService";
 import { useKeybindings } from "@/hooks/useKeybindings";
-import { Layers } from "lucide-react";
+import { Layers, Wand2 } from "lucide-react";
 import type { TableInfo, PagedResult, PendingChange, GridFilter } from "@/types/db";
 import type { TabData, TabPayload } from "@/components/Tab";
 import { TableStructureView } from "@/components/TableStructureView";
@@ -14,6 +14,8 @@ import { CommitFooter } from "@/components/CommitFooter";
 import { TabBar } from "@/components/TabBar";
 import { SqlEditor } from "@/features/SqlEditor";
 import { SchemaVisualizer } from "@/features/SchemaVisualizer";
+import { JsonViewer } from "@/features/JsonViewer/JsonViewer";
+import { MockGenerator } from "@/features/MockGenerator/MockGenerator";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/components/EmptyWorkspaceState";
 import { useToastStore } from "@/store/toastStore";
@@ -150,11 +152,16 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
   const reloadVersion = useConnectionStore((s) => s.reloadVersion);
   useEffect(() => { reloadHandlerRef.current?.(); }, [reloadVersion]);
 
-  // Batch-load columns when SchemaVisualizer tab opens
+  // Batch-load columns when SchemaVisualizer or MockGenerator tab opens
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTabId);
-    if (tab?.type !== "schema" || tables.length === 0) return;
-    loadColumnsBatch(tables, columnMap);
+    if (tables.length === 0) return;
+    if (tab?.type === "schema") {
+      loadColumnsBatch(tables, columnMap);
+    } else if (tab?.type === "mock_generator" && tab.payload.table) {
+      const t = tab.payload.table;
+      if (!columnMap[t.name]?.length) loadColumnsBatch([t], columnMap);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTabId]);
 
@@ -271,6 +278,23 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
     const newTab: TabData = { id: tabId, type: "schema", title: `~ ${table.name}`, isDirty: false, payload: { table }, closeable: true };
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(tabId);
+  }, []);
+
+  const openJsonTab = useCallback((json: string, title: string) => {
+    const tabId = `tab-json-${crypto.randomUUID()}`;
+    const newTab: TabData = { id: tabId, type: "json", title, isDirty: false, payload: { jsonContent: json }, closeable: true };
+    setTabs((prev) => [...prev, newTab]);
+    setActiveTabId(tabId);
+  }, []);
+
+  const openMockGeneratorTab = useCallback((table: TableInfo) => {
+    const tabId = `tab-mock-${table.schema ?? "pub"}-${table.name}`;
+    setTabs((prev) => {
+      if (prev.some((t) => t.id === tabId)) { setActiveTabId(tabId); return prev; }
+      const newTab: TabData = { id: tabId, type: "mock_generator", title: `Mock: ${table.name}`, isDirty: false, payload: { table }, closeable: true };
+      setActiveTabId(tabId);
+      return [...prev, newTab];
+    });
   }, []);
 
   const handleTabSelect = useCallback((id: string) => {
@@ -640,16 +664,26 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
                       const structId = `structure-${t.schema ?? "public"}-${t.name}`;
                       const structureIsOpen = tabs.some((tb) => tb.id === structId);
                       return (
-                        <button
-                          id="dib-structure-toggle-btn"
-                          className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
-                          onClick={() => toggleStructureTab(t)}
-                          title={structureIsOpen ? "View table data" : "View table structure (toggle)"}
-                          aria-pressed={structureIsOpen}
-                        >
-                          <Layers size={12} />
-                          {structureIsOpen ? "Data" : "Structure"}
-                        </button>
+                        <>
+                          <button
+                            className="qp-structure-footer-btn"
+                            onClick={() => openMockGeneratorTab(t)}
+                            title="Generar datos mock para esta tabla"
+                          >
+                            <Wand2 size={12} />
+                            Mock Data
+                          </button>
+                          <button
+                            id="dib-structure-toggle-btn"
+                            className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
+                            onClick={() => toggleStructureTab(t)}
+                            title={structureIsOpen ? "View table data" : "View table structure (toggle)"}
+                            aria-pressed={structureIsOpen}
+                          >
+                            <Layers size={12} />
+                            {structureIsOpen ? "Data" : "Structure"}
+                          </button>
+                        </>
                       );
                     })() : undefined
                   }
@@ -710,6 +744,19 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
             viewState={activeTab.payload.viewState}
             onSaveViewState={handleSaveViewState}
             onContentChange={handleContentChange}
+            onViewJson={(json) => openJsonTab(json, `JSON: ${activeTab.title}`)}
+          />
+        )}
+
+        {activeTab?.type === "json" && activeTab.payload.jsonContent != null && (
+          <JsonViewer content={activeTab.payload.jsonContent} />
+        )}
+
+        {activeTab?.type === "mock_generator" && activeTab.payload.table && (
+          <MockGenerator
+            connectionId={connectionId}
+            table={activeTab.payload.table}
+            columns={columnMap[activeTab.payload.table.name] ?? []}
           />
         )}
 
