@@ -3,6 +3,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Search, Moon, Sun, Settings, Minus, Square, X } from "lucide-react";
 import { useUiStore } from "@/store/uiStore";
 import { useTheme, setTheme } from "@/hooks/useTheme";
+import { ImportDropdown, type ImportResult } from "@/components/ImportDropdown";
+import { useWorkspaceStore } from "@/store/workspaceStore";
+import type { OpenScript } from "@/types/workspace";
 import "./Titlebar.css";
 
 const appWindow = getCurrentWindow();
@@ -19,6 +22,10 @@ export function Titlebar() {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme]);
 
+  const handleImport = useCallback((result: ImportResult) => {
+    useWorkspaceStore.getState().setOpenScript({ sql: result.content, name: result.name, id: `import-${Date.now()}`, v: Date.now() } as OpenScript);
+  }, []);
+
   return (
     <div className="titlebar" data-tauri-drag-region>
       <div className="titlebar-start" data-tauri-drag-region>
@@ -28,6 +35,7 @@ export function Titlebar() {
       <div className="titlebar-center" data-tauri-drag-region />
 
       <div className="titlebar-end">
+        <ImportDropdown onImport={handleImport} />
         <button className="titlebar-btn" onClick={togglePalette} title="Quick Command (Ctrl+K)">
           <Search size={15} />
         </button>

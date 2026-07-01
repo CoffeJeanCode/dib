@@ -224,6 +224,17 @@ pub async fn import_script_dialog() -> Result<Option<ImportedScript>, String> {
     }
 }
 
+/// Reads a text file from disk given its absolute path.
+/// Used by ImportDropdown after the native dialog returns a path.
+#[tauri::command]
+pub fn read_text_file(path: String) -> Result<String, String> {
+    let p = std::path::PathBuf::from(&path);
+    if !p.exists() {
+        return Err(format!("File not found: {}", path));
+    }
+    std::fs::read_to_string(&p).map_err(|e| e.to_string())
+}
+
 /// Returns the next sequential number for Untitled-N.sql naming.
 /// Queries the real count of saved_scripts so the number never grows
 /// without bound across sessions.

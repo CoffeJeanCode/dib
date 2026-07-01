@@ -4,6 +4,8 @@ import { useUiState } from "@/hooks/useUiState";
 import { useKeybindings } from "@/hooks/useKeybindings";
 import { Sidebar } from "@/features/Sidebar";
 import { Titlebar } from "@/components/Titlebar";
+import { JsonPanel } from "@/features/JsonViewer/JsonPanel";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { SavedConnection, TableInfo } from "@/types/db";
 import "./Layout.css";
 
@@ -56,10 +58,18 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
     }
   }, [state.is_sidebar_open, activePanel, updateState]);
 
+  const jsonPanel = useWorkspaceStore((s) => s.jsonPanel);
+  const closeJsonPanel = useWorkspaceStore((s) => s.closeJsonPanel);
+
   useKeybindings([
     {
       combo: "ctrl+b",
       handler: () => updateState({ is_sidebar_open: !state.is_sidebar_open }),
+      allowInMonaco: true,
+    },
+    {
+      combo: "escape",
+      handler: () => { if (jsonPanel) closeJsonPanel(); },
       allowInMonaco: true,
     },
   ]);
@@ -183,6 +193,8 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
         <main id="dib-main-panel" className="main-content" tabIndex={-1}>
           {children}
         </main>
+
+        <JsonPanel />
       </div>
     </div>
   );

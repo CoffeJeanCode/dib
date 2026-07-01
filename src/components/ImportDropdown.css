@@ -1,0 +1,107 @@
+.idrop {
+  position: relative;
+  display: inline-flex;
+}
+
+.idrop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  font-size: var(--font-size-sm);
+}
+
+.idrop-btn:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
+.idrop-btn:active:not(:disabled) {
+  background: var(--color-bg-active);
+}
+
+.idrop-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.idrop-chevron {
+  opacity: 0.6;
+  margin-left: 1px;
+}
+
+.idrop-spinner {
+  animation: idrop-spin 0.8s linear infinite;
+}
+
+@keyframes idrop-spin {
+  to { transform: rotate(360deg); }
+}
+
+.idrop-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 140px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  padding: var(--space-1);
+  animation: idrop-fadein 120ms ease;
+}
+
+@keyframes idrop-fadein {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.idrop-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  transition: background var(--transition-fastest);
+}
+
+.idrop-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.idrop-item:active {
+  background: var(--color-bg-active);
+}
+
+.idrop-item-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.idrop-item-label {
+  flex: 1;
+}
+
+.idrop-item-ext {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}

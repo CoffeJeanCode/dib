@@ -6,7 +6,7 @@ use fake::faker::lorem::en::{Sentence, Word};
 use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::faker::phone_number::en::PhoneNumber;
 use fake::Fake;
-use rand::Rng;
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -43,7 +43,7 @@ fn fake_value(faker_type: &str) -> String {
         "company" => CompanyName().fake::<String>(),
         "word" => Word().fake::<String>(),
         "sentence" => Sentence(5..15).fake::<String>(),
-        "number" => rand::thread_rng().gen_range(1i64..=100_000).to_string(),
+        "number" => StdRng::from_entropy().gen_range(1i64..=100_000).to_string(),
         "boolean" => Boolean(50).fake::<bool>().to_string(),
         _ => String::new(),
     }
@@ -75,7 +75,7 @@ pub async fn generate_mock_data(
         .collect::<Vec<_>>()
         .join(", ");
 
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::from_entropy();
     let batch_size = 500usize;
     let total = rows_count as usize;
     let mut inserted = 0u64;

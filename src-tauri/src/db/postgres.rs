@@ -184,52 +184,96 @@ fn split_statements(sql: &str) -> Vec<String> {
     let mut in_double_quote = false;
     let mut in_block_comment = false;
     let mut in_line_comment = false;
-    let mut chars = sql.chars().peekable();
+    let mut in_dollar_quote: Option<String> = None;
 
-    while let Some(c) = chars.next() {
+    let chars: Vec<char> = sql.chars().collect();
+    let mut i = 0;
+
+    while i < chars.len() {
+        let c = chars[i];
         current.push(c);
 
         if in_single_quote {
             if c == '\'' {
-                if chars.peek() == Some(&'\'') {
-                    if let Some(nc) = chars.next() { current.push(nc); }
+                if i + 1 < chars.len() && chars[i + 1] == '\'' {
+                    current.push(chars[i + 1]);
+                    i += 1;
                 } else {
                     in_single_quote = false;
                 }
             }
         } else if in_double_quote {
             if c == '"' {
-                if chars.peek() == Some(&'"') {
-                    if let Some(nc) = chars.next() { current.push(nc); }
+                if i + 1 < chars.len() && chars[i + 1] == '"' {
+                    current.push(chars[i + 1]);
+                    i += 1;
                 } else {
                     in_double_quote = false;
                 }
             }
         } else if in_block_comment {
-            if c == '*' && chars.peek() == Some(&'/') {
-                if let Some(nc) = chars.next() { current.push(nc); }
+            if c == '*' && i + 1 < chars.len() && chars[i + 1] == '/' {
+                current.push(chars[i + 1]);
+                i += 1;
                 in_block_comment = false;
             }
         } else if in_line_comment {
             if c == '\n' {
                 in_line_comment = false;
             }
+        } else if let Some(ref tag) = in_dollar_quote {
+            let closing_tag = format!("${}$", tag);
+            let closing_chars: Vec<char> = closing_tag.chars().collect();
+            if chars[i..].starts_with(&closing_chars) {
+                for j in 1..closing_chars.len() {
+                    current.push(chars[i + j]);
+                }
+                i += closing_chars.len() - 1;
+                in_dollar_quote = None;
+            }
         } else {
             if c == '\'' {
                 in_single_quote = true;
             } else if c == '"' {
                 in_double_quote = true;
-            } else if c == '-' && chars.peek() == Some(&'-') {
-                if let Some(nc) = chars.next() { current.push(nc); }
+            } else if c == '-' && i + 1 < chars.len() && chars[i + 1] == '-' {
+                current.push(chars[i + 1]);
+                i += 1;
                 in_line_comment = true;
-            } else if c == '/' && chars.peek() == Some(&'*') {
-                if let Some(nc) = chars.next() { current.push(nc); }
+            } else if c == '/' && i + 1 < chars.len() && chars[i + 1] == '*' {
+                current.push(chars[i + 1]);
+                i += 1;
                 in_block_comment = true;
+            } else if c == '$' {
+                let mut tag = String::new();
+                let mut j = i + 1;
+                let mut is_valid_tag = true;
+                while j < chars.len() {
+                    let tc = chars[j];
+                    if tc == '$' {
+                        break;
+                    }
+                    if !tc.is_alphanumeric() && tc != '_' {
+                        is_valid_tag = false;
+                        break;
+                    }
+                    tag.push(tc);
+                    j += 1;
+                }
+                if is_valid_tag && j < chars.len() && chars[j] == '$' {
+                    in_dollar_quote = Some(tag);
+                    for k in i + 1..=j {
+                        current.push(chars[k]);
+                    }
+                    i = j;
+                }
             } else if c == ';' {
                 stmts.push(current.trim().to_string());
                 current.clear();
             }
         }
+        
+        i += 1;
     }
 
     let remainder = current.trim();

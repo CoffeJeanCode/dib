@@ -105,10 +105,22 @@ impl AppDb {
     }
 
     pub fn save_connection(&self, conn: &SavedConnection) -> Result<(), String> {
+        let mut final_pw = conn.password.clone();
+
+        // If the incoming connection has an empty password but save_password is true,
+        // we should try to fetch the existing password first so we don't accidentally erase it.
+        if conn.save_password && final_pw.as_deref().map_or(true, str::is_empty) {
+            if let Ok(existing) = self.get_connection_by_id(&conn.id) {
+                if let Some(epw) = existing.password.filter(|p| !p.is_empty()) {
+                    final_pw = Some(epw);
+                }
+            }
+        }
+
         // Try keyring; if it fails (e.g. no daemon on WSL/Linux), fall back to SQLite column.
         let mut sqlite_pw: Option<String> = None;
         if conn.save_password {
-            if let Some(pw) = conn.password.as_deref().filter(|p| !p.is_empty()) {
+            if let Some(pw) = final_pw.as_deref().filter(|p| !p.is_empty()) {
                 let keyring_ok = keyring::Entry::new("dib_connections", &conn.id)
                     .map(|e| e.set_password(pw).is_ok())
                     .unwrap_or(false);

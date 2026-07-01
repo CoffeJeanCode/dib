@@ -30,6 +30,7 @@ keyring = "3"
 rfd = "0.14"
 fake = { version = "2", features = ["derive"] }
 rand = "0.8"
+tauri-plugin-dialog = "2"
 
 [profile.release]
 panic = "abort"

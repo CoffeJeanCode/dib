@@ -14,7 +14,6 @@ import { CommitFooter } from "@/components/CommitFooter";
 import { TabBar } from "@/components/TabBar";
 import { SqlEditor } from "@/features/SqlEditor";
 import { SchemaVisualizer } from "@/features/SchemaVisualizer";
-import { JsonViewer } from "@/features/JsonViewer/JsonViewer";
 import { MockGenerator } from "@/features/MockGenerator/MockGenerator";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/components/EmptyWorkspaceState";
@@ -276,13 +275,6 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
   const openRelationTab = useCallback((table: TableInfo) => {
     const tabId = `tab-rel-${table.name}-${crypto.randomUUID()}`;
     const newTab: TabData = { id: tabId, type: "schema", title: `~ ${table.name}`, isDirty: false, payload: { table }, closeable: true };
-    setTabs((prev) => [...prev, newTab]);
-    setActiveTabId(tabId);
-  }, []);
-
-  const openJsonTab = useCallback((json: string, title: string) => {
-    const tabId = `tab-json-${crypto.randomUUID()}`;
-    const newTab: TabData = { id: tabId, type: "json", title, isDirty: false, payload: { jsonContent: json }, closeable: true };
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(tabId);
   }, []);
@@ -744,12 +736,7 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
             viewState={activeTab.payload.viewState}
             onSaveViewState={handleSaveViewState}
             onContentChange={handleContentChange}
-            onViewJson={(json) => openJsonTab(json, `JSON: ${activeTab.title}`)}
           />
-        )}
-
-        {activeTab?.type === "json" && activeTab.payload.jsonContent != null && (
-          <JsonViewer content={activeTab.payload.jsonContent} />
         )}
 
         {activeTab?.type === "mock_generator" && activeTab.payload.table && (

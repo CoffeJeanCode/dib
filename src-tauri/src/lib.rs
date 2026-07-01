@@ -12,7 +12,7 @@ use commands::system_status::check_system_status;
 use commands::workspace::{
     delete_internal_script, export_script_dialog, get_internal_scripts, get_next_script_number,
     update_internal_script,
-    get_query_history, import_script_dialog, list_scripts, read_script,
+    get_query_history, import_script_dialog, list_scripts, read_script, read_text_file,
     save_internal_script, save_query_history, save_script,
 };
 use storage::AppDb;
@@ -22,6 +22,7 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let db = AppDb::init(app.handle()).map_err(|e| {
                 Box::new(std::io::Error::other(e))
@@ -73,6 +74,7 @@ pub fn run() {
             save_script,
             list_scripts,
             read_script,
+            read_text_file,
             export_script_dialog,
             import_script_dialog,
             save_internal_script,

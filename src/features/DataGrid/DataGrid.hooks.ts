@@ -241,9 +241,10 @@ export function useDataGridState({
     onPendingChangesRef.current?.(Array.from(editState.changes.values()));
   }, [editState.changes]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    setViewH(el.clientHeight);
     const ro = new ResizeObserver(([e]) => setViewH(e.contentRect.height));
     ro.observe(el);
     return () => ro.disconnect();

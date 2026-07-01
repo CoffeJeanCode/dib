@@ -6,6 +6,7 @@ import { dbService } from "@/services/dbService";
 import { useSqlEditor, THEME_DARK, THEME_LIGHT } from "@/hooks/useSqlEditor";
 import { DataGrid } from "@/features/DataGrid";
 import { VisualExplain } from "@/components/VisualExplain";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 import "./SqlEditor.css";
 
 interface SqlEditorProps {
@@ -19,7 +20,6 @@ interface SqlEditorProps {
   viewState?: unknown;
   onSaveViewState?: (tabId: string, viewState: unknown) => void;
   onContentChange?: (sql: string) => void;
-  onViewJson?: (json: string) => void;
 }
 
 export function SqlEditor({
@@ -33,7 +33,6 @@ export function SqlEditor({
   viewState,
   onSaveViewState,
   onContentChange,
-  onViewJson,
 }: SqlEditorProps) {
   const {
     sql,
@@ -230,10 +229,13 @@ export function SqlEditor({
             {(queryResult as QueryResult).rows_affected > 0
               ? `${(queryResult as QueryResult).rows_affected} rows affected`
               : `${(queryResult as QueryResult).rows.length} rows returned`}
-            {onViewJson && (
+            {(queryResult as QueryResult).columns.length > 0 && (
               <button
                 className="sqleditor-json-btn"
-                onClick={() => onViewJson(JSON.stringify(queryResult, null, 2))}
+                onClick={() => useWorkspaceStore.getState().openJsonPanel({
+                  title: "Query Result",
+                  result: queryResult as QueryResult,
+                })}
                 title="Ver resultado como JSON"
               >
                 <Braces size={11} />
