@@ -790,3 +790,48 @@
 .dbcat-col-icon--num    { color: var(--color-blue); }
 .dbcat-col-icon--date   { color: var(--color-green); }
 .dbcat-col-icon--text   { color: var(--color-text-tertiary); }
+
+/* ── Database tree (ConnectionItem expand) ──────────────── */
+.sidebar-item-expand-btn {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+.sidebar-item-expand-btn:hover { color: var(--color-text-primary); }
+.sidebar-item-expand-spacer { width: 14px; flex-shrink: 0; }
+
+.sidebar-db-tree {
+  padding-left: 20px;
+  border-left: 1px solid var(--color-border);
+  margin-left: 14px;
+  margin-bottom: 2px;
+}
+
+.sidebar-db-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  user-select: none;
+}
+.sidebar-db-tree-item:hover { background: var(--color-hover); color: var(--color-text-primary); }
+.sidebar-db-tree-item--active { color: var(--color-teal); font-weight: 500; }
+.sidebar-db-tree-item--loading,
+.sidebar-db-tree-item--empty { color: var(--color-text-tertiary); cursor: default; font-style: italic; }
+.sidebar-db-tree-item:hover.sidebar-db-tree-item--loading,
+.sidebar-db-tree-item:hover.sidebar-db-tree-item--empty { background: none; }
+
+.sidebar-db-tree-item-icon { flex-shrink: 0; color: var(--color-text-tertiary); }
+.sidebar-db-tree-item--active .sidebar-db-tree-item-icon { color: var(--color-teal); }
+.sidebar-db-tree-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-db-tree-item-dot { font-size: 7px; color: var(--color-teal); flex-shrink: 0; }

@@ -1,12 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Pencil, Trash2, FileCode2, Plus, Edit3 } from "lucide-react";
 import { SystemStatusBar } from "@/components/SystemStatusBar";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useSidebarScripts } from "@/hooks/useSidebarScripts";
-import { useContextMenu } from "@/hooks/useContextMenu";
 import { useConnectionStore } from "@/store/connectionStore";
 import { connectionService } from "@/services/connectionService";
-import { ContextMenu } from "@/components/ContextMenu";
 import { DatabaseSelector, SidebarNav } from "./Parts";
 import type { SavedConnection, TableInfo } from "@/types/db";
 import "./Sidebar.css";
@@ -28,7 +25,8 @@ interface SidebarProps {
   onDatabaseSwitch?: (db: string) => void;
   onDisconnect?: () => void;
   onEditConnection?: (conn: SavedConnection) => void;
-  onDbAction?: (action: DbActionType) => void;
+  onDbAction?: (action: DbActionType, dbName?: string) => void;
+  activeDb?: string;
 }
 
 export function Sidebar({
@@ -45,11 +43,10 @@ export function Sidebar({
   onDisconnect,
   onEditConnection,
   onDbAction,
+  activeDb,
 }: SidebarProps) {
   const { connections, remove, save } = useSavedConnections();
   const { scripts, scriptsLoading, refreshScripts } = useSidebarScripts(activeConnectionId);
-  const { menuState, openMenu, closeMenu } = useContextMenu();
-  const [contextConnId, setContextConnId] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<SavedConnection[]>([]);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -82,52 +79,6 @@ export function Sidebar({
     }
   }, [undoStack, save]);
 
-  const handleClose = useCallback(() => {
-    closeMenu();
-    setContextConnId(null);
-  }, [closeMenu]);
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, connId: string) => {
-    if (!activeConnectionId) return;
-    setContextConnId(connId);
-    openMenu(e);
-  }, [openMenu, activeConnectionId]);
-
-  const menuItems = [
-    ...(activeConnectionId ? [{
-      icon: <FileCode2 size={14} />,
-      label: "New SQL Query",
-      onClick: () => {
-        handleClose();
-        onScriptOpen?.("", "New Query", `new-${Date.now()}`);
-      },
-    }] : []),
-    ...(activeSessionId ? [
-      { icon: <Plus size={14} />,    label: "Create Database…", onClick: () => { handleClose(); onDbAction?.("create"); } },
-      { icon: <Edit3 size={14} />,   label: "Rename Database…", onClick: () => { handleClose(); onDbAction?.("rename"); } },
-      { icon: <Trash2 size={14} />,  label: "Delete Database…", danger: true as const, onClick: () => { handleClose(); onDbAction?.("drop"); } },
-    ] : []),
-    {
-      icon: <Pencil size={14} />,
-      label: "Edit Connection",
-      onClick: () => {
-        const conn = connections.find((c) => c.id === contextConnId);
-        if (conn) onEditConnection?.(conn);
-        handleClose();
-      },
-    },
-    {
-      icon: <Trash2 size={14} />,
-      label: "Delete",
-      danger: true,
-      onClick: () => {
-        const conn = connections.find((c) => c.id === contextConnId);
-        if (conn) deleteConn(conn);
-        handleClose();
-      },
-    },
-  ];
-
   return (
     <aside
       className="sidebar"
@@ -155,6 +106,7 @@ export function Sidebar({
         scripts={scripts}
         scriptsLoading={scriptsLoading}
         activeConnectionId={activeConnectionId}
+        activeDb={activeDb}
         onConnectionSelect={onConnectionSelect}
         onScriptOpen={onScriptOpen}
         onTableSelect={onTableSelect}
@@ -163,14 +115,10 @@ export function Sidebar({
         onEditConnection={onEditConnection}
         onUndoDelete={undoDelete}
         undoStack={undoStack}
-        onContextMenu={handleContextMenu}
-      />
-      <ContextMenu
-        open={menuState.open}
-        x={menuState.x}
-        y={menuState.y}
-        items={menuItems}
-        onClose={handleClose}
+        onDatabaseSwitch={onDatabaseSwitch}
+        onCreateDatabase={() => onDbAction?.("create")}
+        onRenameDb={(dbName) => onDbAction?.("rename", dbName)}
+        onDropDb={(dbName) => onDbAction?.("drop", dbName)}
       />
       <SystemStatusBar />
     </aside>

@@ -2,6 +2,8 @@ export { SidebarHeader } from "./SidebarHeader";
 export { DatabaseSelector } from "./DatabaseSelector";
 export { SidebarNav } from "./SidebarNav";
 export { ConnectionItem } from "./ConnectionItem";
+export { InstanceContextMenu } from "./InstanceContextMenu";
+export { DbContextMenu } from "./DbContextMenu";
 export { ScriptItem } from "./ScriptItem";
 export { QueryHistoryPanel } from "./QueryHistoryPanel";
 export { DatabaseCategories } from "./DatabaseCategories";

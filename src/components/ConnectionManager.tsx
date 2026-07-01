@@ -1,10 +1,10 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
 import type { ConnectionInfo, DbConfig, SavedConnection } from "@/types/db";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
-import { ToastContext } from "@/App";
+import { useToastStore } from "@/store/toastStore";
 import { PasswordInput } from "@/components/PasswordInput";
 import "./ConnectionManager.css";
 
@@ -16,7 +16,7 @@ interface ConnectionManagerProps {
 
 export function ConnectionManager({ onConnected, editing, onEditSaved }: ConnectionManagerProps) {
   const { save } = useSavedConnections();
-  const toast = useContext(ToastContext);
+  const toast = useToastStore.getState();
   const globalConnecting = useConnectionStore((s) => s.connecting);
   const [name, setName] = useState("");
   const [dbType, setDbType] = useState("postgres");

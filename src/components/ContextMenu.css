@@ -1,23 +1,21 @@
-/* Full-screen invisible layer — closes menu on click-away */
-.ctx-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-}
-
-.ctx-menu {
-  position: fixed;
-  z-index: 1000;
+.ContextMenuContent,
+.ContextMenuSubContent {
   min-width: 200px;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-dark);
+  background: rgba(30, 30, 30, 0.6); /* Dark translucent */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* subtle neumorphism/shadow */
   padding: 4px 0;
   outline: none;
+  animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+  font-family: var(--font-sans), 'Inter', 'Nunito', sans-serif;
 }
 
-.ctx-item {
+.ContextMenuItem,
+.ContextMenuSubTrigger {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -26,31 +24,29 @@
   padding: 0 var(--space-3);
   background: none;
   border: none;
-  cursor: pointer;
-  font-family: var(--font-sans);
+  cursor: default;
+  user-select: none;
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   text-align: left;
   transition: background var(--transition-fast);
   white-space: nowrap;
-  border-left: 2px solid transparent;
+  outline: none;
 }
 
-.ctx-item:hover {
-  background: var(--color-bg-hover);
-  border-left-color: var(--color-teal);
+.ContextMenuItem[data-highlighted],
+.ContextMenuSubTrigger[data-highlighted],
+.ContextMenuSubTrigger[data-state="open"] {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary);
 }
 
 .ctx-item--danger {
-  color: var(--color-red);
+  color: var(--color-red) !important;
 }
 
-.ctx-item--danger:hover {
-  border-left-color: var(--color-red);
-}
-
-.ctx-item--danger .ctx-item-icon {
-  color: var(--color-red);
+.ContextMenuItem[data-highlighted].ctx-item--danger {
+  background: rgba(239, 68, 68, 0.15); /* Red tinted hover */
 }
 
 .ctx-item-icon {
@@ -63,19 +59,35 @@
   flex-shrink: 0;
 }
 
+.ctx-item--danger .ctx-item-icon {
+  color: var(--color-red);
+}
+
 .ctx-item-label {
   flex: 1;
 }
 
-.ctx-item-shortcut {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+.RightSlot {
+  margin-left: auto;
+  padding-left: 20px;
+  display: flex;
+  align-items: center;
   color: var(--color-text-tertiary);
-  margin-left: var(--space-4);
 }
 
-.ctx-divider {
+.ContextMenuSeparator {
   height: 1px;
-  background: var(--color-border);
+  background: rgba(255, 255, 255, 0.1);
   margin: 4px 0;
+}
+
+@keyframes contentShow {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

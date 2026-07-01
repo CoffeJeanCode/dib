@@ -14,6 +14,7 @@ interface SidebarNavProps {
   scripts: InternalScript[];
   scriptsLoading: boolean;
   activeConnectionId?: string | null;
+  activeDb?: string;
   onConnectionSelect?: (savedId: string) => void;
   onScriptOpen?: (sql: string, title: string, id: string) => void;
   onTableSelect?: (table: TableInfo) => void;
@@ -22,7 +23,10 @@ interface SidebarNavProps {
   onEditConnection?: (conn: SavedConnection) => void;
   onUndoDelete: () => void;
   undoStack: SavedConnection[];
-  onContextMenu?: (e: React.MouseEvent, connId: string) => void;
+  onDatabaseSwitch?: (db: string) => void;
+  onCreateDatabase?: () => void;
+  onRenameDb?: (dbName: string) => void;
+  onDropDb?: (dbName: string) => void;
 }
 
 type NavItem =
@@ -36,6 +40,7 @@ export function SidebarNav({
   scripts,
   scriptsLoading,
   activeConnectionId,
+  activeDb,
   onConnectionSelect,
   onScriptOpen,
   onTableSelect,
@@ -44,7 +49,10 @@ export function SidebarNav({
   onEditConnection,
   onUndoDelete,
   undoStack,
-  onContextMenu,
+  onDatabaseSwitch,
+  onCreateDatabase,
+  onRenameDb,
+  onDropDb,
 }: SidebarNavProps) {
   const [selectedIdx, setSelectedIdx] = useState(-1);
 
@@ -75,10 +83,6 @@ export function SidebarNav({
     setSelectedIdx(navIdx);
     onScriptOpen?.(script.content, script.title, script.id);
   }, [onScriptOpen]);
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, connId: string) => {
-    onContextMenu?.(e, connId);
-  }, [onContextMenu]);
 
   const handleNavKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -171,10 +175,16 @@ export function SidebarNav({
                       isSelected={isKeySelected}
                       isActive={isActive}
                       navIdx={navIdx}
+                      sessionId={isActive ? activeSessionId : null}
+                      activeDb={isActive ? activeDb : undefined}
                       onSelect={handleConnectionSelect}
-                      onContextMenu={handleContextMenu}
+                      onDbSwitch={onDatabaseSwitch}
                       onEdit={(conn) => onEditConnection?.(conn)}
                       onDelete={onDeleteConnection}
+                      onNewQuery={isActive ? () => onScriptOpen?.("", "New Query", `new-${Date.now()}`) : undefined}
+                      onCreateDatabase={isActive && activeSessionId ? onCreateDatabase : undefined}
+                      onRenameDb={isActive ? onRenameDb : undefined}
+                      onDropDb={isActive ? onDropDb : undefined}
                     />
                   );
                 })

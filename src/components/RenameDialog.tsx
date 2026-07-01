@@ -20,9 +20,11 @@ export function RenameDialog({ connectionId, entityType, entityName, schema, onC
   useEffect(() => {
     inputRef.current?.focus();
     inputRef.current?.select();
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => window.removeEventListener("keydown", handler, { capture: true });
   }, [onClose]);
 
   const handleRename = useCallback(async () => {

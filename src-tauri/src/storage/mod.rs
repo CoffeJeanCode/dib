@@ -49,22 +49,8 @@ pub struct SavedConnection {
 }
 
 fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
-    // Bootstrap the migrations table with down_sql column.
     conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER NOT NULL PRIMARY KEY, down_sql TEXT);",
-    )?;
-    // Upgrade existing installs that have the old single-column schema.
-    let _ = conn.execute_batch("ALTER TABLE schema_migrations ADD COLUMN down_sql TEXT;");
-
-    let version: i64 = conn.query_row(
-        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
-        [],
-        |r| r.get(0),
-    )?;
-
-    // Each entry is (up_sql, down_sql).
-    // V1: baseline schema
-    const M1_UP: &str = "
+        "
         CREATE TABLE IF NOT EXISTS query_history (
             id                INTEGER PRIMARY KEY AUTOINCREMENT,
             connection_id     TEXT NOT NULL,
@@ -74,58 +60,30 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             execution_time_ms INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS saved_connections (
-            id       TEXT PRIMARY KEY,
-            name     TEXT NOT NULL,
-            engine   TEXT NOT NULL,
-            host     TEXT NOT NULL DEFAULT '',
-            port     INTEGER NOT NULL DEFAULT 5432,
-            username TEXT NOT NULL DEFAULT '',
-            db_name  TEXT NOT NULL DEFAULT '',
-            path     TEXT
+            id            TEXT PRIMARY KEY,
+            name          TEXT NOT NULL,
+            engine        TEXT NOT NULL,
+            host          TEXT NOT NULL DEFAULT '',
+            port          INTEGER NOT NULL DEFAULT 5432,
+            username      TEXT NOT NULL DEFAULT '',
+            db_name       TEXT NOT NULL DEFAULT '',
+            path          TEXT,
+            save_password INTEGER NOT NULL DEFAULT 1
         );
         CREATE TABLE IF NOT EXISTS saved_scripts (
-            id         TEXT PRIMARY KEY,
-            title      TEXT NOT NULL,
-            content    TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL DEFAULT (datetime('now')),
-            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-        );";
-    const M1_DOWN: &str =
-        "DROP TABLE IF EXISTS query_history; DROP TABLE IF EXISTS saved_connections; DROP TABLE IF EXISTS saved_scripts;";
-
-    // V2: per-connection save_password flag
-    const M2_UP: &str =
-        "ALTER TABLE saved_connections ADD COLUMN save_password INTEGER NOT NULL DEFAULT 1;";
-    const M2_DOWN: &str =
-        "ALTER TABLE saved_connections DROP COLUMN save_password;";
-
-    // V3: store password directly in SQLite instead of OS keyring
-    const M3_UP: &str =
-        "ALTER TABLE saved_connections ADD COLUMN password TEXT;";
-    const M3_DOWN: &str =
-        "ALTER TABLE saved_connections DROP COLUMN password;";
-
-    // V4: associate scripts with a connection
-    const M4_UP: &str = "ALTER TABLE saved_scripts ADD COLUMN connection_id TEXT;";
-    const M4_DOWN: &str = "ALTER TABLE saved_scripts DROP COLUMN connection_id;";
-
-    let migrations: &[(&str, &str)] = &[
-        (M1_UP, M1_DOWN),
-        (M2_UP, M2_DOWN),
-        (M3_UP, M3_DOWN),
-        (M4_UP, M4_DOWN),
-    ];
-
-    for (i, (up, down)) in migrations.iter().enumerate() {
-        let v = (i + 1) as i64;
-        if version < v {
-            conn.execute_batch(up)?;
-            conn.execute(
-                "INSERT INTO schema_migrations (version, down_sql) VALUES (?1, ?2)",
-                params![v, down],
-            )?;
-        }
-    }
+            id            TEXT PRIMARY KEY,
+            title         TEXT NOT NULL,
+            content       TEXT NOT NULL DEFAULT '',
+            created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+            connection_id TEXT
+        );
+        ",
+    )?;
+    
+    // Clean up exposed plain-text passwords if they exist from older schema.
+    // Ignore errors since the column might not exist.
+    let _ = conn.execute_batch("UPDATE saved_connections SET password = NULL;");
 
     Ok(())
 }
@@ -147,17 +105,11 @@ impl AppDb {
     }
 
     pub fn save_connection(&self, conn: &SavedConnection) -> Result<(), String> {
-        let stored_password: Option<&str> = if conn.save_password {
-            conn.password.as_deref().filter(|p| !p.is_empty())
-        } else {
-            None
-        };
-
         let db = self.0.lock().map_err(|e| e.to_string())?;
         db.execute(
             "INSERT OR REPLACE INTO saved_connections
-             (id, name, engine, host, port, username, db_name, path, save_password, password)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+             (id, name, engine, host, port, username, db_name, path, save_password)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
             params![
                 conn.id,
                 conn.name,
@@ -168,10 +120,21 @@ impl AppDb {
                 conn.db_name,
                 conn.path,
                 conn.save_password as i64,
-                stored_password,
             ],
         )
         .map_err(|e| e.to_string())?;
+
+        // Handle keyring password
+        let entry_res = keyring::Entry::new("dib_connections", &conn.id);
+        if let Ok(entry) = entry_res {
+            if conn.save_password {
+                if let Some(pw) = conn.password.as_deref().filter(|p| !p.is_empty()) {
+                    let _ = entry.set_password(pw);
+                }
+            } else {
+                let _ = entry.delete_credential();
+            }
+        }
 
         Ok(())
     }
@@ -180,16 +143,25 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         let mut stmt = db
             .prepare(
-                "SELECT id, name, engine, host, port, username, db_name, path, save_password, password
+                "SELECT id, name, engine, host, port, username, db_name, path, save_password
                  FROM saved_connections ORDER BY name",
             )
             .map_err(|e| e.to_string())?;
 
         let rows: Vec<SavedConnection> = stmt
             .query_map([], |r| {
+                let id: String = r.get(0)?;
                 let save_password = r.get::<_, i64>(8)? != 0;
+                
+                let mut password = None;
+                if save_password {
+                    if let Ok(entry) = keyring::Entry::new("dib_connections", &id) {
+                        password = entry.get_password().ok();
+                    }
+                }
+
                 Ok(SavedConnection {
-                    id: r.get(0)?,
+                    id,
                     name: r.get(1)?,
                     engine: r.get(2)?,
                     host: r.get(3)?,
@@ -198,7 +170,7 @@ impl AppDb {
                     db_name: r.get(6)?,
                     path: r.get(7)?,
                     save_password,
-                    password: if save_password { r.get(9)? } else { None },
+                    password,
                 })
             })
             .map_err(|e| e.to_string())?
@@ -212,15 +184,24 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         let mut stmt = db
             .prepare(
-                "SELECT id, name, engine, host, port, username, db_name, path, save_password, password \
+                "SELECT id, name, engine, host, port, username, db_name, path, save_password \
                  FROM saved_connections WHERE id = ?1",
             )
             .map_err(|e| e.to_string())?;
 
         stmt.query_row([id], |r| {
+            let id_str: String = r.get(0)?;
             let save_password = r.get::<_, i64>(8)? != 0;
+            
+            let mut password = None;
+            if save_password {
+                if let Ok(entry) = keyring::Entry::new("dib_connections", &id_str) {
+                    password = entry.get_password().ok();
+                }
+            }
+
             Ok(SavedConnection {
-                id: r.get(0)?,
+                id: id_str,
                 name: r.get(1)?,
                 engine: r.get(2)?,
                 host: r.get(3)?,
@@ -229,7 +210,7 @@ impl AppDb {
                 db_name: r.get(6)?,
                 path: r.get(7)?,
                 save_password,
-                password: if save_password { r.get(9)? } else { None },
+                password,
             })
         })
         .map_err(|e| format!("Connection '{}' not found: {}", id, e))
@@ -240,6 +221,12 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         db.execute("DELETE FROM saved_connections WHERE id = ?1", params![clean_id])
             .map_err(|e| e.to_string())?;
+
+        // Delete from keyring if it exists
+        if let Ok(entry) = keyring::Entry::new("dib_connections", clean_id) {
+            let _ = entry.delete_credential();
+        }
+
         Ok(())
     }
 

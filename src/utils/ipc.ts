@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { useUiStore } from "@/store/uiStore";
 
 export async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   // Wait until Tauri is injected into the window (if not already)
@@ -40,10 +41,7 @@ export async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>)
 
       if (isBackendError) {
         console.error(`[IPC] Backend unavailable (${cmd}):`, msg);
-        // Lazy import to avoid circular dep; store is a singleton
-        import("@/store/uiStore").then(({ useUiStore }) => {
-          useUiStore.getState().setBackendError({ command: cmd, message: msg });
-        });
+        useUiStore.getState().setBackendError({ command: cmd, message: msg });
         throw new Error("El backend de Tauri no está disponible. Intenta reiniciar la aplicación.");
       }
 

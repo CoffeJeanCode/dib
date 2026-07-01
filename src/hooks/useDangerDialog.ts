@@ -11,7 +11,6 @@ interface DangerDialog {
 export function useDangerDialog(
   activeConnectionId: string | null,
   onInfo: (msg: string) => void,
-  onError: (msg: string) => void,
 ) {
   const [dangerDialog, setDangerDialog] = useState<DangerDialog | null>(null);
   const triggerReload = useConnectionStore((s) => s.triggerReload);
@@ -24,21 +23,14 @@ export function useDangerDialog(
       setDangerDialog({
         message: `¿Eliminar tabla "${label}"? Esta acción no se puede deshacer.`,
         onConfirm: async () => {
+          await dbService.dropTable(connId, table.name, table.schema ?? null);
           setDangerDialog(null);
-          try {
-            await dbService.dropTable(connId, table.name, table.schema ?? null);
-            onInfo(`Tabla "${label}" eliminada`);
-            triggerReload();
-          } catch (e: unknown) {
-            const msg = e && typeof e === "object" && "message" in e
-              ? String((e as { message: unknown }).message)
-              : String(e);
-            onError(msg);
-          }
+          onInfo(`Tabla "${label}" eliminada`);
+          triggerReload();
         },
       });
     },
-    [activeConnectionId, onInfo, onError, triggerReload],
+    [activeConnectionId, onInfo, triggerReload],
   );
 
   const handleTruncateTable = useCallback(
@@ -49,24 +41,17 @@ export function useDangerDialog(
       setDangerDialog({
         message: `¿Truncar tabla "${label}"? Se eliminarán TODOS los registros. Esta acción no se puede deshacer.`,
         onConfirm: async () => {
+          const sql = table.schema
+            ? `TRUNCATE TABLE "${table.schema}"."${table.name}"`
+            : `TRUNCATE TABLE "${table.name}"`;
+          await dbService.runQuery(connId, sql);
           setDangerDialog(null);
-          try {
-            const sql = table.schema
-              ? `TRUNCATE TABLE "${table.schema}"."${table.name}"`
-              : `TRUNCATE TABLE "${table.name}"`;
-            await dbService.runQuery(connId, sql);
-            onInfo(`Tabla "${label}" truncada`);
-            triggerReload();
-          } catch (e: unknown) {
-            const msg = e && typeof e === "object" && "message" in e
-              ? String((e as { message: unknown }).message)
-              : String(e);
-            onError(msg);
-          }
+          onInfo(`Tabla "${label}" truncada`);
+          triggerReload();
         },
       });
     },
-    [activeConnectionId, onInfo, onError, triggerReload],
+    [activeConnectionId, onInfo, triggerReload],
   );
 
   return {

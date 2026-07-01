@@ -106,8 +106,9 @@ export function CommandPalette({
   const [baseItems, setBaseItems]       = useState<PaletteItem[]>([]);
   const [loading, setLoading]           = useState(false);
   const [ddlMode, setDdlMode]           = useState<DdlMode>(null);
-  const inputRef   = useRef<HTMLInputElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const inputRef        = useRef<HTMLInputElement>(null);
+  const resultsRef      = useRef<HTMLDivElement>(null);
+  const pointerActiveRef = useRef(false);
   
   const [recentIds, setRecentIds] = useState<string[]>(() => {
     try {
@@ -204,7 +205,8 @@ export function CommandPalette({
     setDdlMode(mode);
     setQuery("");
     setSelectedIndex(0);
-    setTimeout(() => inputRef.current?.focus(), 30);
+    pointerActiveRef.current = false;
+    setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
   // DDL static actions — built-in, appear under > prefix and in suggestions
@@ -315,9 +317,11 @@ export function CommandPalette({
     (e: React.KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
+        pointerActiveRef.current = false;
         setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+        pointerActiveRef.current = false;
         setSelectedIndex((i) => Math.max(i - 1, 0));
       } else if (e.key === "Enter" && e.altKey && filtered[selectedIndex]?.kind === "table") {
         // Alt+Enter → open ERD for focused table
@@ -330,6 +334,8 @@ export function CommandPalette({
       } else if (e.key === "Enter" && filtered[selectedIndex]) {
         execute(filtered[selectedIndex]);
       } else if (e.key === "Escape") {
+        // handled by global handler — stop native event so it doesn't double-fire
+        e.nativeEvent.stopImmediatePropagation();
         if (ddlMode) { setDdlMode(null); setQuery(""); }
         else onClose();
       }
@@ -339,7 +345,11 @@ export function CommandPalette({
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && !ddlMode) onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (ddlMode) { setDdlMode(null); setQuery(""); }
+      else onClose();
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, ddlMode, onClose]);
@@ -360,7 +370,7 @@ export function CommandPalette({
             </button>
             <span className="palette-ddl-icon">{currentDdlMeta.icon}</span>
             <span className="palette-ddl-label">{currentDdlMeta.label}</span>
-            <span className="palette-ddl-hint">— select a table</span>
+            <span className="palette-ddl-hint">— type to filter · ↑↓ navigate · ↵ apply</span>
           </div>
         )}
 
@@ -423,7 +433,7 @@ export function CommandPalette({
                       isDdlAction ? "palette-item--ddl" : "",
                     ].filter(Boolean).join(" ")}
                     onClick={() => execute(item)}
-                    onMouseEnter={() => setSelectedIndex(i)}
+                    onPointerMove={() => { pointerActiveRef.current = true; setSelectedIndex(i); }}
                   >
                     <span className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}>
                       {ddlMode && item.kind === "table" ? currentDdlMeta?.icon
@@ -438,6 +448,17 @@ export function CommandPalette({
             })
           )}
         </div>
+
+        {filtered.length > 0 && (
+          <div className="palette-footer">
+            <span className="palette-footer-hint"><kbd>↑↓</kbd> navigate</span>
+            <span className="palette-footer-hint"><kbd>↵</kbd> select</span>
+            {ddlMode
+              ? <span className="palette-footer-hint"><kbd>esc</kbd> back</span>
+              : <span className="palette-footer-hint"><kbd>esc</kbd> close</span>
+            }
+          </div>
+        )}
       </div>
     </div>
   );

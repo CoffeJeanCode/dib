@@ -135,8 +135,12 @@ fn pg_bind_json(args: &mut sqlx::postgres::PgArguments, val: &Value) {
             else { let _ = args.add(n.as_f64().unwrap_or(0.0)); }
         }
         // Coerce numeric strings → INT8/FLOAT8 so Postgres doesn't reject bigint = $1::text
+        // Coerce "true"/"false" strings to native booleans.
         Value::String(s) => {
-            if let Ok(i) = s.parse::<i64>() { let _ = args.add(i); }
+            let lower = s.to_lowercase();
+            if lower == "true" { let _ = args.add(true); }
+            else if lower == "false" { let _ = args.add(false); }
+            else if let Ok(i) = s.parse::<i64>() { let _ = args.add(i); }
             else if let Ok(f) = s.parse::<f64>() { let _ = args.add(f); }
             else { let _ = args.add(s.clone()); }
         }

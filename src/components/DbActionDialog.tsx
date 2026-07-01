@@ -8,6 +8,7 @@ type Action = "create" | "drop" | "rename";
 interface DbActionDialogProps {
   action: Action;
   connectionId: string;
+  targetDb?: string;
   onClose: () => void;
 }
 
@@ -23,10 +24,10 @@ const ACTION_LABEL: Record<Action, string> = {
   rename: "Rename",
 };
 
-export function DbActionDialog({ action, connectionId, onClose }: DbActionDialogProps) {
+export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbActionDialogProps) {
   const [name, setName] = useState("");
   const [newName, setNewName] = useState("");
-  const [selectedDb, setSelectedDb] = useState("");
+  const [selectedDb, setSelectedDb] = useState(targetDb ?? "");
   const [databases, setDatabases] = useState<string[]>([]);
   const [dbsLoading, setDbsLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -37,7 +38,7 @@ export function DbActionDialog({ action, connectionId, onClose }: DbActionDialog
     if (action === "drop" || action === "rename") {
       setDbsLoading(true);
       invoke<string[]>("list_databases", { connectionId })
-        .then((dbs) => { setDatabases(dbs); if (!selectedDb && dbs.length > 0) setSelectedDb(dbs[0]); })
+        .then((dbs) => { setDatabases(dbs); if (!selectedDb && dbs.length > 0) setSelectedDb(targetDb ?? dbs[0]); })
         .catch(() => setDatabases([]))
         .finally(() => setDbsLoading(false));
     }
@@ -45,9 +46,11 @@ export function DbActionDialog({ action, connectionId, onClose }: DbActionDialog
 
   useEffect(() => {
     inputRef.current?.focus();
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => window.removeEventListener("keydown", handler, { capture: true });
   }, [onClose]);
 
   const handleSubmit = useCallback(async () => {

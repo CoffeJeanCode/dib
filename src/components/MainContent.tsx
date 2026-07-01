@@ -16,7 +16,7 @@ interface Props {
   onEditSaved: () => void;
   onConnected: (connInfo: ConnectionInfo) => void;
   onBack: () => void;
-  onConnectionSelect: (savedId: string, password?: string) => Promise<void>;
+  onConnectionSelect: (savedId: string, password?: string) => Promise<boolean | void>;
   onNewConnection: () => void;
 }
 

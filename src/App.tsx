@@ -1,4 +1,4 @@
-import { useState, useCallback, createContext, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { MainContent } from "@/components/MainContent";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -12,7 +12,7 @@ import { DbActionDialog } from "@/components/DbActionDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useUiState } from "@/hooks/useUiState";
-import { useToast } from "@/hooks/useToast";
+import { useToastStore } from "@/store/toastStore";
 import { useConnectionManager } from "@/hooks/useConnectionManager";
 import { useAppKeybindings } from "@/hooks/useAppKeybindings";
 import { useDangerDialog } from "@/hooks/useDangerDialog";
@@ -23,19 +23,11 @@ import type { TableInfo, SavedConnection } from "@/types/db";
 import type { NavTable, OpenScript } from "@/types/workspace";
 import "./App.css";
 
-export interface ToastCtx {
-  info: (msg: string) => void;
-  error: (msg: string) => void;
-  warn: (msg: string) => void;
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const ToastContext = createContext<ToastCtx>({ info: () => {}, error: () => {}, warn: () => {} });
-
 function App() {
   const { connections } = useSavedConnections();
   const { state: uiState } = useUiState();
-  const { toasts, info, error, warn, remove } = useToast();
+  const info = useToastStore((s) => s.info);
+  const error = useToastStore((s) => s.error);
 
   const {
     active, connecting, passwordPrompt,
@@ -56,7 +48,7 @@ function App() {
   const { setNavigateTo, setOpenScript } = useWorkspaceStore.getState();
 
   const { dangerDialog, handleDropTable, handleTruncateTable, clearDangerDialog } =
-    useDangerDialog(active?.activeId ?? null, info, error);
+    useDangerDialog(active?.activeId ?? null, info);
 
   const handleTogglePalette    = useCallback(() => togglePalette(), [togglePalette]);
   const handleToggleCheatSheet = useCallback(() => setCheatSheetOpen(!cheatSheetOpen), [cheatSheetOpen, setCheatSheetOpen]);
@@ -91,22 +83,19 @@ function App() {
 
   const [renameTarget, setRenameTarget] = useState<TableInfo | null>(null);
   const [alterTarget, setAlterTarget] = useState<TableInfo | null>(null);
-  const [dbAction, setDbAction] = useState<"create" | "rename" | "drop" | null>(null);
+  const [dbAction, setDbAction] = useState<{ action: "create" | "rename" | "drop"; dbName?: string } | null>(null);
 
   const handleRenameTable = useCallback((table: TableInfo) => {
     setRenameTarget(table);
-    togglePalette();
-  }, [togglePalette]);
+  }, []);
 
   const handleAlterTable = useCallback((table: TableInfo) => {
     setAlterTarget(table);
-    togglePalette();
-  }, [togglePalette]);
+  }, []);
 
-  const handleDbAction = useCallback((action: "create" | "rename" | "drop") => {
-    togglePalette();
-    setDbAction(action);
-  }, [togglePalette]);
+  const handleDbAction = useCallback((action: "create" | "rename" | "drop", dbName?: string) => {
+    setDbAction({ action, dbName });
+  }, []);
 
   const paletteActions = [
     ...(active ? [
@@ -120,52 +109,48 @@ function App() {
     { id: "cheat-sheet",    label: "Keyboard Shortcuts (Ctrl+/)", onAction: () => { togglePalette(); setCheatSheetOpen(true); } },
   ];
 
-  const toast = { info, error, warn };
-
   return (
-    <ToastContext.Provider value={toast}>
-      <Layout
-        activeConnectionId={active?.savedId ?? null}
-        activeSessionId={active?.activeId ?? null}
-        onConnectionSelect={handleConnectionSelect}
-        connectionName={active?.name}
-        onScriptOpen={handleScriptOpen}
+    <Layout
+      activeConnectionId={active?.savedId ?? null}
+      activeSessionId={active?.activeId ?? null}
+      onConnectionSelect={handleConnectionSelect}
+      connectionName={active?.name}
+      onScriptOpen={handleScriptOpen}
+      onTableSelect={handleTableSelect}
+      onDatabaseSwitch={handleDatabaseSwitch}
+      onDisconnect={handleDisconnect}
+      onEditConnection={handleEditConnection}
+      onSettingsOpen={() => setSettingsOpen(true)}
+      onDbAction={handleDbAction}
+    >
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => togglePalette()}
+        connectionId={active?.activeId ?? null}
         onTableSelect={handleTableSelect}
+        onScriptOpen={handleScriptOpen}
         onDatabaseSwitch={handleDatabaseSwitch}
-        onDisconnect={handleDisconnect}
-        onEditConnection={handleEditConnection}
-        onSettingsOpen={() => setSettingsOpen(true)}
+        onDropTable={handleDropTable}
+        onTruncateTable={handleTruncateTable}
+        onRenameTable={handleRenameTable}
+        onAlterTable={handleAlterTable}
         onDbAction={handleDbAction}
-      >
-        <CommandPalette
-          open={paletteOpen}
-          onClose={() => togglePalette()}
-          connectionId={active?.activeId ?? null}
-          onTableSelect={handleTableSelect}
-          onScriptOpen={handleScriptOpen}
-          onDatabaseSwitch={handleDatabaseSwitch}
-          onDropTable={handleDropTable}
-          onTruncateTable={handleTruncateTable}
-          onRenameTable={handleRenameTable}
-          onAlterTable={handleAlterTable}
-          onDbAction={handleDbAction}
-          actions={paletteActions}
-        />
-        {connecting && <div className="app-connecting">Connecting…</div>}
-        <MainContent
-          editingConn={editingConn}
-          showNewConnection={showNewConnection}
-          connecting={connecting}
-          active={active}
-          navigateTo={navigateTo}
-          openScript={openScript}
-          onEditSaved={() => setEditingConn(null)}
-          onConnected={(connInfo) => { handleNewConnection(connInfo); setShowNewConnection(false); }}
-          onBack={() => setShowNewConnection(false)}
-          onConnectionSelect={handleConnectionSelect}
-          onNewConnection={() => setShowNewConnection(true)}
-        />
-      </Layout>
+        actions={paletteActions}
+      />
+      {connecting && <div className="app-connecting">Connecting…</div>}
+      <MainContent
+        editingConn={editingConn}
+        showNewConnection={showNewConnection}
+        connecting={connecting}
+        active={active}
+        navigateTo={navigateTo}
+        openScript={openScript}
+        onEditSaved={() => setEditingConn(null)}
+        onConnected={(connInfo) => { handleNewConnection(connInfo); setShowNewConnection(false); }}
+        onBack={() => setShowNewConnection(false)}
+        onConnectionSelect={handleConnectionSelect}
+        onNewConnection={() => setShowNewConnection(true)}
+      />
       {passwordPrompt && (
         <PasswordPrompt
           connectionName={passwordPrompt.name}
@@ -193,8 +178,9 @@ function App() {
       )}
       {dbAction && active?.activeId && (
         <DbActionDialog
-          action={dbAction}
+          action={dbAction.action}
           connectionId={active.activeId}
+          targetDb={dbAction.dbName}
           onClose={() => setDbAction(null)}
         />
       )}
@@ -206,8 +192,8 @@ function App() {
           onClose={() => setAlterTarget(null)}
         />
       )}
-      <ToastContainer toasts={toasts} onDismiss={remove} />
-    </ToastContext.Provider>
+      <ToastContainer />
+    </Layout>
   );
 }
 

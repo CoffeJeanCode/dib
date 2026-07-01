@@ -33,7 +33,7 @@ interface LayoutProps {
   onDisconnect?: () => void;
   onEditConnection?: (conn: SavedConnection) => void;
   onSettingsOpen?: () => void;
-  onDbAction?: (action: DbActionType) => void;
+  onDbAction?: (action: DbActionType, dbName?: string) => void;
 }
 
 export function Layout({ children, activeConnectionId, activeSessionId, connectionName, onConnectionSelect, onScriptOpen, onTableSelect, onDatabaseSwitch, onDisconnect, onEditConnection, onSettingsOpen, onDbAction }: LayoutProps) {
@@ -176,6 +176,7 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
             onDisconnect={onDisconnect}
             onEditConnection={onEditConnection}
             onDbAction={onDbAction}
+            activeDb={connectionName}
           />
         )}
 

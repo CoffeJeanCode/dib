@@ -140,7 +140,7 @@ pub async fn export_script_dialog(content: String) -> Result<Option<String>, Str
 // ── Internal script CRUD (primary storage) ─────────────────
 
 #[tauri::command]
-pub fn save_internal_script(
+pub async fn save_internal_script(
     app_handle: tauri::AppHandle,
     id: String,
     title: String,
@@ -152,7 +152,7 @@ pub fn save_internal_script(
 }
 
 #[tauri::command]
-pub fn get_internal_scripts(
+pub async fn get_internal_scripts(
     app_handle: tauri::AppHandle,
     connection_id: Option<String>,
 ) -> Result<Vec<InternalScript>, String> {
@@ -161,13 +161,13 @@ pub fn get_internal_scripts(
 }
 
 #[tauri::command]
-pub fn update_internal_script(app_handle: tauri::AppHandle, id: String, title: String) -> Result<(), String> {
+pub async fn update_internal_script(app_handle: tauri::AppHandle, id: String, title: String) -> Result<(), String> {
     let db = app_handle.state::<crate::storage::AppDb>();
     db.update_script_internal(&id, &title)
 }
 
 #[tauri::command]
-pub fn delete_internal_script(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+pub async fn delete_internal_script(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
     let db = app_handle.state::<crate::storage::AppDb>();
     db.delete_script_internal(&id)
 }

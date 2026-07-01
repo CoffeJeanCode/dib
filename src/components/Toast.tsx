@@ -1,14 +1,11 @@
 import { createPortal } from "react-dom";
 import { Copy, X, AlertTriangle, Info } from "lucide-react";
-import type { Toast as ToastType } from "@/hooks/useToast";
+import { useToastStore, type Toast as ToastType } from "@/store/toastStore";
 import "./Toast.css";
 
-interface ToastContainerProps {
-  toasts: ToastType[];
-  onDismiss: (id: string) => void;
-}
+function ToastItem({ toast }: { toast: ToastType }) {
+  const remove = useToastStore((s) => s.remove);
 
-function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: string) => void }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(toast.message).catch(() => {});
   };
@@ -25,7 +22,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: str
         <Copy size={14} />
       </button>
       {toast.dismissible && (
-        <button className="toast-close-btn" onClick={() => onDismiss(toast.id)} title="Cerrar">
+        <button className="toast-close-btn" onClick={() => remove(toast.id)} title="Cerrar">
           <X size={14} />
         </button>
       )}
@@ -33,13 +30,15 @@ function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (id: str
   );
 }
 
-export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
+export function ToastContainer() {
+  const toasts = useToastStore((s) => s.toasts);
+
   if (!toasts.length) return null;
 
   return createPortal(
     <div className="toast-container">
       {toasts.map((t) => (
-        <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
+        <ToastItem key={t.id} toast={t} />
       ))}
     </div>,
     document.body,

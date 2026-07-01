@@ -64,6 +64,11 @@ export function useDataGridState({
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
 
+  // Post-save order preservation — values assigned after editState is declared below.
+  const preserveOrderRef = useRef(false);
+  const displayedRowsRef = useRef<unknown[][]>(rows);
+  const pkColIdxRef = useRef(-1);
+
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -85,6 +90,7 @@ export function useDataGridState({
 
   // Edit state (undo/redo history)
   const [editState, setEditState] = useState<EditState>(() => makeEditState(rows));
+  displayedRowsRef.current = editState.rows; // keep in sync every render for post-save reordering
 
   // Freeze controlled mode on mount — never switch between controlled/uncontrolled
   const isControlledRef = useRef(onActiveCellChange !== undefined);
@@ -126,6 +132,7 @@ export function useDataGridState({
     () => (primaryKeyColumn ? columns.indexOf(primaryKeyColumn) : -1),
     [primaryKeyColumn, columns],
   );
+  pkColIdxRef.current = pkColIdx;
 
   const colInfoMap = useMemo(() => {
     const map: Record<string, ColumnInfo> = {};
@@ -195,10 +202,31 @@ export function useDataGridState({
   }, [columns, columnWidths]);
 
   useEffect(() => {
+    if (preserveOrderRef.current) {
+      preserveOrderRef.current = false;
+      const colIdx = pkColIdxRef.current;
+      const prev = displayedRowsRef.current;
+      if (colIdx >= 0 && prev.length > 0) {
+        const orderMap = new Map<unknown, number>();
+        for (let i = 0; i < prev.length; i++) {
+          const pk = (prev[i] as unknown[])[colIdx];
+          if (pk != null) orderMap.set(pk, i);
+        }
+        const sorted = [...rows].sort((a, b) => {
+          const ia = orderMap.get((a as unknown[])[colIdx]) ?? Number.MAX_SAFE_INTEGER;
+          const ib = orderMap.get((b as unknown[])[colIdx]) ?? Number.MAX_SAFE_INTEGER;
+          return ia - ib;
+        });
+        setEditState(makeEditState(sorted));
+        setSelectedCells(new Set());
+        setAnchorCell(null);
+        return;
+      }
+    }
     setEditState(makeEditState(rows));
     setSelectedCells(new Set());
     setAnchorCell(null);
-  }, [rows]);
+  }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (disableAutoFocus || rows.length === 0) return;
@@ -531,6 +559,7 @@ export function useDataGridState({
     const changes = Array.from(editState.changes.values());
     onSaveRef.current(changes)
       .then(() => {
+        preserveOrderRef.current = true;
         setSaveIndicator(true);
         setTimeout(() => setSaveIndicator(false), 2000);
       })

@@ -1,11 +1,12 @@
-import { useState, useCallback, useRef, useEffect, useContext } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { OnMount } from "@monaco-editor/react";
-import type { TableInfo, ColumnInfo, QueryResult, ExplainPlan } from "@/types/db";
+import type { ColumnInfo, QueryResult, ExplainPlan } from "@/types/db";
 import { dbService } from "@/services/dbService";
 import { workspaceService } from "@/services/workspaceService";
-import { ToastContext } from "@/App";
+import { useToastStore } from "@/store/toastStore";
 import { useUiStore } from "@/store/uiStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useConnectionStore } from "@/store/connectionStore";
 import { useUiState } from "@/hooks/useUiState";
 
 function fmtErr(e: unknown): string {
@@ -188,7 +189,7 @@ export function useSqlEditor({
   onSaveViewState,
   onContentChange,
 }: UseSqlEditorOptions) {
-  const toast = useContext(ToastContext);
+  const toast = useToastStore.getState();
   const DEFAULT_SQL = "SELECT * FROM ";
 
   const [sql, setSql] = useState(initialSql ?? DEFAULT_SQL);
@@ -279,7 +280,8 @@ export function useSqlEditor({
     return () => { completionDisposable.current?.dispose(); };
   }, []);
 
-  // Lazy schema: only fetch table names on connect; columns fetched on demand
+  // Lazy schema: refetch table names on connect AND after schema mutations (reloadVersion)
+  const reloadVersion = useConnectionStore((s) => s.reloadVersion);
   useEffect(() => {
     schemaRef.current = {};
     colsFetchedRef.current = new Set();
@@ -288,7 +290,7 @@ export function useSqlEditor({
     dbService.fetchSchemaObjects(connectionId)
       .then((obj) => { tableNamesRef.current = [...obj.tables, ...obj.views]; })
       .catch(console.error);
-  }, [connectionId]);
+  }, [connectionId, reloadVersion]);
 
   const fetchColumnsLazy = useCallback(async (tableName: string): Promise<ColumnInfo[]> => {
     const key = tableName.toLowerCase();

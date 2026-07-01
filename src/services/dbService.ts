@@ -1,5 +1,5 @@
 import { safeInvoke } from "@/utils/ipc";
-import type { TableInfo, ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects } from "@/types/db";
+import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects } from "@/types/db";
 
 export const dbService = {
   fetchTableSchema: (connectionId: string, tableName: string, schema: string | null) =>

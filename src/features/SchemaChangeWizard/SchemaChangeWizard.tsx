@@ -5,10 +5,11 @@ import { useConnectionStore } from "@/store/connectionStore";
 import type { SchemaChange, ColumnInfo } from "@/types/db";
 import "./SchemaChangeWizard.css";
 
-type ChangeKind = "add_column" | "rename_column" | "alter_type";
+type ChangeKind = "add_column" | "drop_column" | "rename_column" | "alter_type";
 
 const KIND_OPTIONS: { value: ChangeKind; label: string }[] = [
   { value: "add_column", label: "Add Column" },
+  { value: "drop_column", label: "Drop Column" },
   { value: "rename_column", label: "Rename Column" },
   { value: "alter_type", label: "Change Data Type" },
 ];
@@ -41,9 +42,11 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
 
   useEffect(() => {
     cancelRef.current?.focus();
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => window.removeEventListener("keydown", handler, { capture: true });
   }, [onClose]);
 
   useEffect(() => {
@@ -79,6 +82,14 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
       }]);
       return;
     }
+    if (kind === "drop_column" && renameTarget) {
+      setChanges((p) => [...p, {
+        kind: "drop_column",
+        column: renameTarget,
+      }]);
+      setRenameTarget("");
+      return;
+    }
   }, [kind, colName, colType, renameTarget, newName]);
 
   const removeChange = useCallback((idx: number) => {
@@ -106,6 +117,7 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
   const changeLabel = (c: SchemaChange): string => {
     switch (c.kind) {
       case "add_column": return `ADD ${c.column} ${c.data_type ?? ""}`;
+      case "drop_column": return `DROP ${c.column}`;
       case "rename_column": return `${c.column} → ${c.new_column}`;
       case "alter_type": return `${c.column} :: ${c.data_type}`;
       default: return "";
@@ -159,6 +171,15 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
                 </>
               )}
 
+              {kind === "drop_column" && (
+                <>
+                  <select value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
+                    <option value="">— select —</option>
+                    {columns.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+                  </select>
+                </>
+              )}
+
               {kind === "rename_column" && (
                 <>
                   <select value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
@@ -199,7 +220,7 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
                 {changes.map((c, i) => (
                   <li key={i} className="scw-change-item">
                     <span className={`scw-change-kind scw-change-kind--${c.kind}`}>
-                      {c.kind === "add_column" ? "ADD" : c.kind === "rename_column" ? "RENAME" : "TYPE"}
+                      {c.kind === "add_column" ? "ADD" : c.kind === "drop_column" ? "DROP" : c.kind === "rename_column" ? "RENAME" : "TYPE"}
                     </span>
                     <span className="scw-change-text">{changeLabel(c)}</span>
                     <button className="scw-btn scw-btn--remove" onClick={() => removeChange(i)}>&times;</button>

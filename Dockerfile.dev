@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libssl-dev libwebkit2gtk-4.1-dev \
     libayatana-appindicator3-dev librsvg2-dev \
     libsecret-1-dev libdbus-1-dev \
-    xvfb x11-utils
+    xvfb xauth x11-utils
 
 # 2. Cache the Rust installation downloads
 RUN --mount=type=cache,target=/root/.rustup \

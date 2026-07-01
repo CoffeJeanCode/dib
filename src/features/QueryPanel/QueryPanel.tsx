@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo, useCallback, useRef, useContext } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { workspaceService } from "@/services/workspaceService";
-import { dbService } from "@/services/dbService";
 import { useDatabaseEngine, DEFAULT_PAGE_SIZE } from "@/hooks/useDatabaseEngine";
 import { useWorkspaceService } from "@/hooks/useWorkspaceService";
 import { useKeybindings } from "@/hooks/useKeybindings";
@@ -17,7 +16,7 @@ import { SqlEditor } from "@/features/SqlEditor";
 import { SchemaVisualizer } from "@/features/SchemaVisualizer";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/components/EmptyWorkspaceState";
-import { ToastContext } from "@/App";
+import { useToastStore } from "@/store/toastStore";
 import "./QueryPanel.css";
 
 function fmtErr(e: unknown): string {
@@ -58,7 +57,7 @@ interface QueryPanelProps {
 }
 
 export function QueryPanel({ connectionId, connectionName, engine, navigateTo, openScript }: QueryPanelProps) {
-  const toast = useContext(ToastContext);
+  const toast = useToastStore.getState();
 
   // ── Engine: tables, columns, relations, data fetching, commits ─────────
   const { tables, columnMap, tableRelations, fetchTablePage, loadTableRelations, loadColumnsBatch, commitChanges } =
@@ -330,16 +329,31 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
       const tabId = activeTabIdRef.current;
       if (tab?.closeable) handleTabClose(tabId);
     } else {
-      dbService.getNextScriptNumber()
-        .then((count) => { const n = count + 1; openSqlTab("", n === 1 ? "Untitled.sql" : `Untitled-${n}.sql`); })
-        .catch(() => openSqlTab("", "Untitled.sql"));
+      // Find next available "Untitled N" number from current tabs
+      const currentTabs = tabsRef.current;
+      let maxUntitled = 0;
+      for (const t of currentTabs) {
+        const match = t.title.match(/^Untitled(?:\s+(\d+))?\.sql$/);
+        if (match) {
+          const num = match[1] ? parseInt(match[1], 10) : 1;
+          if (num > maxUntitled) maxUntitled = num;
+        }
+      }
+      const nextNum = maxUntitled + 1;
+      openSqlTab("", nextNum === 1 ? "Untitled.sql" : `Untitled ${nextNum}.sql`);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabAction]);
 
   // ── Navigate/openScript from App ───────────────────────────────────────
-  useEffect(() => { if (navigateTo) openTableTab(navigateTo.table); }, [navigateTo]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (openScript) openSqlTab(openScript.sql, openScript.name, openScript.id); }, [openScript]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (navigateTo) openTableTab(navigateTo.table); }, [navigateTo, openTableTab]);
+  const lastOpenScriptIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (openScript && openScript.id !== lastOpenScriptIdRef.current) {
+      lastOpenScriptIdRef.current = openScript.id;
+      openSqlTab(openScript.sql, openScript.name, openScript.id);
+    }
+  }, [openScript, openSqlTab]);
 
   // ── Active table → sidebar highlight ──────────────────────────────────
   useEffect(() => {
@@ -436,9 +450,18 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
     {
       combo: "ctrl+t",
       handler: () => {
-        dbService.getNextScriptNumber()
-          .then((count) => { const n = count + 1; openSqlTab("", n === 1 ? "Untitled.sql" : `Untitled-${n}.sql`); })
-          .catch(() => openSqlTab("", "Untitled.sql"));
+        // Find next available "Untitled N" number from current tabs
+        const currentTabs = tabsRef.current;
+        let maxUntitled = 0;
+        for (const t of currentTabs) {
+          const match = t.title.match(/^Untitled(?:\s+(\d+))?\.sql$/);
+          if (match) {
+            const num = match[1] ? parseInt(match[1], 10) : 1;
+            if (num > maxUntitled) maxUntitled = num;
+          }
+        }
+        const nextNum = maxUntitled + 1;
+        openSqlTab("", nextNum === 1 ? "Untitled.sql" : `Untitled ${nextNum}.sql`);
       },
       allowInMonaco: true,
     },

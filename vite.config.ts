@@ -18,6 +18,25 @@ export default defineConfig(async () => ({
       "@/constants": path.resolve(__dirname, "src/constants"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-monaco": ["@monaco-editor/react"],
+          "vendor-xyflow": ["@xyflow/react"],
+          "vendor-ui": [
+            "@dnd-kit/core",
+            "@dnd-kit/sortable",
+            "@dnd-kit/utilities",
+            "lucide-react",
+            "@tanstack/react-virtual",
+          ],
+          "vendor-tauri": ["@tauri-apps/api"],
+        },
+      },
+    },
+  },
   clearScreen: false,
   server: {
     port: 1420,

@@ -13,7 +13,7 @@ pub struct SystemStatus {
 }
 
 #[tauri::command]
-pub fn check_system_status() -> SystemStatus {
+pub async fn check_system_status() -> Result<SystemStatus, String> {
     let mut sys = System::new_all();
     sys.refresh_all();
 
@@ -21,7 +21,7 @@ pub fn check_system_status() -> SystemStatus {
     let available_mem = sys.available_memory() / 1024 / 1024;
     let used_mem = total_mem - available_mem;
 
-    SystemStatus {
+    Ok(SystemStatus {
         os_name: System::name().unwrap_or_else(|| "Unknown".to_string()),
         os_version: System::os_version().unwrap_or_else(|| "Unknown".to_string()),
         total_memory_mb: total_mem,
@@ -29,5 +29,5 @@ pub fn check_system_status() -> SystemStatus {
         used_memory_mb: used_mem,
         cpu_count: sys.cpus().len(),
         hostname: System::host_name().unwrap_or_else(|| "Unknown".to_string()),
-    }
+    })
 }
