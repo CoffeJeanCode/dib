@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Check } from "lucide-react";
+import { mod } from "@/utils/platform";
 import { useDataGridContext } from "./DataGridContext";
 
 export const GridFooter = memo(function GridFooter() {
@@ -12,7 +13,7 @@ export const GridFooter = memo(function GridFooter() {
 
       {selectedCells.size > 1 && (
         <span className="dg-footer-selection">
-          {selectedCells.size} celdas · Ctrl+C
+          {selectedCells.size} celdas · {mod("Ctrl+C")}
         </span>
       )}
 
@@ -22,7 +23,7 @@ export const GridFooter = memo(function GridFooter() {
 
       {editState.changes.size > 0 && (
         <span className="dg-footer-changes">
-          {editState.changes.size} cambio{editState.changes.size !== 1 ? "s" : ""} · Ctrl+Z deshacer
+          {editState.changes.size} cambio{editState.changes.size !== 1 ? "s" : ""} · {mod("Ctrl+Z")} deshacer
         </span>
       )}
 

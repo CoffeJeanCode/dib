@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::db::types::{
-    ChangeRow, ColumnInfo, DbConfig, DdlResult, ExplainPlan,
+    ChangeRow, ColumnInfo, DbConfig, DbTreeNode, DdlResult, ExplainPlan,
     GridFilter, PagedResult, QueryError, QueryResult,
     SchemaChange, SchemaObjects, TableInfo, TableRelation, TableStructure,
 };
@@ -90,6 +90,18 @@ pub trait DatabaseDriver: Send + Sync {
     async fn get_table_structure(&self, table_name: &str, schema: Option<&str>) -> Result<TableStructure, QueryError> {
         let _ = (table_name, schema);
         Err(QueryError { message: "Structure introspection not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
+    }
+    /// Lazy catalog introspection: resolve the children of one tree node.
+    /// `node_type` selects the catalog query; `parent_id` scopes it
+    /// (schema name, "schema.table", role name — depends on node_type).
+    /// Only implemented for PostgreSQL.
+    async fn fetch_node_children(
+        &self,
+        node_type: &str,
+        parent_id: Option<&str>,
+    ) -> Result<Vec<DbTreeNode>, QueryError> {
+        let _ = (node_type, parent_id);
+        Err(QueryError { message: "Catalog introspection not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
     }
     #[allow(dead_code)]
     fn driver_name(&self) -> &'static str;

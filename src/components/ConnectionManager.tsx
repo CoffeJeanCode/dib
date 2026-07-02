@@ -6,6 +6,9 @@ import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useToastStore } from "@/store/toastStore";
 import { PasswordInput } from "@/components/PasswordInput";
+import { GlassInput } from "@/components/GlassInput";
+import { GlassSelect } from "@/components/GlassSelect";
+import { GlassCheckbox } from "@/components/GlassCheckbox";
 import "./ConnectionManager.css";
 
 interface ConnectionManagerProps {
@@ -36,6 +39,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
     setUsername(editing.username || "");
     setDatabase(editing.db_name || editing.path || "");
     setPassword(""); // never expose stored password; leave blank to preserve it
+    setSavePassword(editing.save_password ?? true);
     setError(null);
     setTestOk(false);
     setSuccess(null);
@@ -99,6 +103,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           // If save_password is false, send null to explicitly clear any stored password.
           password: savePassword ? (password || editing.password || null) : null,
           save_password: savePassword,
+          workspace_id: editing.workspace_id,
         });
         onEditSaved?.();
       } catch (err) {
@@ -127,6 +132,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         path: isSqlite ? database : null,
         password: isSqlite ? null : savePassword ? (password || null) : null,
         save_password: savePassword,
+        workspace_id: undefined, // Let useSavedConnections inject activeWorkspaceId
       });
 
       setSuccess(result);
@@ -149,70 +155,55 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
       </div>
 
       <form className="cm-form" onSubmit={handleSubmit}>
-        <div className="cm-field">
-          <label className="cm-field-label" htmlFor="connection-name">Name</label>
-          <input
-            id="connection-name"
-            className="cm-input"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="My Database"
-          />
-        </div>
+        <GlassInput
+          label="Name"
+          id="connection-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="My Database"
+        />
 
-        <div className="cm-field">
-          <label className="cm-field-label" htmlFor="db-type">Type</label>
-          <select
-            id="db-type"
-            className="cm-select"
-            value={dbType}
-            onChange={(e) => setDbType(e.target.value)}
-          >
-            <option value="sqlite">SQLite</option>
-            <option value="postgres">PostgreSQL</option>
-          </select>
-        </div>
+        <GlassSelect
+          label="Type"
+          id="db-type"
+          value={dbType}
+          onChange={(e) => setDbType(e.target.value)}
+        >
+          <option value="sqlite">SQLite</option>
+          <option value="postgres">PostgreSQL</option>
+        </GlassSelect>
 
         {dbType !== "sqlite" && (
           <>
             <div className="cm-row">
-              <div className="cm-field cm-field--flex">
-                <label className="cm-field-label" htmlFor="host">Host</label>
-                <input
-                  id="host"
-                  className="cm-input"
-                  type="text"
-                  value={host}
-                  onChange={(e) => setHost(e.target.value)}
-                  placeholder="localhost"
-                />
-              </div>
-              <div className="cm-field cm-field--small">
-                <label className="cm-field-label" htmlFor="port">Port</label>
-                <input
-                  id="port"
-                  className="cm-input"
-                  type="number"
-                  value={port}
-                  onChange={(e) => setPort(e.target.value)}
-                  placeholder="5432"
-                />
-              </div>
+              <GlassInput
+                label="Host"
+                id="host"
+                className="cm-field--flex"
+                value={host}
+                onChange={(e) => setHost(e.target.value)}
+                placeholder="localhost"
+              />
+              <GlassInput
+                label="Port"
+                id="port"
+                type="number"
+                className="cm-field--small"
+                value={port}
+                onChange={(e) => setPort(e.target.value)}
+                placeholder="5432"
+              />
             </div>
 
             <div className="cm-row">
-              <div className="cm-field cm-field--flex">
-                <label className="cm-field-label" htmlFor="username">Username</label>
-                <input
-                  id="username"
-                  className="cm-input"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="postgres"
-                />
-              </div>
+              <GlassInput
+                label="Username"
+                id="username"
+                className="cm-field--flex"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="postgres"
+              />
               <div className="cm-field cm-field--flex">
                 <label className="cm-field-label" htmlFor="password">Password</label>
                 <PasswordInput
@@ -223,33 +214,22 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
                 />
               </div>
             </div>
-            
-            <div className="cm-field cm-field--checkbox">
-              <label className="cm-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={savePassword}
-                  onChange={(e) => setSavePassword(e.target.checked)}
-                />
-                Remember password
-              </label>
-            </div>
+
+            <GlassCheckbox
+              label="Remember password"
+              checked={savePassword}
+              onChange={(e) => setSavePassword(e.target.checked)}
+            />
           </>
         )}
 
-        <div className="cm-field">
-          <label className="cm-field-label" htmlFor="database">
-            {dbType === "sqlite" ? "File Path" : "Database"}
-          </label>
-          <input
-            id="database"
-            className="cm-input"
-            type="text"
-            value={database}
-            onChange={(e) => setDatabase(e.target.value)}
-            placeholder={dbType === "sqlite" ? "./mydb.sqlite" : "mydb"}
-          />
-        </div>
+        <GlassInput
+          label={dbType === "sqlite" ? "File Path" : "Database"}
+          id="database"
+          value={database}
+          onChange={(e) => setDatabase(e.target.value)}
+          placeholder={dbType === "sqlite" ? "./mydb.sqlite" : "mydb"}
+        />
 
         {testOk && !error && (
           <div className="cm-test-ok">

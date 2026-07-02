@@ -1,0 +1,46 @@
+.scripts-ctx-menu,
+.scripts-ctx-subcontent {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  padding: 4px;
+  animation: scripts-ctx-fade-in 0.15s ease-out;
+}
+
+.scripts-ctx-item,
+.scripts-ctx-subtrigger {
+  padding: 6px 8px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.scripts-ctx-item:hover,
+.scripts-ctx-subtrigger:hover,
+.scripts-ctx-item:focus,
+.scripts-ctx-subtrigger:focus,
+.scripts-ctx-subtrigger[data-state="open"] {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text);
+  outline: none;
+}
+
+.scripts-ctx-separator {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: 4px -4px;
+}
+
+.scripts-ctx-color-item:hover,
+.scripts-ctx-color-item:focus {
+  transform: scale(1.15) !important;
+}
+
+@keyframes scripts-ctx-fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

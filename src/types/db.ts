@@ -84,6 +84,7 @@ export interface SavedConnection {
   path: string | null;
   password: string | null;
   save_password?: boolean;
+  workspace_id?: string | null;
 }
 
 export type FilterOperator =
@@ -117,6 +118,16 @@ export interface PendingChange {
   old_value?: unknown;
   new_value?: unknown;
   row_pk_value?: unknown;
+}
+
+/** Lazy catalog node returned by get_node_children (Rust DbTreeNode). */
+export interface DbTreeNode {
+  /** Composite id, e.g. "schema_public", "index_public.users.users_pkey" */
+  id: string;
+  label: string;
+  /** Node kind — drives the icon */
+  type: string;
+  has_children: boolean;
 }
 
 export interface InternalScript {

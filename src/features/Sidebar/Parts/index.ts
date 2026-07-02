@@ -1,10 +1,13 @@
 export { SidebarHeader } from "./SidebarHeader";
 export { DatabaseSelector } from "./DatabaseSelector";
-export { SidebarNav } from "./SidebarNav";
 export { ConnectionItem } from "./ConnectionItem";
 export { InstanceContextMenu } from "./InstanceContextMenu";
 export { DbContextMenu } from "./DbContextMenu";
-export { ScriptItem } from "./ScriptItem";
 export { QueryHistoryPanel } from "./QueryHistoryPanel";
 export { DatabaseCategories } from "./DatabaseCategories";
+export { ConnectionStatusDot } from "./ConnectionStatusDot";
+export { WorkspaceTree } from "./WorkspaceTree";
+export { DatabaseTree } from "./DatabaseTree";
+export { PinnedSection } from "./PinnedSection";
+export { WorkspaceList } from "./WorkspaceList";
 export { getEngineIcon, getDbName, ENGINE_COLORS, PostgresIcon, SqliteIcon } from "./utils";

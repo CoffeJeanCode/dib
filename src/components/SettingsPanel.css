@@ -60,6 +60,43 @@
   color: var(--color-text-secondary);
 }
 
+/* Layout selector */
+.sp-layout-selector {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.sp-layout-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius-md) - 3px);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.sp-layout-btn:hover {
+  color: var(--color-text-secondary);
+}
+
+.sp-layout-btn--active {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
 /* Toggle switch */
 .sp-toggle {
   position: relative;
@@ -132,20 +169,10 @@
   opacity: 0.9;
 }
 
-.sp-number-input {
+.sp-number-wrapper {
   width: 80px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  padding: var(--space-2) var(--space-3);
-  text-align: right;
-  transition: border-color var(--transition-fast);
 }
 
-.sp-number-input:focus {
-  outline: none;
-  border-color: var(--color-teal);
+.sp-number-wrapper .glass-input {
+  text-align: right;
 }

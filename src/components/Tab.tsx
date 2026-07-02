@@ -1,5 +1,6 @@
 import { Table2, Network, FileCode2, Circle, Wrench, Layers, Wand2 } from "lucide-react";
 import type { TableInfo } from "@/types/db";
+import { mod } from "@/utils/platform";
 import "./Tab.css";
 
 export type TabType = "table" | "script" | "schema" | "table_builder" | "table_structure" | "mock_generator";
@@ -63,7 +64,7 @@ export function Tab({ tab, active, onSelect, onClose, dragListeners, dragAttribu
       {tab.closeable && (
         <span
           className={`tab-close${tab.isDirty ? " tab-close--dirty" : ""}`}
-          title={tab.isDirty ? "Unsaved changes (Ctrl+S to save)" : "Close"}
+          title={tab.isDirty ? `Unsaved changes (${mod("Ctrl+S")} to save)` : "Close"}
           onClick={(e) => {
             e.stopPropagation();
             onClose(tab.id);

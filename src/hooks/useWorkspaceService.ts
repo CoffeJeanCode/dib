@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { safeInvoke as invoke } from "@/utils/ipc";
 import type { TabData } from "@/components/Tab";
 
 interface Options {
@@ -28,7 +29,13 @@ export function useWorkspaceService({ tabsRef, markTabClean, setTabs, connection
     if (!tab) return;
     const scriptId = tab.payload.scriptId ?? tabId;
     try {
-      await workspaceService.saveInternalScript(scriptId, tab.title, sql, connectionId);
+      const workspaceId = useWorkspaceStore.getState().activeWorkspaceId;
+      if (workspaceId) {
+        await invoke("write_text_file", { path: scriptId, content: sql });
+      } else {
+        await workspaceService.updateVirtualScriptContent(scriptId, sql);
+      }
+      
       markTabClean(tabId);
       setTabSql((prev) => ({ ...prev, [tabId]: sql }));
       setTabs((prev) => prev.map((t) =>
@@ -36,26 +43,36 @@ export function useWorkspaceService({ tabsRef, markTabClean, setTabs, connection
       ));
       incrementScriptVersion();
     } catch (e) {
-      console.error("[DIB] save_internal_script failed:", e);
+      console.error("[DIB] save_sql_tab failed:", e);
     }
-  }, [tabsRef, markTabClean, setTabs, connectionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tabsRef, markTabClean, setTabs, incrementScriptVersion]);
 
   // Save a draft tab for the first time (shows name in dialog, called after user confirms)
   const saveNewScript = useCallback(async (tabId: string, name: string, sql: string) => {
     try {
-      await workspaceService.saveInternalScript(tabId, name, sql, connectionId);
+      const workspaceId = useWorkspaceStore.getState().activeWorkspaceId;
+      let finalId = tabId;
+      if (workspaceId) {
+        const rootPath = useWorkspaceStore.getState().activeWorkspacePath || "";
+        const fileName = name + (name.includes('.') ? '' : '.sql');
+        finalId = rootPath.replace(/\\/g, "/") + "/" + fileName;
+        await invoke("write_text_file", { path: finalId, content: sql });
+      } else {
+        await workspaceService.saveVirtualScript(tabId, name, sql, null, connectionId);
+      }
+      
       markTabClean(tabId);
       setTabSql((prev) => ({ ...prev, [tabId]: sql }));
       setTabs((prev) => prev.map((t) =>
         t.id === tabId
-          ? { ...t, title: name, payload: { ...t.payload, sql, scriptId: tabId } }
+          ? { ...t, title: name, payload: { ...t.payload, sql, scriptId: finalId } }
           : t,
       ));
       incrementScriptVersion();
     } catch (e) {
       console.error("[DIB] save_internal_script (new) failed:", e);
     }
-  }, [markTabClean, setTabs, connectionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [markTabClean, setTabs, connectionId, incrementScriptVersion]);
 
   const persistContentChange = useCallback((tabId: string, sql: string) => {
     setTabSql((prev) => ({ ...prev, [tabId]: sql }));

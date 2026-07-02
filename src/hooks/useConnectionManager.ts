@@ -31,7 +31,7 @@ export function useConnectionManager({ connections, savePassword, onError, onInf
         return true;
       } catch (e: unknown) {
         const err = e as { code?: string; message?: string };
-        if (err?.code === "PASSWORD_REQUIRED") {
+        if (err?.code === "PASSWORD_REQUIRED" || err?.code === "AuthRequired" || err?.code === "MissingCredentials") {
           const saved = connections.find((c) => c.id === savedId);
           setPasswordPrompt({ savedId, name: saved?.name || savedId });
         } else {

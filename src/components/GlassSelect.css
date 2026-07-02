@@ -1,0 +1,67 @@
+.glass-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.glass-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  padding-right: var(--space-8);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.glass-select option {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+.glass-select:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-dark);
+}
+
+.glass-select:focus {
+  background: var(--color-bg);
+  border-color: var(--color-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-teal) 20%, transparent);
+}
+
+.glass-select--error {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-red) 15%, transparent);
+}
+
+.glass-select--error:focus {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-red) 20%, transparent);
+}
+
+.glass-select-arrow {
+  position: absolute;
+  right: var(--space-3);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.glass-select:focus + .glass-select-arrow,
+.glass-select-wrapper:hover .glass-select-arrow {
+  color: var(--color-text-secondary);
+}
+
+.glass-select::-ms-expand {
+  display: none;
+}

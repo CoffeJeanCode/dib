@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useTreeStateStore, treeKey, treeKeyPrefix } from "@/store/treeStateStore";
 import {
   ChevronRight, Table2, Eye, Zap, Cog, Activity,
   Key, Hash, Type, Calendar,
@@ -15,6 +16,12 @@ import { TableContextMenu } from "@/components/TableContextMenu";
 
 interface DatabaseCategoriesProps {
   sessionId: string | null | undefined;
+  /**
+   * STABLE saved-connection id used to key expansion state. Session ids are
+   * ephemeral (new uuid per connect) — keying by them loses all expansion on
+   * reconnect. When omitted, falls back to the active connection's savedId.
+   */
+  connectionId?: string | null;
   onTableSelect?: (table: TableInfo) => void;
   onScriptOpen?: (sql: string, title: string, id: string) => void;
 }
@@ -51,34 +58,52 @@ function fmtErr(e: unknown): string {
 
 export function DatabaseCategories({
   sessionId,
+  connectionId,
   onTableSelect,
   onScriptOpen,
 }: DatabaseCategoriesProps) {
   const toast = useToastStore.getState();
   const toastRef = useRef(toast);
-  useEffect(() => { toastRef.current = useToastStore.getState(); });
+  useEffect(() => { toastRef.current = toast; }, [toast]);
 
-  const [open, setOpen] = useState<Record<string, boolean>>({
-    tables: true, views: false, functions: false, procedures: false, triggers: false,
-  });
+  // Category + item expansion live in useTreeStateStore, keyed by the
+  // STABLE connection id (compound keys) — five databases can stay expanded
+  // concurrently, and reconnects/refreshes never reset the branches.
+  const activeSavedId = useConnectionStore((s) =>
+    s.active && s.active.activeId === sessionId ? s.active.savedId : null,
+  );
+  const stableId = connectionId ?? activeSavedId ?? sessionId;
+
+  const expandedMap = useTreeStateStore((s) => s.expandedNodes);
+  const open = useMemo<Record<string, boolean>>(() => {
+    const cats = ["tables", "views", "functions", "procedures", "triggers"];
+    const out: Record<string, boolean> = {};
+    for (const c of cats) out[c] = expandedMap[treeKey("dbcat", String(stableId), c)] ?? (c === "tables");
+    return out;
+  }, [expandedMap, stableId]);
   const [objects, setObjects] = useState<SchemaObjects | null>(null);
   const [loading, setLoading] = useState(false);
   const [ddlLoading, setDdlLoading] = useState<string | null>(null);
   const [columnMap, setColumnMap] = useState<Record<string, ColumnInfo[]>>({});
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const expandedItems = useMemo(() => {
+    const prefix = treeKeyPrefix("dbitem", String(stableId));
+    const s = new Set<string>();
+    for (const [k, v] of Object.entries(expandedMap)) {
+      if (v && k.startsWith(prefix)) s.add(k.slice(prefix.length));
+    }
+    return s;
+  }, [expandedMap, stableId]);
   const [colLoadingSet, setColLoadingSet] = useState<Set<string>>(new Set());
-  const [activeTable, setActiveTable] = useState<{ name: string; schema: string | null } | null>(null);
   const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => Promise<void> } | null>(null);
   const [alterTable, setAlterTable] = useState<{ name: string; schema: string | null } | null>(null);
   const [renameTarget, setRenameTarget] = useState<{ name: string; schema: string | null; kind: CatKind } | null>(null);
 
   // Track active table tab from workspaceStore — replaces dib:active-table
   const storeActiveTable = useWorkspaceStore((s) => s.activeTable);
-  useEffect(() => { setActiveTable(storeActiveTable); }, [storeActiveTable]);
 
   const toggle = useCallback((cat: string) => {
-    setOpen((prev) => ({ ...prev, [cat]: !prev[cat] }));
-  }, []);
+    useTreeStateStore.getState().toggleNode(treeKey("dbcat", String(stableId), cat), cat === "tables");
+  }, [stableId]);
 
   // Reload schema when sessionId changes or reloadVersion increments — replaces dib:reload
   const reloadVersion = useConnectionStore((s) => s.reloadVersion);
@@ -96,11 +121,23 @@ export function DatabaseCategories({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadKey]);
 
+  // Data caches are per-session (stale columns from another server are
+  // useless), but expansion state is NOT touched — rehydration, not reset.
   useEffect(() => {
     setColumnMap({});
-    setExpandedItems(new Set());
     setColLoadingSet(new Set());
   }, [sessionId]);
+
+  // Rehydration: after (re)connect delivers fresh schema objects, reload
+  // column data for every branch the user already had expanded, so open
+  // trees fill back in instead of sitting empty.
+  useEffect(() => {
+    if (!objects) return;
+    for (const t of objects.tables) {
+      if (expandedItems.has(t.name)) loadColumns(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [objects]);
 
   const loadColumns = useCallback((table: TableInfo) => {
     if (!sessionId || columnMap[table.name] !== undefined) return;
@@ -118,14 +155,9 @@ export function DatabaseCategories({
 
   const handleExpandClick = useCallback((e: React.MouseEvent, item: TableInfo) => {
     e.stopPropagation();
-    setExpandedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(item.name)) { next.delete(item.name); return next; }
-      next.add(item.name);
-      return next;
-    });
+    useTreeStateStore.getState().toggleNode(treeKey("dbitem", String(stableId), item.name));
     loadColumns(item);
-  }, [loadColumns]);
+  }, [stableId, loadColumns]);
 
   const handleItemClick = useCallback(async (kind: CatKind, item: TableInfo | TriggerInfo) => {
     if (!sessionId) return;
@@ -223,7 +255,7 @@ export function DatabaseCategories({
                     const name = displayName(it);
                     const schema = "schema" in it ? (it as TableInfo).schema : null;
                     const isLoading = ddlLoading === `${cat.kind}-${name}`;
-                    const isActive = canExpand && activeTable?.name === name && activeTable?.schema === schema;
+                    const isActive = canExpand && storeActiveTable?.name === name && storeActiveTable?.schema === schema;
                     const isExpanded = expandedItems.has(name);
                     const cols = columnMap[name];
                     const colsLoading = colLoadingSet.has(name);

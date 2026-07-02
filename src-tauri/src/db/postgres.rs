@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use crate::db::{
-    ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, DdlResult, ExplainNode,
+    ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, DbTreeNode, DdlResult, ExplainNode,
     ExplainPlan, ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange,
     SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation,
     TableStructure, TriggerInfo,
@@ -700,6 +700,313 @@ impl DatabaseDriver for PostgresDriver {
         };
         let ddl = format!("CREATE OR REPLACE VIEW {} AS\n{}", qualified, definition);
         Ok(DdlResult { name: view_name.to_string(), schema: schema.map(|s| s.to_string()), ddl })
+    }
+
+    /// Lazy catalog introspection. All queries hit pg_catalog directly with
+    /// bound parameters ($1/$2) — parent ids from the frontend never get
+    /// interpolated into SQL.
+    async fn fetch_node_children(
+        &self,
+        node_type: &str,
+        parent_id: Option<&str>,
+    ) -> Result<Vec<DbTreeNode>, QueryError> {
+        // ponytail: parent ids use plain "schema.table" split on the first dot;
+        // identifiers containing dots would need quoted-id parsing.
+        let split_parent = || -> Result<(String, String), QueryError> {
+            parent_id
+                .and_then(|p| p.split_once('.'))
+                .map(|(s, t)| (s.to_string(), t.to_string()))
+                .ok_or_else(|| QueryError::from(format!(
+                    "node_type '{}' requires parent_id 'schema.table'", node_type
+                )))
+        };
+        let require_parent = || -> Result<String, QueryError> {
+            parent_id
+                .map(str::to_string)
+                .ok_or_else(|| QueryError::from(format!("node_type '{}' requires parent_id", node_type)))
+        };
+        let err = |e: sqlx::Error| QueryError::from(e.to_string());
+
+        let mut nodes: Vec<DbTreeNode> = Vec::new();
+
+        match node_type {
+            // ── Schemas ─────────────────────────────────────────
+            // "schema_list" hides system schemas; "schema_list_all" includes them.
+            "schema_list" | "schema_list_all" => {
+                let include_hidden = node_type == "schema_list_all";
+                let rows = sqlx::query(
+                    "SELECT n.nspname AS name, \
+                            EXISTS (SELECT 1 FROM pg_catalog.pg_class c WHERE c.relnamespace = n.oid) AS has_children \
+                     FROM pg_catalog.pg_namespace n \
+                     WHERE $1 OR (
+                         n.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+                         AND n.nspname NOT LIKE 'pg_temp_%'
+                         AND n.nspname NOT LIKE 'pg_toast_temp_%'
+                     )
+                     ORDER BY n.nspname",
+                )
+                .bind(include_hidden)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("schema_{}", name),
+                        label: name,
+                        node_type: "schema".into(),
+                        has_children: r.get("has_children"),
+                    });
+                }
+            }
+
+            // ── Relations in a schema (parent_id = schema name) ─
+            // relkind: r/p tables, v views, m matviews, S sequences, f foreign tables
+            "schema_tables" | "schema_views" | "schema_matviews" | "schema_sequences" | "sequences" | "schema_foreign_tables" => {
+                let (kinds, child_type, expandable) = match node_type {
+                    "schema_tables" => (vec!["r", "p"], "table", true),
+                    "schema_views" => (vec!["v"], "view", true),
+                    "schema_matviews" => (vec!["m"], "matview", true),
+                    "schema_sequences" | "sequences" => (vec!["S"], "sequence", false),
+                    _ => (vec!["f"], "foreign_table", true),
+                };
+                let schema = require_parent()?;
+                let rows = sqlx::query(
+                    "SELECT c.relname AS name \
+                     FROM pg_catalog.pg_class c \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
+                     WHERE n.nspname = $1 AND c.relkind = ANY($2::\"char\"[]) \
+                     ORDER BY c.relname",
+                )
+                .bind(&schema)
+                .bind(&kinds)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("{}_{}.{}", child_type, schema, name),
+                        label: name,
+                        node_type: child_type.into(),
+                        has_children: expandable, // columns/indexes/triggers folders
+                    });
+                }
+            }
+
+            // ── Table anatomy (parent_id = "schema.table") ──────
+            "table_columns" => {
+                let (schema, table) = split_parent()?;
+                let rows = sqlx::query(
+                    "SELECT a.attname AS name, pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type \
+                     FROM pg_catalog.pg_attribute a \
+                     JOIN pg_catalog.pg_class c ON c.oid = a.attrelid \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
+                     WHERE n.nspname = $1 AND c.relname = $2 AND a.attnum > 0 AND NOT a.attisdropped \
+                     ORDER BY a.attnum",
+                )
+                .bind(&schema)
+                .bind(&table)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let dt: String = r.get("data_type");
+                    nodes.push(DbTreeNode {
+                        id: format!("column_{}.{}.{}", schema, table, name),
+                        label: format!("{} : {}", name, dt),
+                        node_type: "column".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            "table_indexes" => {
+                let (schema, table) = split_parent()?;
+                let rows = sqlx::query(
+                    "SELECT indexname AS name \
+                     FROM pg_catalog.pg_indexes \
+                     WHERE schemaname = $1 AND tablename = $2 \
+                     ORDER BY indexname",
+                )
+                .bind(&schema)
+                .bind(&table)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("index_{}.{}.{}", schema, table, name),
+                        label: name,
+                        node_type: "index".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            "table_triggers" => {
+                let (schema, table) = split_parent()?;
+                let rows = sqlx::query(
+                    "SELECT t.tgname AS name \
+                     FROM pg_catalog.pg_trigger t \
+                     JOIN pg_catalog.pg_class c ON c.oid = t.tgrelid \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
+                     WHERE n.nspname = $1 AND c.relname = $2 AND NOT t.tgisinternal \
+                     ORDER BY t.tgname",
+                )
+                .bind(&schema)
+                .bind(&table)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("trigger_{}.{}.{}", schema, table, name),
+                        label: name,
+                        node_type: "trigger".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Routines in a schema (parent_id = schema name) ──
+            // prokind: f = function, p = procedure
+            "schema_functions" | "schema_procedures" => {
+                let kind = if node_type == "schema_functions" { "f" } else { "p" };
+                let child_type = if kind == "f" { "function" } else { "procedure" };
+                let schema = require_parent()?;
+                let rows = sqlx::query(
+                    "SELECT p.proname AS name, \
+                            pg_catalog.pg_get_function_identity_arguments(p.oid) AS args \
+                     FROM pg_catalog.pg_proc p \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace \
+                     WHERE n.nspname = $1 AND p.prokind = $2::\"char\" \
+                     ORDER BY p.proname",
+                )
+                .bind(&schema)
+                .bind(kind)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let args: String = r.get("args");
+                    nodes.push(DbTreeNode {
+                        id: format!("{}_{}.{}({})", child_type, schema, name, args),
+                        label: format!("{}({})", name, args),
+                        node_type: child_type.into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Full-text search dictionaries ───────────────────
+            // parent_id = schema name, or None for all schemas.
+            "fts_dictionaries" => {
+                let rows = sqlx::query(
+                    "SELECT d.dictname AS name, n.nspname AS schema \
+                     FROM pg_catalog.pg_ts_dict d \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = d.dictnamespace \
+                     WHERE $1::text IS NULL OR n.nspname = $1 \
+                     ORDER BY n.nspname, d.dictname",
+                )
+                .bind(parent_id)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let schema: String = r.get("schema");
+                    nodes.push(DbTreeNode {
+                        id: format!("ftsdict_{}.{}", schema, name),
+                        label: name,
+                        node_type: "fts_dictionary".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Global: roles ───────────────────────────────────
+            "roles" => {
+                let rows = sqlx::query(
+                    "SELECT r.rolname AS name, r.rolcanlogin AS can_login, \
+                            EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.roleid = r.oid) AS has_children \
+                     FROM pg_catalog.pg_roles r \
+                     ORDER BY r.rolname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let can_login: bool = r.get("can_login");
+                    nodes.push(DbTreeNode {
+                        id: format!("role_{}", name),
+                        label: name,
+                        node_type: if can_login { "role_login".into() } else { "role_group".into() },
+                        has_children: r.get("has_children"),
+                    });
+                }
+            }
+
+            // ── Members of a role (parent_id = role name) ───────
+            "role_members" => {
+                let role = require_parent()?;
+                let rows = sqlx::query(
+                    "SELECT member.rolname AS name, member.rolcanlogin AS can_login \
+                     FROM pg_catalog.pg_auth_members m \
+                     JOIN pg_catalog.pg_roles grp ON grp.oid = m.roleid \
+                     JOIN pg_catalog.pg_roles member ON member.oid = m.member \
+                     WHERE grp.rolname = $1 \
+                     ORDER BY member.rolname",
+                )
+                .bind(&role)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let can_login: bool = r.get("can_login");
+                    nodes.push(DbTreeNode {
+                        id: format!("role_{}", name),
+                        label: name,
+                        node_type: if can_login { "role_login".into() } else { "role_group".into() },
+                        has_children: false, // ponytail: no recursive membership; expand via 'roles' if needed
+                    });
+                }
+            }
+
+            // ── Global: extensions ──────────────────────────────
+            "extensions" => {
+                let rows = sqlx::query(
+                    "SELECT e.extname AS name, e.extversion AS version \
+                     FROM pg_catalog.pg_extension e \
+                     ORDER BY e.extname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let version: String = r.get("version");
+                    nodes.push(DbTreeNode {
+                        id: format!("extension_{}", name),
+                        label: format!("{} ({})", name, version),
+                        node_type: "extension".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            other => {
+                return Err(QueryError::from(format!("Unknown catalog node_type: '{}'", other)));
+            }
+        }
+
+        Ok(nodes)
     }
 
     fn driver_name(&self) -> &'static str {

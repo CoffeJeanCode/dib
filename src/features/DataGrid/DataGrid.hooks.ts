@@ -743,6 +743,11 @@ export function useDataGridState({
         if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return;
       }
 
+      // Always block native scroll for arrow keys before any cell-focus logic runs.
+      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault();
+      }
+
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         const rowSet = new Set<number>(

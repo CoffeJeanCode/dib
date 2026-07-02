@@ -1,5 +1,10 @@
+import { LayoutList, Columns3 } from "lucide-react";
 import { useUiState } from "@/hooks/useUiState";
 import { useTheme, setTheme } from "@/hooks/useTheme";
+import { useSettingsStore } from "@/store/settingsStore";
+import { GlassCheckbox } from "@/components/GlassCheckbox";
+import { GlassInput } from "@/components/GlassInput";
+import type { WorkspaceLayout } from "@/types/workspace";
 import "./SettingsPanel.css";
 
 interface SettingsPanelProps {
@@ -7,9 +12,16 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
+const LAYOUT_OPTIONS: { value: WorkspaceLayout; label: string; Icon: typeof LayoutList }[] = [
+  { value: "unified", label: "Unified", Icon: LayoutList },
+  { value: "split", label: "Split", Icon: Columns3 },
+];
+
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { state, updateState } = useUiState();
   const { theme } = useTheme();
+  const layout = useSettingsStore((s) => s.workspaceLayout);
+  const setLayout = useSettingsStore((s) => s.setWorkspaceLayout);
 
   if (!open) return null;
 
@@ -20,6 +32,27 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           <span className="sp-label">Settings</span>
         </div>
         <div className="sp-body">
+          <div className="sp-option">
+            <div className="sp-option-info">
+              <span className="sp-option-title">Sidebar layout</span>
+              <span className="sp-option-desc">
+                Unified shows everything in one tree; Split separates DBs and files.
+              </span>
+            </div>
+            <div className="sp-layout-selector">
+              {LAYOUT_OPTIONS.map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  className={`sp-layout-btn${layout === value ? " sp-layout-btn--active" : ""}`}
+                  onClick={() => setLayout(value)}
+                  aria-pressed={layout === value}
+                >
+                  <Icon size={16} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="sp-option">
             <div className="sp-option-info">
               <span className="sp-option-title">Dark mode</span>
@@ -37,20 +70,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </label>
           </div>
           <div className="sp-option">
-            <div className="sp-option-info">
-              <span className="sp-option-title">Save passwords in keyring</span>
-              <span className="sp-option-desc">
-                Automatically store passwords when connecting to saved databases.
-              </span>
-            </div>
-            <label className="sp-toggle">
-              <input
-                type="checkbox"
-                checked={state.save_password}
-                onChange={(e) => updateState({ save_password: e.target.checked })}
-              />
-              <span className="sp-toggle-track" />
-            </label>
+            <GlassCheckbox
+              label="Save passwords in keyring"
+              checked={state.save_password}
+              onChange={(e) => updateState({ save_password: e.target.checked })}
+            />
           </div>
           <div className="sp-option">
             <div className="sp-option-info">
@@ -59,15 +83,16 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 Max queries kept per session (0 = unlimited)
               </span>
             </div>
-            <input
-              type="number"
-              className="sp-number-input"
-              min={0}
-              max={10000}
-              step={100}
-              value={state.history_limit}
-              onChange={(e) => updateState({ history_limit: Math.max(0, parseInt(e.target.value, 10) || 0) })}
-            />
+            <div className="sp-number-wrapper">
+              <GlassInput
+                type="number"
+                min={0}
+                max={10000}
+                step={100}
+                value={state.history_limit}
+                onChange={(e) => updateState({ history_limit: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+              />
+            </div>
           </div>
         </div>
         <div className="sp-footer">

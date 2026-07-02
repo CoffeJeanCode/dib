@@ -43,7 +43,7 @@
   --sidebar-width-collapsed: 45px;
 
   /* ── Accent palette (invariant) ──────────────────────────────── */
-  --neon-green:       #51b990;
+  --neon-green:       #138a70;
   --neon-purple:      #5f43b3;
   --neon-cyan:        #00a4b9;
   --neon-yellow:      #f5d249;
@@ -111,7 +111,7 @@
 
   --color-green:        var(--neon-green);
   --color-green-light:  #0c1a14;
-  --color-green-dark:   #6ee7b7;
+  --color-green-dark:rgb(35, 172, 117);
 
   --color-blue:         #2a6fdb;
   --color-blue-light:   #0f1d35;
@@ -171,7 +171,7 @@
   --color-orange:       #b45309;
   --color-orange-light: #fffbeb;
 
-  --color-green:        #15803d;
+  --color-green:rgb(51, 156, 89);
   --color-green-light:  #f0fdf4;
   --color-green-dark:   #14532d;
 

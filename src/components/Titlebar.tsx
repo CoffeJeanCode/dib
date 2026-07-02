@@ -1,9 +1,10 @@
 import { useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Search, Moon, Sun, Settings, Minus, Square, X } from "lucide-react";
+import { mod } from "@/utils/platform";
 import { useUiStore } from "@/store/uiStore";
 import { useTheme, setTheme } from "@/hooks/useTheme";
-import { ImportDropdown, type ImportResult } from "@/components/ImportDropdown";
+import { Dropzone, type ImportResult } from "@/components/Dropzone";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { OpenScript } from "@/types/workspace";
 import "./Titlebar.css";
@@ -14,6 +15,8 @@ export function Titlebar() {
   const { theme } = useTheme();
   const togglePalette = useUiStore((s) => s.togglePalette);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath);
+  const setActiveWorkspacePath = useWorkspaceStore((s) => s.setActiveWorkspacePath);
 
   const handleMinimize = useCallback(() => { appWindow.minimize(); }, []);
   const handleMaximize = useCallback(() => { appWindow.toggleMaximize(); }, []);
@@ -30,13 +33,21 @@ export function Titlebar() {
     <div className="titlebar" data-tauri-drag-region>
       <div className="titlebar-start" data-tauri-drag-region>
         <span className="titlebar-brand" data-tauri-drag-region>DIB</span>
+        {activeWorkspacePath && (
+          <div className="titlebar-workspace-pill">
+            <span className="titlebar-workspace-name">{activeWorkspacePath.split(/[/\\]/).pop()}</span>
+            <button className="titlebar-workspace-close" onClick={() => setActiveWorkspacePath(null)} title="Close Workspace">
+              <X size={12} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="titlebar-center" data-tauri-drag-region />
 
       <div className="titlebar-end">
-        <ImportDropdown onImport={handleImport} />
-        <button className="titlebar-btn" onClick={togglePalette} title="Quick Command (Ctrl+K)">
+        <Dropzone onImport={handleImport} />
+        <button className="titlebar-btn" onClick={togglePalette} title={`Quick Command (${mod("Ctrl+K")})`}>
           <Search size={15} />
         </button>
         <button className="titlebar-btn" onClick={handleToggleTheme} title={theme === "dark" ? "Light mode" : "Dark mode"}>

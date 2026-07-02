@@ -1,9 +1,10 @@
 import { useRef, useCallback } from "react";
-import Editor from "@monaco-editor/react";
 import { Play, Upload, Download, Zap, Lock, Square, Braces } from "lucide-react";
 import type { QueryResult, PendingChange, ColumnInfo } from "@/types/db";
 import { dbService } from "@/services/dbService";
-import { useSqlEditor, THEME_DARK, THEME_LIGHT } from "@/hooks/useSqlEditor";
+import { useSqlEditor } from "@/hooks/useSqlEditor";
+import { MonacoEditor } from "@/features/MonacoEditor/MonacoEditor";
+import { MOD } from "@/utils/platform";
 import { DataGrid } from "@/features/DataGrid";
 import { VisualExplain } from "@/components/VisualExplain";
 import { useWorkspaceStore } from "@/store/workspaceStore";
@@ -42,7 +43,6 @@ export function SqlEditor({
     cancelling,
     explainResult,
     explainLoading,
-    editorTheme,
     fileStatus,
     handleExport,
     handleImport,
@@ -138,7 +138,7 @@ export function SqlEditor({
             className="sqleditor-explain-btn"
             onClick={() => runExplain(sql)}
             disabled={explainLoading || loading}
-            title="Visual EXPLAIN (Ctrl+Shift+E)"
+            title={`Visual EXPLAIN (${MOD}+Shift+E)`}
           >
             <Zap size={14} />
             <span>{explainLoading ? "Analizando…" : "Explain"}</span>
@@ -167,47 +167,26 @@ export function SqlEditor({
         </div>
       </div>
       <div className="sqleditor-body" ref={editorContainerRef}>
-        <Editor
+        <MonacoEditor
           language="sql"
-          theme={editorTheme === "dark" ? THEME_DARK : THEME_LIGHT}
           value={sql}
           onChange={handleChange}
           onMount={handleMount}
-          options={{
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 14,
-            wordWrap: "on",
-            lineNumbers: "off",
-            glyphMargin: false,
-            folding: false,
-            lineDecorationsWidth: 0,
-            lineNumbersMinChars: 3,
-            padding: { top: 12, bottom: 12 },
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            scrollbar: {
-              vertical: "auto",
-              horizontal: "auto",
-              verticalScrollbarSize: 8,
-              horizontalScrollbarSize: 8,
-            },
-          }}
+          options={{ fontSize: 14, folding: false, lineNumbersMinChars: 3 }}
         />
       </div>
 
       <div className="sqleditor-hint-container">
         <div className="sqleditor-hint">
-          <kbd>Ctrl</kbd>+<kbd>Enter</kbd>
+          <kbd>{MOD}</kbd>+<kbd>Enter</kbd>
           <span>Ejecutar</span>
         </div>
         <div className="sqleditor-hint">
-          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd>
+          <kbd>{MOD}</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd>
           <span>Bloquear Consulta</span>
         </div>
         <div className="sqleditor-hint">
-          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd>
+          <kbd>{MOD}</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd>
           <span>Visual EXPLAIN</span>
         </div>
       </div>

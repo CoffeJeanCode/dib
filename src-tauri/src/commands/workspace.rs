@@ -1,4 +1,4 @@
-use crate::storage::{InternalScript, QueryHistoryEntry};
+use crate::storage::{InternalScript, QueryHistoryEntry, Workspace};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -146,9 +146,11 @@ pub async fn save_internal_script(
     title: String,
     content: String,
     connection_id: Option<String>,
-) -> Result<(), String> {
+) -> Result<InternalScript, String> {
     let db = app_handle.state::<crate::storage::AppDb>();
-    db.save_script_internal(&id, &title, &content, connection_id.as_deref())
+    db.save_script_internal(&id, &title, &content, connection_id.as_deref())?;
+    let scripts = db.get_scripts_internal(connection_id.as_deref())?;
+    scripts.into_iter().find(|s| s.id == id).ok_or_else(|| "Failed to retrieve saved script".to_string())
 }
 
 #[tauri::command]
@@ -170,6 +172,150 @@ pub async fn update_internal_script(app_handle: tauri::AppHandle, id: String, ti
 pub async fn delete_internal_script(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
     let db = app_handle.state::<crate::storage::AppDb>();
     db.delete_script_internal(&id)
+}
+
+// ── Virtual FS (Standalone) ────────────────────────────────
+
+#[tauri::command]
+pub async fn save_virtual_folder(
+    app_handle: tauri::AppHandle,
+    id: String,
+    name: String,
+    parent_id: Option<String>,
+    connection_id: String,
+    color: Option<String>,
+    is_pinned: Option<bool>,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    let folder = crate::storage::VirtualFolder {
+        id,
+        name,
+        parent_id,
+        connection_id,
+        created_at: String::new(), // Set by DB
+        updated_at: String::new(),
+        color,
+        is_pinned: is_pinned.unwrap_or(false),
+    };
+    db.save_virtual_folder(&folder)
+}
+
+#[tauri::command]
+pub async fn create_fs_folder(
+    app_handle: tauri::AppHandle,
+    id: String,
+    name: String,
+    parent_id: Option<String>,
+    connection_id: String,
+) -> Result<(), String> {
+    save_virtual_folder(app_handle, id, name, parent_id, connection_id, None, Some(false)).await
+}
+
+#[tauri::command]
+pub async fn get_virtual_folders(
+    app_handle: tauri::AppHandle,
+    connection_id: String,
+) -> Result<Vec<crate::storage::VirtualFolder>, String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.get_virtual_folders(&connection_id)
+}
+
+#[tauri::command]
+pub async fn delete_virtual_folder(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.delete_virtual_folder(&id)
+}
+
+#[tauri::command]
+pub async fn save_virtual_script(
+    app_handle: tauri::AppHandle,
+    id: String,
+    name: String,
+    content: String,
+    folder_id: Option<String>,
+    connection_id: String,
+    color: Option<String>,
+    is_pinned: Option<bool>,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    let script = crate::storage::VirtualScript {
+        id,
+        name,
+        content,
+        folder_id,
+        connection_id,
+        created_at: String::new(), // Set by DB
+        updated_at: String::new(),
+        color,
+        is_pinned: is_pinned.unwrap_or(false),
+    };
+    db.save_virtual_script(&script)
+}
+
+#[tauri::command]
+pub async fn rename_virtual_item(
+    app_handle: tauri::AppHandle,
+    id: String,
+    new_name: String,
+    is_folder: bool,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    if is_folder {
+        db.rename_virtual_folder(&id, &new_name)
+    } else {
+        db.rename_virtual_script(&id, &new_name)
+    }
+}
+
+#[tauri::command]
+pub async fn move_virtual_item(
+    app_handle: tauri::AppHandle,
+    id: String,
+    new_parent_id: Option<String>,
+    is_folder: bool,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    if is_folder {
+        db.move_virtual_folder(&id, new_parent_id.as_deref())
+    } else {
+        db.move_virtual_script(&id, new_parent_id.as_deref())
+    }
+}
+
+#[tauri::command]
+pub async fn update_virtual_script_content(
+    app_handle: tauri::AppHandle,
+    id: String,
+    content: String,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.update_virtual_script_content(&id, &content)
+}
+
+#[tauri::command]
+pub async fn update_fs_metadata(
+    app_handle: tauri::AppHandle,
+    id: String,
+    color: Option<String>,
+    is_pinned: bool,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.update_fs_metadata(&id, color.as_deref(), is_pinned)
+}
+
+#[tauri::command]
+pub async fn get_virtual_scripts(
+    app_handle: tauri::AppHandle,
+    connection_id: String,
+) -> Result<Vec<crate::storage::VirtualScript>, String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.get_virtual_scripts(&connection_id)
+}
+
+#[tauri::command]
+pub async fn delete_virtual_script(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.delete_virtual_script(&id)
 }
 
 // ── Query history ────────────────────────────────────────────
@@ -235,10 +381,277 @@ pub fn read_text_file(path: String) -> Result<String, String> {
     std::fs::read_to_string(&p).map_err(|e| e.to_string())
 }
 
+/// Writes a text file at an absolute path. Counterpart of read_text_file;
+/// used by the physical FS adapter in Workspace mode.
+#[tauri::command]
+pub fn write_text_file(path: String, content: String) -> Result<(), String> {
+    fs::write(&path, content).map_err(|e| e.to_string())
+}
+
+/// Deletes a file or folder (recursively) from the workspace tree.
+#[tauri::command]
+pub async fn delete_fs_item(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    let meta = fs::metadata(p).map_err(|e| e.to_string())?;
+    if meta.is_dir() {
+        fs::remove_dir_all(p).map_err(|e| e.to_string())
+    } else {
+        fs::remove_file(p).map_err(|e| e.to_string())
+    }
+}
+
 /// Returns the next sequential number for Untitled-N.sql naming.
 /// Queries the real count of saved_scripts so the number never grows
 /// without bound across sessions.
 #[tauri::command]
 pub fn get_next_script_number(app_db: tauri::State<'_, crate::storage::AppDb>) -> Result<u64, String> {
     app_db.get_script_count()
+}
+
+// ── Workspace CRUD ───────────────────────────────────────────
+
+#[tauri::command]
+pub async fn create_workspace(
+    app_handle: tauri::AppHandle,
+    name: String,
+    root_path: String,
+    connection_ids: String,
+) -> Result<Workspace, String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    let ws = Workspace {
+        id: uuid::Uuid::new_v4().to_string(),
+        name,
+        root_path,
+        connection_ids,
+    };
+    db.save_workspace(&ws)?;
+    Ok(ws)
+}
+
+#[tauri::command]
+pub async fn update_workspace(
+    app_handle: tauri::AppHandle,
+    id: String,
+    name: String,
+    root_path: String,
+    connection_ids: String,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    let ws = Workspace { id, name, root_path, connection_ids };
+    db.save_workspace(&ws)
+}
+
+#[tauri::command]
+pub async fn get_workspaces(app_handle: tauri::AppHandle) -> Result<Vec<Workspace>, String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.get_workspaces()
+}
+
+#[tauri::command]
+pub async fn delete_workspace(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    db.delete_workspace(&id)
+}
+
+// ── Physical File System Trigger Sync ────────────────────────
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TreeNode {
+    pub name: String,
+    pub path: String,
+    pub is_dir: bool,
+    pub children: Option<Vec<TreeNode>>,
+    pub color: Option<String>,
+    pub sort_order: i32,
+    pub is_pinned: bool,
+}
+
+#[tauri::command]
+pub async fn read_workspace_tree(
+    path: String,
+    workspace_id: Option<String>,
+    app_handle: tauri::AppHandle,
+) -> Result<TreeNode, String> {
+    use crate::storage::WorkspaceItemMeta;
+    use std::collections::HashMap;
+
+    let mut meta_map: HashMap<String, WorkspaceItemMeta> = HashMap::new();
+
+    if let Some(wid) = &workspace_id {
+        let db = app_handle.state::<crate::storage::AppDb>();
+        if let Ok(meta_list) = db.get_workspace_meta(wid) {
+            for m in meta_list {
+                meta_map.insert(m.item_path.clone(), m);
+            }
+        }
+    }
+
+    let root_path_obj = std::path::Path::new(&path);
+
+    // The root can vanish between the UI trigger and this read (deleted from
+    // the OS file explorer). Fail with a typed, clean error instead of
+    // returning a phantom leaf node.
+    match fs::metadata(root_path_obj) {
+        Ok(meta) if !meta.is_dir() => {
+            return Err(format!("NotADirectory: workspace root '{}' is not a directory", path));
+        }
+        Err(e) => {
+            let kind = match e.kind() {
+                std::io::ErrorKind::NotFound => "NotFound",
+                std::io::ErrorKind::PermissionDenied => "PermissionDenied",
+                _ => "Io",
+            };
+            return Err(format!("{}: cannot read workspace root '{}': {}", kind, path, e));
+        }
+        Ok(_) => {}
+    }
+
+    fn build_tree(
+        dir: &std::path::Path,
+        root_path: &std::path::Path,
+        meta_map: &HashMap<String, WorkspaceItemMeta>,
+    ) -> Result<TreeNode, String> {
+        let name = dir.file_name().unwrap_or_default().to_string_lossy().into_owned();
+        let path_str = dir.to_string_lossy().into_owned();
+        let is_dir = dir.is_dir();
+
+        let rel_path = dir
+            .strip_prefix(root_path)
+            .unwrap_or(dir)
+            .to_string_lossy()
+            .replace('\\', "/");
+
+        let meta = meta_map.get(&rel_path);
+        let color = meta.and_then(|m| m.color.clone());
+        let sort_order = meta.map(|m| m.sort_order).unwrap_or(0);
+        let is_pinned = meta.map(|m| m.is_pinned).unwrap_or(false);
+
+        let children = if is_dir {
+            let mut kids = Vec::new();
+            if let Ok(entries) = fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Ok(child_node) = build_tree(&path, root_path, meta_map) {
+                            kids.push(child_node);
+                        }
+                    } else {
+                        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                        if ["sql", "json", "csv", "yml", "yaml"].contains(&ext.as_str()) {
+                            if let Ok(child_node) = build_tree(&path, root_path, meta_map) {
+                                kids.push(child_node);
+                            }
+                        }
+                    }
+                }
+            }
+            kids.sort_by(|a, b| {
+                if a.is_pinned && !b.is_pinned { return std::cmp::Ordering::Less; }
+                if !a.is_pinned && b.is_pinned { return std::cmp::Ordering::Greater; }
+                if a.sort_order != b.sort_order { return a.sort_order.cmp(&b.sort_order); }
+                match (b.is_dir, a.is_dir) {
+                    (true, false) => std::cmp::Ordering::Greater,
+                    (false, true) => std::cmp::Ordering::Less,
+                    _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+                }
+            });
+            Some(kids)
+        } else {
+            None
+        };
+
+        Ok(TreeNode {
+            name,
+            path: path_str,
+            is_dir,
+            children,
+            color,
+            sort_order,
+            is_pinned,
+        })
+    }
+
+    build_tree(root_path_obj, root_path_obj, &meta_map)
+}
+
+#[tauri::command]
+pub async fn create_folder(path: String, name: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path).join(name);
+    fs::create_dir_all(&p).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn create_file(path: String, name: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path).join(name);
+    fs::write(&p, "").map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn rename_fs_item(
+    app_handle: tauri::AppHandle,
+    old_path: String,
+    new_path: String,
+    workspace_id: Option<String>,
+    root_path: Option<String>,
+) -> Result<(), String> {
+    fs::rename(&old_path, &new_path).map_err(|e| e.to_string())?;
+
+    if let (Some(wid), Some(root)) = (workspace_id, root_path) {
+        let root_obj = std::path::Path::new(&root);
+        let old_rel = std::path::Path::new(&old_path)
+            .strip_prefix(root_obj)
+            .unwrap_or(std::path::Path::new(&old_path))
+            .to_string_lossy()
+            .replace('\\', "/");
+        let new_rel = std::path::Path::new(&new_path)
+            .strip_prefix(root_obj)
+            .unwrap_or(std::path::Path::new(&new_path))
+            .to_string_lossy()
+            .replace('\\', "/");
+
+        let db = app_handle.state::<crate::storage::AppDb>();
+        if let Ok(metas) = db.get_workspace_meta(&wid) {
+            for mut meta in metas {
+                if meta.item_path == old_rel || meta.item_path.starts_with(&format!("{}/", old_rel)) {
+                    let new_item_path = meta.item_path.replacen(&old_rel, &new_rel, 1);
+                    let _ = db.delete_workspace_item_meta(&wid, &meta.item_path);
+                    meta.item_path = new_item_path;
+                    let _ = db.save_workspace_item_meta(&meta);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn move_fs_item(
+    app_handle: tauri::AppHandle,
+    source_path: String,
+    target_path: String,
+    workspace_id: Option<String>,
+    root_path: Option<String>,
+) -> Result<(), String> {
+    rename_fs_item(app_handle, source_path, target_path, workspace_id, root_path).await
+}
+
+#[tauri::command]
+pub async fn save_workspace_item_meta(
+    app_handle: tauri::AppHandle,
+    workspace_id: String,
+    item_path: String,
+    color: Option<String>,
+    sort_order: i32,
+    is_pinned: bool,
+) -> Result<(), String> {
+    let db = app_handle.state::<crate::storage::AppDb>();
+    let meta = crate::storage::WorkspaceItemMeta {
+        workspace_id,
+        item_path,
+        color,
+        sort_order,
+        is_pinned,
+    };
+    db.save_workspace_item_meta(&meta)
 }

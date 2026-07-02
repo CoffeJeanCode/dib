@@ -23,7 +23,11 @@ interface Props {
 export function MainContent({ editingConn, showNewConnection, connecting, active, navigateTo, openScript, onEditSaved, onConnected, onBack, onConnectionSelect, onNewConnection }: Props) {
   if (editingConn) {
     return (
-      <div className="app-container">
+      <div className="app-centered">
+        <button className="app-back-btn" onClick={onEditSaved}>
+          <ArrowLeft size={14} />
+          Back
+        </button>
         <ConnectionManager editing={editingConn} onEditSaved={onEditSaved} />
       </div>
     );

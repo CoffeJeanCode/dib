@@ -1,0 +1,137 @@
+{
+  "build.rs": {
+    "mtime": 1782228718.9409359,
+    "ast_hash": "1be34a5c61c2c35365de3dab14298f0b",
+    "semantic_hash": ""
+  },
+  "capabilities/default.json": {
+    "mtime": 1782912889.3426719,
+    "ast_hash": "8fc6a75c90f324fa036f262b1a2383cc",
+    "semantic_hash": ""
+  },
+  "gen/schemas/acl-manifests.json": {
+    "mtime": 1782908628.321217,
+    "ast_hash": "a441cf6a778a0416efdca1972c70dd8f",
+    "semantic_hash": ""
+  },
+  "gen/schemas/capabilities.json": {
+    "mtime": 1782912892.5061069,
+    "ast_hash": "91aedee1ec107a428314764b8221773d",
+    "semantic_hash": ""
+  },
+  "gen/schemas/desktop-schema.json": {
+    "mtime": 1782908628.3358676,
+    "ast_hash": "7c28017056cea1c986c378f6a78d354f",
+    "semantic_hash": ""
+  },
+  "gen/schemas/linux-schema.json": {
+    "mtime": 1782755491.3756037,
+    "ast_hash": "5c93c8a807ecaf937ad49d07ed4a2c03",
+    "semantic_hash": ""
+  },
+  "gen/schemas/windows-schema.json": {
+    "mtime": 1782908628.3358676,
+    "ast_hash": "7c28017056cea1c986c378f6a78d354f",
+    "semantic_hash": ""
+  },
+  "src/commands/connection.rs": {
+    "mtime": 1782935541.2328248,
+    "ast_hash": "a47c298fe4dd12259cd87c6babc40664",
+    "semantic_hash": ""
+  },
+  "src/commands/db.rs": {
+    "mtime": 1782755491.384724,
+    "ast_hash": "1d5d5b5ccc36243dc144c0bf2b2f3190",
+    "semantic_hash": ""
+  },
+  "src/commands/ddl.rs": {
+    "mtime": 1782755491.384724,
+    "ast_hash": "88bbccc78fbde271486276277fed16c6",
+    "semantic_hash": ""
+  },
+  "src/commands/mock.rs": {
+    "mtime": 1782906446.6298258,
+    "ast_hash": "182a191819aed1ce51babcbfd6b8b3de",
+    "semantic_hash": ""
+  },
+  "src/commands/mod.rs": {
+    "mtime": 1782904266.7451725,
+    "ast_hash": "9118bcf1b54d93f99b96f6270a32b600",
+    "semantic_hash": ""
+  },
+  "src/commands/persistence.rs": {
+    "mtime": 1782931687.8128011,
+    "ast_hash": "4c9a0b8ab77607a9ad9c61aece2b5519",
+    "semantic_hash": ""
+  },
+  "src/commands/query.rs": {
+    "mtime": 1782935549.6992674,
+    "ast_hash": "cb251a0f8356ca9e6ecdbd8b3ccfd940",
+    "semantic_hash": ""
+  },
+  "src/commands/schema.rs": {
+    "mtime": 1782943299.6639724,
+    "ast_hash": "915537b183ea9952c27b92243d216fd1",
+    "semantic_hash": ""
+  },
+  "src/commands/system_status.rs": {
+    "mtime": 1782847810.0661657,
+    "ast_hash": "d7736abfc5e1817f7663d330fbaed2e5",
+    "semantic_hash": ""
+  },
+  "src/commands/workspace.rs": {
+    "mtime": 1782943446.560902,
+    "ast_hash": "161156cc1b3d5d7859b6a60ee83e130d",
+    "semantic_hash": ""
+  },
+  "src/db/driver.rs": {
+    "mtime": 1782940735.9373841,
+    "ast_hash": "0a34bf72d5e31978da3ebbfc497af2a6",
+    "semantic_hash": ""
+  },
+  "src/db/mod.rs": {
+    "mtime": 1782940737.9622595,
+    "ast_hash": "c9df12fece7832ed29e1515751a7375b",
+    "semantic_hash": ""
+  },
+  "src/db/postgres.rs": {
+    "mtime": 1782940795.1069121,
+    "ast_hash": "6c9b9314a395eaf37f188d7eec9079ef",
+    "semantic_hash": ""
+  },
+  "src/db/sqlite.rs": {
+    "mtime": 1782755491.3888297,
+    "ast_hash": "c7d152969f769674c8897bbcac402e7d",
+    "semantic_hash": ""
+  },
+  "src/db/types.rs": {
+    "mtime": 1782940725.02157,
+    "ast_hash": "4d16d5d38727122c77d1c8b1cd0b190a",
+    "semantic_hash": ""
+  },
+  "src/lib.rs": {
+    "mtime": 1782943452.8951356,
+    "ast_hash": "62035da836de8cddceea0badecd206a4",
+    "semantic_hash": ""
+  },
+  "src/main.rs": {
+    "mtime": 1782228724.1095183,
+    "ast_hash": "97acae23b621279708066dbbbea9469a",
+    "semantic_hash": ""
+  },
+  "src/storage/mod.rs": {
+    "mtime": 1782943350.0248215,
+    "ast_hash": "b030319af8bb06b7a4aad36251e81e7e",
+    "semantic_hash": ""
+  },
+  "tauri.conf.json": {
+    "mtime": 1782819201.653697,
+    "ast_hash": "170183f1ee52f568230965c11b56f837",
+    "semantic_hash": ""
+  },
+  "icons/icon.png": {
+    "mtime": 1782904266.7171397,
+    "ast_hash": "4de7c3f732afc93b4e5e8450f59fe38e",
+    "semantic_hash": ""
+  }
+}

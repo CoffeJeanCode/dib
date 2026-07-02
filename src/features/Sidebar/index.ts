@@ -2,9 +2,7 @@ export { Sidebar } from "./Sidebar";
 export {
   SidebarHeader,
   DatabaseSelector,
-  SidebarNav,
   ConnectionItem,
-  ScriptItem,
   QueryHistoryPanel,
   DatabaseCategories,
   getEngineIcon,

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { mod } from "@/utils/platform";
 import { useDataGridContext } from "./DataGridContext";
 import { cellStr, cellId, makeKey } from "../DataGrid.utils";
 
@@ -67,7 +68,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
               minWidth: cssW,
               maxWidth: cssW,
             }}
-            title={isFk ? `Ctrl+Click → ${fkMap[col].targetTable} (${cellStr(value)})` : cellStr(value)}
+            title={isFk ? `${mod("Ctrl+Click")} → ${fkMap[col].targetTable} (${cellStr(value)})` : cellStr(value)}
             onClick={(e) => handleCellClick(absIdx, j, e)}
             onDoubleClick={() => startEdit(absIdx, j)}
           >

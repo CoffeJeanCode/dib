@@ -12,6 +12,9 @@ pub async fn run_query(
 ) -> Result<QueryResult, QueryError> {
     let start = std::time::Instant::now();
 
+    let app_db = app_handle.state::<crate::storage::AppDb>();
+    crate::commands::connection::assert_connection_in_active_workspace(&state, &app_db, &connection_id)?;
+
     let result = {
         let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
             message: format!("Connection not found: {}", connection_id),
@@ -37,7 +40,11 @@ pub async fn apply_changes(
     primary_key_column: String,
     changes: Vec<ChangeRow>,
     state: State<'_, DbState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<u64, QueryError> {
+    let app_db = app_handle.state::<crate::storage::AppDb>();
+    crate::commands::connection::assert_connection_in_active_workspace(&state, &app_db, &connection_id)?;
+
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,

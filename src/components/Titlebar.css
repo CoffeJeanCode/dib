@@ -19,11 +19,49 @@
 }
 
 .titlebar-brand {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  letter-spacing: 0.06em;
-  padding: 0 var(--space-2);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--color-text-tertiary);
+  margin-right: 12px;
+}
+
+.titlebar-workspace-pill {
+  display: flex;
+  align-items: center;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.titlebar-workspace-name {
+  font-size: 11px;
+  color: var(--color-text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.titlebar-workspace-close {
+  background: transparent;
+  border: none;
+  color: var(--color-text-tertiary);
+  padding: 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.titlebar-workspace-close:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
 }
 
 .titlebar-center {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { isMac } from "@/utils/platform";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, Workflow, ChevronLeft, Loader2, Eye, Activity } from "lucide-react";
 import type { TableInfo, InternalScript } from "@/types/db";
@@ -152,6 +153,13 @@ export function CommandPalette({
     const next: PaletteItem[] = [];
     const loaders: Promise<void>[] = [];
 
+    // Scripts are not fetched into local state — they're read live from
+    // useWorkspaceStore (single source of truth shared with the Sidebar).
+    // Just make sure the store has the latest data.
+    workspaceService.getInternalScripts()
+      .then((scripts) => useWorkspaceStore.getState().setInternalScripts(scripts))
+      .catch(console.error);
+
     if (connectionId) {
       loaders.push(
         dbService.listDatabases(connectionId)
@@ -179,27 +187,36 @@ export function CommandPalette({
             pushObj("mat_view",  obj.materialized_views ?? []);
             pushObj("function",  obj.functions ?? []);
             pushObj("procedure", obj.procedures ?? []);
-            pushObj("trigger",   (obj.triggers ?? []).map(t => ({ name: t.trigger_name, schema: t.schema })));
+            
+            for (const t of obj.triggers ?? []) {
+              const label = t.schema ? `${t.schema}.${t.trigger_name}` : t.trigger_name;
+              const uniqueId = `obj:trigger:${label}:${t.table_name}`;
+              next.push({
+                kind: "object",
+                id: uniqueId,
+                label: `${label} on ${t.table_name}`,
+                subtype: "trigger",
+                name: t.trigger_name,
+                schema: t.schema ?? null,
+              });
+            }
           })
           .catch(() => {}),
       );
     }
-
-    loaders.push(
-      workspaceService.getInternalScripts()
-        .then((scripts) => {
-          for (const s of scripts) {
-            next.push({ kind: "script", id: `s:${s.id}`, label: s.title, script: s });
-          }
-        })
-        .catch(console.error),
-    );
 
     Promise.all(loaders).then(() => {
       setBaseItems([...next]);
       setLoading(false);
     });
   }, [open, connectionId]);
+
+  // Single source of truth: same array Sidebar reads, kept live via scriptVersion.
+  const internalScripts = useWorkspaceStore((s) => s.internalScripts);
+  const scriptItems = useMemo<PaletteItem[]>(
+    () => internalScripts.map((s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s })),
+    [internalScripts],
+  );
 
   const enterDdlMode = useCallback((mode: NonNullable<DdlMode>) => {
     setDdlMode(mode);
@@ -232,12 +249,12 @@ export function CommandPalette({
 
     const q = query.trim();
     if (!q) {
-      const allItems = [...baseItems, ...actionItems];
+      const allItems = [...baseItems, ...scriptItems, ...actionItems];
       const recent = recentIds.map((id) => allItems.find((i) => i.id === id)).filter(Boolean) as PaletteItem[];
       if (recent.length > 0) return recent;
       return connectionId
         ? [...actionItems, ...baseItems.filter(i => i.kind === "table")].slice(0, 5)
-        : [...actionItems, ...baseItems.filter(i => i.kind === "script")].slice(0, 5);
+        : [...actionItems, ...scriptItems].slice(0, 5);
     }
 
     const symbol = q[0];
@@ -252,8 +269,7 @@ export function CommandPalette({
       return rest ? pool.filter((i) => i.label.toLowerCase().includes(rest)) : pool;
     }
     if (symbol === "#") {
-      const pool = baseItems.filter((i) => i.kind === "script");
-      return rest ? pool.filter((i) => i.label.toLowerCase().includes(rest)) : pool;
+      return rest ? scriptItems.filter((i) => i.label.toLowerCase().includes(rest)) : scriptItems;
     }
     if (symbol === "%") {
       const pool = baseItems.filter((i) => i.kind === "object");
@@ -271,7 +287,7 @@ export function CommandPalette({
       else if (item.label.toLowerCase().includes(qLower)) textMatches.push(item);
     }
     return [...aliasMatches, ...textMatches];
-  }, [query, baseItems, actions, ddlActionItems, ddlMode]);
+  }, [query, baseItems, scriptItems, actions, ddlActionItems, ddlMode]);
 
   useEffect(() => { setSelectedIndex(0); }, [query, ddlMode]);
 
@@ -412,7 +428,7 @@ export function CommandPalette({
 
               let hintText = "↵ Select";
               if (ddlMode && item.kind === "table") hintText = currentDdlMeta?.hint ?? "↵";
-              else if (item.kind === "table")    hintText = "↵ Open · ⌥↵ ERD · ⌃↵ Structure";
+              else if (item.kind === "table")    hintText = isMac ? "↵ Open · ⌥↵ ERD · ⌃↵ Structure" : "↵ Open · Alt+↵ ERD · Ctrl+↵ Structure";
               else if (item.kind === "script")   hintText = "↵ Run Script";
               else if (item.kind === "database") hintText = "↵ Switch DB";
               else if (item.kind === "action")   hintText = "↵ Execute";

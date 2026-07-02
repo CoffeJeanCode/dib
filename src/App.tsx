@@ -10,6 +10,7 @@ import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
 import { RenameDialog } from "@/components/RenameDialog";
 import { DbActionDialog } from "@/components/DbActionDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
+import { mod } from "@/utils/platform";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useUiState } from "@/hooks/useUiState";
 import { useToastStore } from "@/store/toastStore";
@@ -97,6 +98,25 @@ function App() {
     setDbAction({ action, dbName });
   }, []);
 
+  const handleCreateWorkspace = useCallback(async () => {
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const { workspaceService } = await import("@/services/workspaceService");
+      const selectedPath = await open({ directory: true, multiple: false });
+      if (!selectedPath || typeof selectedPath !== 'string') return;
+      
+      const folderName = selectedPath.split(/[/\\]/).pop() || "New Workspace";
+      const name = prompt("Workspace Name:", folderName);
+      if (!name) return;
+
+      const ws = await workspaceService.createWorkspace(name, selectedPath);
+      useWorkspaceStore.getState().setActiveWorkspacePath(ws.root_path, ws.id);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to create workspace: " + String(e));
+    }
+  }, []);
+
   const paletteActions = [
     ...(active ? [
       { id: "disconnect",          label: "Disconnect",       onAction: handleDisconnect },
@@ -106,7 +126,8 @@ function App() {
       { id: "drop-db",             label: "Delete Database…", onAction: () => handleDbAction("drop") },
     ] : []),
     { id: "new-connection", label: "New Connection",              onAction: () => { togglePalette(); setShowNewConnection(true); } },
-    { id: "cheat-sheet",    label: "Keyboard Shortcuts (Ctrl+/)", onAction: () => { togglePalette(); setCheatSheetOpen(true); } },
+    { id: "create-workspace", label: "Open Folder / Workspace...", onAction: () => { togglePalette(); handleCreateWorkspace(); } },
+    { id: "cheat-sheet",    label: `Keyboard Shortcuts (${mod("Ctrl+/")})`, onAction: () => { togglePalette(); setCheatSheetOpen(true); } },
   ];
 
   return (

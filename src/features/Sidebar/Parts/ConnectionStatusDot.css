@@ -1,0 +1,37 @@
+.conn-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.conn-dot--gray {
+  background: var(--color-text-tertiary);
+  opacity: 0.5;
+}
+
+.conn-dot--yellow {
+  background: var(--color-orange);
+  opacity: 0.9;
+}
+
+.conn-dot--green {
+  background: var(--color-green);
+  opacity: 0.9;
+}
+
+.conn-dot--red {
+  background: var(--color-red);
+  opacity: 0.9;
+}
+
+.conn-dot--spin {
+  animation: conn-dot-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes conn-dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}

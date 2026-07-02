@@ -8,6 +8,7 @@ import { useUiStore } from "@/store/uiStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useUiState } from "@/hooks/useUiState";
+import { setMonacoInstance } from "@/utils/monacoRegistry";
 
 function fmtErr(e: unknown): string {
   if (typeof e === "string") return e;
@@ -44,11 +45,6 @@ export const SQL_FUNCTIONS = [
   "TO_CHAR", "TO_NUMBER",
 ];
 
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
 export const THEME_LIGHT = "dib-light";
 export const THEME_DARK  = "dib-dark";
 
@@ -59,31 +55,22 @@ export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
     base: "vs",
     inherit: true,
     rules: [
-      // Comments: medium grey, italic
       { token: "comment",    foreground: "8a8a96", fontStyle: "italic" },
-      // Keywords: deep blue (AA on #FAFAFA)
-      { token: "keyword",    foreground: "1a56a8", fontStyle: "bold" },
-      // Strings: forest green
-      { token: "string",     foreground: "15803d" },
-      // Numbers: amber-orange
-      { token: "number",     foreground: "b45309" },
-      // Operators: mid grey
+      { token: "keyword",    foreground: "3b82f6", fontStyle: "bold" },
+      { token: "string",     foreground: "059669" },
+      { token: "number",     foreground: "d97706" },
       { token: "operator",   foreground: "6b7280" },
-      // Identifiers: near black
       { token: "identifier", foreground: "111118" },
-      // Types: deep purple
-      { token: "type",       foreground: "7c3aed" },
-      // Predefined (funcs): teal
-      { token: "predefined", foreground: "0e7490" },
+      { token: "type",       foreground: "8b5cf6" },
+      { token: "predefined", foreground: "0891b2" },
     ],
     colors: {
-      // Seamless with app background
       "editor.background":                  "#FAFAFA",
       "editor.foreground":                  "#111118",
       "editor.lineHighlightBackground":     "#F0F0F3",
       "editor.selectionBackground":         "#BFDBFE88",
       "editor.inactiveSelectionBackground": "#BFDBFE44",
-      "editorCursor.foreground":            "#1a56a8",
+      "editorCursor.foreground":            "#3b82f6",
       "editorWhitespace.foreground":        "#DCDCE0",
       "editorIndentGuide.background":       "#DCDCE0",
       "editorIndentGuide.activeBackground": "#C8C8CE",
@@ -91,18 +78,15 @@ export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
       "editorLineNumber.activeForeground":  "#5A5A6A",
       "editor.selectionHighlightBackground": "#BFDBFE44",
       "editorBracketMatch.background":      "#BFDBFE66",
-      "editorBracketMatch.border":          "#1a56a8",
-      // Scrollbar
+      "editorBracketMatch.border":          "#3b82f6",
       "scrollbarSlider.background":         "#DCDCE080",
       "scrollbarSlider.hoverBackground":    "#C8C8CEAA",
       "scrollbarSlider.activeBackground":   "#9090A0",
-      // Suggest / autocomplete — seamless via CSS overrides in monaco-overrides.css
       "editorSuggestWidget.background":     "#FFFFFF",
       "editorSuggestWidget.border":         "#DCDCE0",
       "editorSuggestWidget.foreground":     "#111118",
       "editorSuggestWidget.selectedBackground": "#0068C914",
-      "editorSuggestWidget.highlightForeground": "#1a56a8",
-      // Hover widget
+      "editorSuggestWidget.highlightForeground": "#3b82f6",
       "editorHoverWidget.background":       "#FFFFFF",
       "editorHoverWidget.border":           "#DCDCE0",
     },
@@ -113,58 +97,43 @@ export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
     base: "vs-dark",
     inherit: true,
     rules: [
-      // Comments: dim grey, italic
-      { token: "comment",    foreground: "4a5568", fontStyle: "italic" },
-      // Keywords: neon cyan
-      { token: "keyword",    foreground: "00EEFF", fontStyle: "bold" },
-      // Strings: neon green
-      { token: "string",     foreground: "00FF66" },
-      // Numbers: neon magenta
-      { token: "number",     foreground: "FF00FF" },
-      // Operators: medium grey
+      { token: "comment",    foreground: "6b7280", fontStyle: "italic" },
+      { token: "keyword",    foreground: "67e8f9", fontStyle: "bold" },
+      { token: "string",     foreground: "86efac" },
+      { token: "number",     foreground: "c084fc" },
       { token: "operator",   foreground: "888888" },
-      // Identifiers: near white
-      { token: "identifier", foreground: "FFFFFF" },
-      // Types: neon purple
-      { token: "type",       foreground: "9D00FF" },
-      // Predefined (functions): neon cyan variant
-      { token: "predefined", foreground: "00EEFF" },
+      { token: "identifier", foreground: "F3F4F6" },
+      { token: "type",       foreground: "a78bfa" },
+      { token: "predefined", foreground: "5eead4" },
     ],
     colors: {
-      // Seamless with app background  (#121215)
       "editor.background":                  "#121215",
-      "editor.foreground":                  "#FFFFFF",
+      "editor.foreground":                  "#F3F4F6",
       "editor.lineHighlightBackground":     "#1A1A1E",
-      "editor.selectionBackground":         "#00EEFF22",
-      "editor.inactiveSelectionBackground": "#00EEFF11",
-      "editorCursor.foreground":            "#00EEFF",
+      "editor.selectionBackground":         "#67e8f922",
+      "editor.inactiveSelectionBackground": "#67e8f911",
+      "editorCursor.foreground":            "#67e8f9",
       "editorWhitespace.foreground":        "#2A2A30",
       "editorIndentGuide.background":       "#2A2A30",
-      "editorIndentGuide.activeBackground": "#00EEFF33",
+      "editorIndentGuide.activeBackground": "#67e8f933",
       "editorLineNumber.foreground":        "#555560",
       "editorLineNumber.activeForeground":  "#888888",
-      "editor.selectionHighlightBackground": "#00EEFF18",
-      "editorBracketMatch.background":      "#00EEFF22",
-      "editorBracketMatch.border":          "#00EEFF",
-      // Scrollbar
+      "editor.selectionHighlightBackground": "#67e8f918",
+      "editorBracketMatch.background":      "#67e8f922",
+      "editorBracketMatch.border":          "#67e8f9",
       "scrollbarSlider.background":         "#2A2A3080",
-      "scrollbarSlider.hoverBackground":    "#00EEFF33",
-      "scrollbarSlider.activeBackground":   "#00EEFF55",
-      // Suggest / autocomplete — further styled via CSS overrides
+      "scrollbarSlider.hoverBackground":    "#67e8f933",
+      "scrollbarSlider.activeBackground":   "#67e8f955",
       "editorSuggestWidget.background":     "#1A1A1E",
       "editorSuggestWidget.border":         "#2A2A30",
-      "editorSuggestWidget.foreground":     "#FFFFFF",
-      "editorSuggestWidget.selectedBackground": "#00EEFF14",
-      "editorSuggestWidget.highlightForeground": "#00EEFF",
-      // Hover widget
+      "editorSuggestWidget.foreground":     "#F3F4F6",
+      "editorSuggestWidget.selectedBackground": "#67e8f914",
+      "editorSuggestWidget.highlightForeground": "#67e8f9",
       "editorHoverWidget.background":       "#1A1A1E",
       "editorHoverWidget.border":           "#2A2A30",
     },
   });
 }
-
-export { getSystemTheme };
-
 
 interface UseSqlEditorOptions {
   connectionId: string;
@@ -244,19 +213,15 @@ export function useSqlEditor({
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const cancelledRef = useRef(false);
+  // Guards against duplicate execution when the same keystroke fires runQuery
+  // more than once synchronously (e.g. duplicate Monaco command registration).
+  // A state-based guard isn't enough since setState is async/batched.
+  const runningRef = useRef(false);
   const [explainResult, setExplainResult] = useState<ExplainPlan | null>(null);
   const [explainLoading, setExplainLoading] = useState(false);
-  const [editorTheme, setEditorTheme] = useState<"light" | "dark">(getSystemTheme);
   const [fileStatus, setFileStatus] = useState<{ msg: string; ok: boolean } | null>(null);
-  // Holds reference to the monaco namespace so setTheme can be called from effects
+  // Holds reference to the monaco namespace so cleanup can access it
   const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
-
-  // Sync Monaco theme from uiStore — replaces dib:theme window event
-  const storeTheme = useUiStore((s) => s.theme);
-  useEffect(() => {
-    setEditorTheme(storeTheme); // keeps the Editor component's theme prop in sync
-    monacoRef.current?.editor.setTheme(storeTheme === "dark" ? THEME_DARK : THEME_LIGHT);
-  }, [storeTheme]);
 
 
   /** columns per table, populated lazily on first dot-trigger */
@@ -339,7 +304,8 @@ export function useSqlEditor({
 
   const runQuery = useCallback(
     async (sqlText: string) => {
-      if (!connectionId) return;
+      if (!connectionId || runningRef.current) return;
+      runningRef.current = true;
       cancelledRef.current = false;
       setQueryError(null);
       setQueryResult(null);
@@ -364,6 +330,7 @@ export function useSqlEditor({
         dbService.saveQueryHistory(connectionId, sqlText, success, Date.now() - t0, uiState.history_limit)
           .then(() => useWorkspaceStore.getState().incrementQueryVersion())
           .catch(() => {});
+        runningRef.current = false;
         requestAnimationFrame(() => {
           editorRef.current?.focus();
         });
@@ -421,6 +388,7 @@ export function useSqlEditor({
   const handleMount: OnMount = useCallback((editor, monacoInstance) => {
     editorRef.current = editor;
     monacoRef.current = monacoInstance;
+    setMonacoInstance(monacoInstance);
     defineDibThemes(monacoInstance);
 
     const currentTheme = useUiStore.getState().theme;
@@ -665,7 +633,6 @@ export function useSqlEditor({
     cancelling,
     explainResult,
     explainLoading,
-    editorTheme,
     fileStatus,
     editorRef,
     handleExport,

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { mod } from "@/utils/platform";
 import "./KeyboardCheatSheet.css";
 
 interface KeyboardCheatSheetProps {
@@ -82,9 +83,9 @@ export function KeyboardCheatSheet({ onClose }: KeyboardCheatSheetProps) {
               <div className="kcs-section-title">{s.title}</div>
               <table className="kcs-table">
                 <tbody>
-                  {s.rows.map(([combo, desc]) => (
+                    {s.rows.map(([combo, desc]) => (
                     <tr key={combo}>
-                      <td className="kcs-combo"><kbd>{combo}</kbd></td>
+                      <td className="kcs-combo"><kbd>{mod(combo)}</kbd></td>
                       <td className="kcs-desc">{desc}</td>
                     </tr>
                   ))}

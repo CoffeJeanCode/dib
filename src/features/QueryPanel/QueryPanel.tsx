@@ -5,7 +5,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { useDatabaseEngine, DEFAULT_PAGE_SIZE } from "@/hooks/useDatabaseEngine";
 import { useWorkspaceService } from "@/hooks/useWorkspaceService";
 import { useKeybindings } from "@/hooks/useKeybindings";
-import { Layers, Wand2 } from "lucide-react";
+import { Braces, Layers, Wand2 } from "lucide-react";
 import type { TableInfo, PagedResult, PendingChange, GridFilter } from "@/types/db";
 import type { TabData, TabPayload } from "@/components/Tab";
 import { TableStructureView } from "@/components/TableStructureView";
@@ -441,7 +441,12 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
             if (result) {
               const newId = crypto.randomUUID();
               openSqlTab(result.content, result.name, newId);
-              workspaceService.saveInternalScript(newId, result.name, result.content, connectionId).catch(console.error);
+              workspaceService.saveInternalScript(newId, result.name, result.content, connectionId)
+                .then((saved) => {
+                  useWorkspaceStore.getState().upsertInternalScript(saved);
+                  useWorkspaceStore.getState().incrementScriptVersion();
+                })
+                .catch(console.error);
             }
           })
           .catch(() => {});
@@ -517,7 +522,12 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
   const handleImportScriptAndSave = useCallback((sql: string, name: string) => {
     const newId = crypto.randomUUID();
     openSqlTab(sql, name, newId);
-    workspaceService.saveInternalScript(newId, name, sql, connectionId).catch(console.error);
+    workspaceService.saveInternalScript(newId, name, sql, connectionId)
+      .then((saved) => {
+        useWorkspaceStore.getState().upsertInternalScript(saved);
+        useWorkspaceStore.getState().incrementScriptVersion();
+      })
+      .catch(console.error);
   }, [openSqlTab, connectionId]);
 
   const handleSaveScript = useCallback((sql: string) => {
@@ -664,6 +674,27 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
                           >
                             <Wand2 size={12} />
                             Mock Data
+                          </button>
+                          <button
+                            className="qp-structure-footer-btn"
+                            onClick={() => {
+                              const r = activeTableState?.result;
+                              if (!r) return;
+                              useWorkspaceStore.getState().openJsonPanel({
+                                title: `Table: ${t.name}`,
+                                result: {
+                                  columns: r.columns,
+                                  rows: r.rows as (string | number | boolean | null)[][],
+                                  rows_affected: 0,
+                                  column_metadata: [],
+                                  is_updatable: false,
+                                },
+                              });
+                            }}
+                            title="View table data as JSON"
+                          >
+                            <Braces size={12} />
+                            JSON
                           </button>
                           <button
                             id="dib-structure-toggle-btn"

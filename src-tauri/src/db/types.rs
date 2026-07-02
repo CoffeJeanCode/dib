@@ -43,6 +43,21 @@ impl From<String> for QueryError {
 
 // ── Schema introspection ──────────────────────────────────────
 
+/// Generic lazy-loading catalog node. The frontend requests children only
+/// when the user expands a node; `has_children` lets it draw the expansion
+/// arrow without fetching the subtree.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DbTreeNode {
+    /// Composite id, e.g. "schema_public", "index_public.users.users_pkey"
+    pub id: String,
+    /// Visual name shown in the tree
+    pub label: String,
+    /// Node kind — drives the icon in the frontend
+    #[serde(rename = "type")]
+    pub node_type: String,
+    pub has_children: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableInfo {
     pub name: String,

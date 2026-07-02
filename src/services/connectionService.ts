@@ -17,8 +17,8 @@ export const connectionService = {
   testConnection: (config: Record<string, unknown>) =>
     invoke<void>("test_connection", { config }),
 
-  getSavedConnections: () =>
-    invoke<SavedConnection[]>("get_saved_connections"),
+  getSavedConnections: (workspaceId: string | null = null) =>
+    invoke<SavedConnection[]>("get_saved_connections", { workspaceId }),
 
   saveConnection: (connection: SavedConnection) =>
     invoke<void>("save_connection", { connection }),

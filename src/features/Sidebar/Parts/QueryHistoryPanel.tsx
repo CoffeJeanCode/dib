@@ -30,13 +30,19 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const pageRef = useRef(0);
+  // Sequencing guard: two fetches can overlap (e.g. two queryVersion bumps in
+  // quick succession), and without this the slower one can resolve last and
+  // clobber the UI with stale data. Only the most-recently-issued request applies.
+  const fetchIdRef = useRef(0);
 
   const fetchHistory = useCallback(async (reset = false) => {
     if (!activeConnectionId) {
+      fetchIdRef.current += 1;
       setHistory([]);
       setHasMore(false);
       return;
     }
+    const myId = ++fetchIdRef.current;
     setLoading(true);
     try {
       if (reset) {
@@ -45,7 +51,8 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
       const limit = 50;
       const offset = pageRef.current * limit;
       const data = await dbService.getQueryHistory(activeConnectionId, limit, offset);
-      
+      if (myId !== fetchIdRef.current) return; // superseded by a newer request
+
       setHistory((prev) => (reset ? data : [...prev, ...data]));
       setHasMore(data.length === limit);
       if (data.length > 0 || reset) {
@@ -54,7 +61,7 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (myId === fetchIdRef.current) setLoading(false);
     }
   }, [activeConnectionId]);
 

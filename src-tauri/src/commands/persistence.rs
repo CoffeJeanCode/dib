@@ -39,9 +39,9 @@ pub fn save_connection(
 }
 
 #[tauri::command]
-pub fn get_saved_connections(app_handle: tauri::AppHandle) -> Result<Vec<SavedConnection>, String> {
+pub fn get_saved_connections(app_handle: tauri::AppHandle, workspace_id: Option<String>) -> Result<Vec<SavedConnection>, String> {
     let db = app_handle.state::<crate::storage::AppDb>();
-    db.get_connections()
+    db.get_connections(workspace_id.as_deref())
 }
 
 #[tauri::command]

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { FileCode2, Save, Plus, Clock } from "lucide-react";
+import { FileCode2, Save, Plus, Clock, Pin } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
 import type { ScriptMeta } from "@/types/db";
+import { useFileSystemStore } from "@/store/fileSystemStore";
+import { PinnedSection } from "./PinnedSection";
 
 interface SavedScriptsPanelProps {
   onScriptOpen?: (sql: string, title: string, id: string) => void;
@@ -60,6 +62,12 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
       setSaving(false);
     }
   }, [newFilename, refresh]);
+
+  // Pin/color meta is shared app-wide (persisted) via useFileSystemStore.
+  const meta = useFileSystemStore((s) => s.meta);
+  const togglePin = useFileSystemStore((s) => s.togglePin);
+  const pinnedScripts = scripts.filter((s) => meta[s.name]?.isPinned);
+  const unpinnedScripts = scripts.filter((s) => !meta[s.name]?.isPinned);
 
   const handleRead = useCallback(async (name: string) => {
     try {
@@ -150,7 +158,12 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
           </span>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {scripts.map((s) => (
+            <PinnedSection
+              items={pinnedScripts.map((s) => ({ id: s.name, name: s.name }))}
+              onOpen={(item) => handleRead(item.name)}
+              onUnpin={(item) => togglePin(item.id)}
+            />
+            {unpinnedScripts.map((s) => (
               <div
                 key={s.name}
                 className="sidebar-db-item"
@@ -173,6 +186,14 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
                   <Clock size={9} />
                   {fmtTime(s.modified_ms)}
                 </span>
+                <button
+                  className="sidebar-icon-btn"
+                  title="Pin script"
+                  onClick={(e) => { e.stopPropagation(); togglePin(s.name); }}
+                  style={{ padding: 2, flexShrink: 0 }}
+                >
+                  <Pin size={10} />
+                </button>
               </div>
             ))}
           </div>
