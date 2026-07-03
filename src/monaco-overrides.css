@@ -30,55 +30,6 @@
   --suggest-font-size:   13px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SUGGEST WIDGET  (autocomplete dropdown)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Container */
-
-/* Inner scrollable list */
-
-/* Every list row */
-
-/* ── Hover state */
-
-/* ── Focused / keyboard-selected row
-   Monaco uses .focused AND .selected classes interchangeably */
-
-/* ── Suggestion label (the completion text itself) */
-
-/* Highlighted characters within the label */
-
-/* ── Type/detail label (right side, e.g. "VARCHAR(255)") */
-
-/* ── Icon column (completion kind icon) */
-
-/* ── Status bar at the bottom of the widget */
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SUGGEST DETAILS PANE  (docs / signature panel)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   HOVER WIDGET  (column/table info on hover)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PARAMETER HINTS WIDGET  (function signature)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   CONTEXT MENU  (right-click inside Monaco)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SCROLLBAR OVERRIDES (inside Monaco overlays)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   EDITOR CONTAINER SEAMLESS BG  (ensure no white flash on load)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 /* The host container loaded by @monaco-editor/react */
 .sqleditor-body .monaco-editor,
 .sqleditor-body .monaco-editor .margin {
