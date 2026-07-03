@@ -21,6 +21,7 @@ interface SqlEditorProps {
   viewState?: unknown;
   onSaveViewState?: (tabId: string, viewState: unknown) => void;
   onContentChange?: (sql: string) => void;
+  autoRun?: boolean;
 }
 
 export function SqlEditor({
@@ -34,6 +35,7 @@ export function SqlEditor({
   viewState,
   onSaveViewState,
   onContentChange,
+  autoRun,
 }: SqlEditorProps) {
   const {
     sql,
@@ -61,6 +63,7 @@ export function SqlEditor({
     onSaveScript,
     onSaveViewState,
     onContentChange,
+    autoRun,
   });
 
   const editorContainerRef = useRef<HTMLDivElement>(null);

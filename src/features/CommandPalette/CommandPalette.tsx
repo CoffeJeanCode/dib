@@ -395,7 +395,6 @@ export function CommandPalette({
           .then((content) => useWorkspaceStore.getState().setOpenScript({ sql: content, name: item.label, id: item.path, v: Date.now() }))
           .catch((e) => useToastStore.getState().error(`Failed to read file: ${String(e)}`));
         pushToRecents({ type: "wsfile", id: item.id, label: item.label, path: item.path });
-        onClose();
       }
       else if (item.kind === "script") {
         useWorkspaceStore.getState().setOpenScript({ sql: item.script.content, name: item.script.title, id: item.script.id, v: Date.now() } as any);

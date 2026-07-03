@@ -55,7 +55,7 @@ interface QueryPanelProps {
   engine?: string;
   scopeKey?: string;
   navigateTo?: { table: TableInfo; v: number } | null;
-  openScript?: { sql: string; name: string; id: string; v: number } | null;
+  openScript?: import("@/types/workspace").OpenScript | null;
 }
 
 export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _scopeKey, navigateTo, openScript }: QueryPanelProps) {
@@ -203,12 +203,12 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   );
 
   // ── Tab lifecycle ──────────────────────────────────────────────────────
-  const openSqlTab = useCallback((sql: string, name: string, scriptId?: string) => {
+  const openSqlTab = useCallback((sql: string, name: string, scriptId?: string, autoRun?: boolean) => {
     const tabId = scriptId ?? crypto.randomUUID();
     setTabs((prev) => {
       if (prev.some((t) => t.id === tabId)) { setActiveTabId(tabId); return prev; }
       // scriptId provided → tab is already saved; null → draft
-      const newTab: TabData = { id: tabId, type: "script", title: name, isDirty: false, payload: { sql, filename: name, scriptId: scriptId ?? null }, closeable: true };
+      const newTab: TabData = { id: tabId, type: "script", title: name, isDirty: false, payload: { sql, filename: name, scriptId: scriptId ?? null, autoRun }, closeable: true };
       registerTabSql(tabId, sql);
       setActiveTabId(tabId);
       return [...prev, newTab];
@@ -371,7 +371,7 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   useEffect(() => {
     if (openScript && openScript.id !== lastOpenScriptIdRef.current) {
       lastOpenScriptIdRef.current = openScript.id;
-      openSqlTab(openScript.sql, openScript.name, openScript.id);
+      openSqlTab(openScript.sql, openScript.name, openScript.id, openScript.autoRun);
     }
   }, [openScript, openSqlTab]);
 
@@ -762,6 +762,7 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
             viewState={activeTab.payload.viewState}
             onSaveViewState={handleSaveViewState}
             onContentChange={handleContentChange}
+            autoRun={activeTab.payload.autoRun}
           />
         )}
 

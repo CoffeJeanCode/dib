@@ -49,7 +49,7 @@ function App() {
   const cheatSheetOpen  = useUiStore((s) => s.cheatSheetOpen);
   const showNewConnection = useUiStore((s) => s.showNewConnection);
   const editingConn     = useUiStore((s) => s.editingConn);
-  const { togglePalette, setCheatSheetOpen, setShowNewConnection, setEditingConn, setDbAction, setSettingsOpen } = useUiStore.getState();
+  const { togglePalette, closePalette, setCheatSheetOpen, setShowNewConnection, setEditingConn, setDbAction, setSettingsOpen } = useUiStore.getState();
 
   const navigateTo  = useWorkspaceStore((s) => s.navigateTo);
   const openScript  = useWorkspaceStore((s) => s.openScript);
@@ -94,14 +94,14 @@ function App() {
   const paletteActions = [
     ...(active ? [
       { id: "disconnect",          label: "Disconnect",       onAction: () => useConnectionStore.getState().disconnect() },
-      { id: "ddl-template",        label: "New DDL Template", onAction: () => { togglePalette(); setOpenScript({ sql: DDL_TEMPLATE, name: "New DDL Template.sql", id: `ext-${Date.now()}`, v: Date.now() } as OpenScript); } },
+      { id: "ddl-template",        label: "New DDL Template", onAction: () => { closePalette(); setOpenScript({ sql: DDL_TEMPLATE, name: "New DDL Template.sql", id: `ext-${Date.now()}`, v: Date.now() } as OpenScript); } },
       { id: "create-db",           label: "Create Database…", onAction: () => setDbAction({ action: "create" }) },
       { id: "rename-db",           label: "Rename Database…", onAction: () => setDbAction({ action: "rename" }) },
       { id: "drop-db",             label: "Delete Database…", onAction: () => setDbAction({ action: "drop" }) },
     ] : []),
-    { id: "new-connection", label: "New Connection",              onAction: () => { togglePalette(); setShowNewConnection(true); } },
-    { id: "create-workspace", label: "Open Folder / Workspace...", onAction: () => { togglePalette(); handleCreateWorkspace(); } },
-    { id: "cheat-sheet",    label: `Keyboard Shortcuts (${mod("Ctrl+/")})`, onAction: () => { togglePalette(); setCheatSheetOpen(true); } },
+    { id: "new-connection", label: "New Connection",              onAction: () => { closePalette(); setShowNewConnection(true); } },
+    { id: "create-workspace", label: "Open Folder / Workspace...", onAction: () => { closePalette(); handleCreateWorkspace(); } },
+    { id: "cheat-sheet",    label: `Keyboard Shortcuts (${mod("Ctrl+/")})`, onAction: () => { closePalette(); setCheatSheetOpen(true); } },
   ];
 
   return (
@@ -110,7 +110,7 @@ function App() {
     >
       <CommandPalette
         open={paletteOpen}
-        onClose={() => togglePalette()}
+        onClose={() => closePalette()}
         actions={paletteActions}
       />
       {connecting && <div className="app-connecting">Connecting…</div>}

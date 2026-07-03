@@ -183,6 +183,7 @@ export function useDataGridState({
       name: `join_${tableName}_${fk.targetTable}.sql`,
       id: `ext-${Date.now()}`,
       v: Date.now(),
+      autoRun: true,
     });
   }, [fkMap, tableName]);
 

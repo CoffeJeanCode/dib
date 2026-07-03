@@ -18,6 +18,7 @@ import {
   DragOverlay,
   pointerWithin,
   getFirstCollision,
+  useDroppable,
   type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
@@ -30,7 +31,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { useTreeStateStore } from "@/store/treeStateStore";
 import type { FsNode } from "@/types/workspace";
 import { ScriptsContextMenu } from "@/features/Sidebar/Parts/ScriptsContextMenu";
-import { FlatInput } from "@/shared/ui/FlatInput";
+
 import "./WorkspaceTree.css";
 
 function getFileIcon(name: string, isDirectory?: boolean, isExpanded?: boolean) {
@@ -245,20 +246,45 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
 
     if (active.id !== over.id) {
       const activeNode = findNode(tree, active.id as string);
-      const overNode = findNode(tree, over.id as string);
       
-      if (!activeNode || !overNode) return;
+      let targetPath = "root";
+      let isOverDir = true;
+
+      if (over.id !== "root") {
+        const overNode = findNode(tree, over.id as string);
+        if (!overNode) return;
+        isOverDir = !!(overNode.isDir || overNode.is_dir);
+        targetPath = overNode.path;
+      }
       
-      if (connectionId && (overNode.isDir || overNode.is_dir)) {
-        try {
-           await workspaceService.moveVirtualItem(activeNode.path, overNode.path === "root" ? null : overNode.path, !!(activeNode.isDir || activeNode.is_dir));
-           refresh();
-        } catch(err) {
-           console.error(err);
+      if (!isOverDir) {
+        if (targetPath.includes("/")) {
+          targetPath = targetPath.substring(0, targetPath.lastIndexOf("/"));
+        } else if (targetPath.includes("\\")) {
+          targetPath = targetPath.substring(0, targetPath.lastIndexOf("\\"));
+        } else {
+          targetPath = "root";
         }
+      }
+
+      if (!activeNode) return;
+      
+      try {
+        if (workspaceId) {
+           const normalizedRoot = rootPath?.replace(/\\/g, "/") ?? "";
+           const destPath = targetPath === "root" ? `${normalizedRoot}/${activeNode.name}` : `${targetPath}/${activeNode.name}`;
+           await workspaceService.moveFsItem(activeNode.path, destPath, workspaceId, rootPath || null);
+        } else if (connectionId) {
+           await workspaceService.moveVirtualItem(activeNode.path, targetPath === "root" ? null : targetPath, !!(activeNode.isDir || activeNode.is_dir));
+        }
+        refresh();
+      } catch(err) {
+        console.error(err);
       }
     }
   };
+
+  const { setNodeRef: setRootRef, isOver: isRootOver } = useDroppable({ id: 'root' });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -332,7 +358,7 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
           onNewScript={() => handleCreateRequest("file", "root")}
           onNewFolder={() => handleCreateRequest("folder", "root")}
         >
-          <div className="workspace-tree-root min-h-[100px]">
+          <div ref={setRootRef} className="workspace-tree-root min-h-[100px]" style={isRootOver ? { background: "var(--color-bg-hover)" } : undefined}>
             {tree.children && tree.children.length > 0 ? (
               <SortableContext
                 items={tree.children.map(c => c.path)}
@@ -364,36 +390,22 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
       </DndContext>
 
       {promptInfo && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-[300px] rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl">
-            <h3 className="mb-4 text-sm font-medium text-gray-200">
-              Create New {promptInfo.type === "file" ? "Script" : "Folder"}
-            </h3>
-            <FlatInput
-              autoFocus
-              value={promptValue}
-              onChange={(e) => setPromptValue(e.target.value)}
-              placeholder={`Enter ${promptInfo.type} name...`}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handlePromptSubmit();
-                if (e.key === "Escape") setPromptInfo(null);
-              }}
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                className="rounded px-3 py-1 text-xs text-gray-400 hover:bg-gray-700"
-                onClick={() => setPromptInfo(null)}
-              >
-                Cancel
-              </button>
-              <button
-                className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
-                onClick={handlePromptSubmit}
-              >
-                Create
-              </button>
-            </div>
-          </div>
+        <div className="tree-inline-create" style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 16px", paddingLeft: 16 }}>
+          {promptInfo.type === "folder" ? <Folder size={13} style={{ flexShrink: 0, opacity: 0.6 }} /> : <FileCode2 size={13} style={{ flexShrink: 0, opacity: 0.6 }} />}
+          <input
+            ref={(el) => { if (el && document.activeElement !== el) { el.focus(); el.select(); } }}
+            className="inline-edit-input inline-edit-input--xs"
+            value={promptValue}
+            onChange={(e) => setPromptValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.stopPropagation(); handlePromptSubmit(); }
+              if (e.key === "Escape") { e.stopPropagation(); setPromptInfo(null); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            placeholder={promptInfo.type === "file" ? "filename.sql" : "folder name"}
+            style={{ flex: 1, minWidth: 0 }}
+          />
         </div>
       )}
     </div>

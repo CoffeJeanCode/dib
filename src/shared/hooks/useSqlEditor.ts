@@ -149,87 +149,95 @@ export const THEME_LIGHT = "dib-light";
 export const THEME_DARK = "dib-dark";
 
 export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
-  // ── LIGHT THEME ──────────────────────────────────────────────
+  // ── LIGHT THEME (custom — clean, low-saturation, high readability) ──
   monaco.editor.defineTheme(THEME_LIGHT, {
     base: "vs",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "8a8a96", fontStyle: "italic" },
-      { token: "keyword", foreground: "3b82f6", fontStyle: "bold" },
-      { token: "string", foreground: "059669" },
+      { token: "comment", foreground: "a1a1aa", fontStyle: "italic" },
+      { token: "keyword", foreground: "d946ef" },
+      { token: "string", foreground: "10b981" },
+      { token: "string.sql", foreground: "10b981" },
+      { token: "string.value.json", foreground: "10b981" },
+      { token: "string.key.json", foreground: "0284c7" },
+      { token: "keyword.json", foreground: "d946ef" },
       { token: "number", foreground: "d97706" },
       { token: "operator", foreground: "6b7280" },
-      { token: "identifier", foreground: "111118" },
-      { token: "type", foreground: "8b5cf6" },
+      { token: "identifier", foreground: "18181b" },
+      { token: "type", foreground: "6366f1" },
       { token: "predefined", foreground: "0891b2" },
     ],
     colors: {
-      "editor.background": "#FAFAFA",
-      "editor.foreground": "#111118",
-      "editor.lineHighlightBackground": "#F0F0F3",
-      "editor.selectionBackground": "#BFDBFE88",
-      "editor.inactiveSelectionBackground": "#BFDBFE44",
-      "editorCursor.foreground": "#3b82f6",
-      "editorWhitespace.foreground": "#DCDCE0",
-      "editorIndentGuide.background": "#DCDCE0",
-      "editorIndentGuide.activeBackground": "#C8C8CE",
-      "editorLineNumber.foreground": "#9090A0",
-      "editorLineNumber.activeForeground": "#5A5A6A",
-      "editor.selectionHighlightBackground": "#BFDBFE44",
-      "editorBracketMatch.background": "#BFDBFE66",
-      "editorBracketMatch.border": "#3b82f6",
-      "scrollbarSlider.background": "#DCDCE080",
-      "scrollbarSlider.hoverBackground": "#C8C8CEAA",
-      "scrollbarSlider.activeBackground": "#9090A0",
+      "editor.background": "#F4F4F6",
+      "editor.foreground": "#18181b",
+      "editor.lineHighlightBackground": "#EBEBEF",
+      "editor.selectionBackground": "#d946ef22",
+      "editor.inactiveSelectionBackground": "#d946ef11",
+      "editorCursor.foreground": "#d946ef",
+      "editorWhitespace.foreground": "#D4D4DC",
+      "editorIndentGuide.background": "#D4D4DC",
+      "editorIndentGuide.activeBackground": "#B8B8C8",
+      "editorLineNumber.foreground": "#90909E",
+      "editorLineNumber.activeForeground": "#5E5E70",
+      "editor.selectionHighlightBackground": "#d946ef18",
+      "editorBracketMatch.background": "#d946ef22",
+      "editorBracketMatch.border": "#d946ef",
+      "scrollbarSlider.background": "#D4D4DC80",
+      "scrollbarSlider.hoverBackground": "#B8B8C8AA",
+      "scrollbarSlider.activeBackground": "#90909E",
       "editorSuggestWidget.background": "#FFFFFF",
-      "editorSuggestWidget.border": "#DCDCE0",
-      "editorSuggestWidget.foreground": "#111118",
-      "editorSuggestWidget.selectedBackground": "#0068C914",
-      "editorSuggestWidget.highlightForeground": "#3b82f6",
+      "editorSuggestWidget.border": "#D4D4DC",
+      "editorSuggestWidget.foreground": "#18181b",
+      "editorSuggestWidget.selectedBackground": "#d946ef14",
+      "editorSuggestWidget.highlightForeground": "#d946ef",
       "editorHoverWidget.background": "#FFFFFF",
-      "editorHoverWidget.border": "#DCDCE0",
+      "editorHoverWidget.border": "#D4D4DC",
     },
   });
 
-  // ── DARK THEME ───────────────────────────────────────────────
+  // ── DARK THEME (custom — neon-dash inspired, low saturation) ──
   monaco.editor.defineTheme(THEME_DARK, {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "6b7280", fontStyle: "italic" },
-      { token: "keyword", foreground: "67e8f9", fontStyle: "bold" },
-      { token: "string", foreground: "86efac" },
-      { token: "number", foreground: "c084fc" },
-      { token: "operator", foreground: "888888" },
-      { token: "identifier", foreground: "F3F4F6" },
-      { token: "type", foreground: "a78bfa" },
-      { token: "predefined", foreground: "5eead4" },
+      { token: "comment", foreground: "5c5c6e", fontStyle: "italic" },
+      { token: "keyword", foreground: "f472b6" },
+      { token: "string", foreground: "34d399" },
+      { token: "string.sql", foreground: "34d399" },
+      { token: "string.value.json", foreground: "34d399" },
+      { token: "string.key.json", foreground: "7dd3fc" },
+      { token: "keyword.json", foreground: "f472b6" },
+      { token: "number", foreground: "facc15" },
+      { token: "operator", foreground: "a1a1aa" },
+      { token: "identifier", foreground: "d4d4d8" },
+      { token: "type", foreground: "818cf8" },
+      { token: "predefined", foreground: "22d3ee" },
     ],
     colors: {
-      "editor.background": "#121215",
-      "editor.foreground": "#F3F4F6",
-      "editor.lineHighlightBackground": "#1A1A1E",
-      "editor.selectionBackground": "#67e8f922",
-      "editor.inactiveSelectionBackground": "#67e8f911",
-      "editorCursor.foreground": "#67e8f9",
-      "editorWhitespace.foreground": "#2A2A30",
-      "editorIndentGuide.background": "#2A2A30",
-      "editorIndentGuide.activeBackground": "#67e8f933",
-      "editorLineNumber.foreground": "#555560",
-      "editorLineNumber.activeForeground": "#888888",
-      "editor.selectionHighlightBackground": "#67e8f918",
-      "editorBracketMatch.background": "#67e8f922",
-      "editorBracketMatch.border": "#67e8f9",
-      "scrollbarSlider.background": "#2A2A3080",
-      "scrollbarSlider.hoverBackground": "#67e8f933",
-      "scrollbarSlider.activeBackground": "#67e8f955",
-      "editorSuggestWidget.background": "#1A1A1E",
-      "editorSuggestWidget.border": "#2A2A30",
-      "editorSuggestWidget.foreground": "#F3F4F6",
-      "editorSuggestWidget.selectedBackground": "#67e8f914",
-      "editorSuggestWidget.highlightForeground": "#67e8f9",
-      "editorHoverWidget.background": "#1A1A1E",
-      "editorHoverWidget.border": "#2A2A30",
+      "editor.background": "#141518",
+      "editor.foreground": "#d4d4d8",
+      "editor.lineHighlightBackground": "#1C1D22",
+      "editor.selectionBackground": "#f472b622",
+      "editor.inactiveSelectionBackground": "#f472b611",
+      "editorCursor.foreground": "#f472b6",
+      "editorWhitespace.foreground": "#2A2B32",
+      "editorIndentGuide.background": "#2A2B32",
+      "editorIndentGuide.activeBackground": "#f472b633",
+      "editorLineNumber.foreground": "#4A4B58",
+      "editorLineNumber.activeForeground": "#7A7B88",
+      "editor.selectionHighlightBackground": "#f472b618",
+      "editorBracketMatch.background": "#f472b622",
+      "editorBracketMatch.border": "#f472b6",
+      "scrollbarSlider.background": "#2A2B3280",
+      "scrollbarSlider.hoverBackground": "#f472b633",
+      "scrollbarSlider.activeBackground": "#f472b655",
+      "editorSuggestWidget.background": "#1C1D22",
+      "editorSuggestWidget.border": "#2A2B32",
+      "editorSuggestWidget.foreground": "#d4d4d8",
+      "editorSuggestWidget.selectedBackground": "#f472b614",
+      "editorSuggestWidget.highlightForeground": "#f472b6",
+      "editorHoverWidget.background": "#1C1D22",
+      "editorHoverWidget.border": "#2A2B32",
     },
   });
 }
@@ -244,6 +252,7 @@ interface UseSqlEditorOptions {
   onSaveScript?: (sql: string) => void;
   onSaveViewState?: (tabId: string, viewState: unknown) => void;
   onContentChange?: (sql: string) => void;
+  autoRun?: boolean;
 }
 
 export function useSqlEditor({
@@ -256,6 +265,7 @@ export function useSqlEditor({
   onSaveScript,
   onSaveViewState,
   onContentChange,
+  autoRun,
 }: UseSqlEditorOptions) {
   const toast = useToastStore.getState();
   const DEFAULT_SQL = "SELECT * FROM ";
@@ -272,6 +282,8 @@ export function useSqlEditor({
   const onSaveViewStateRef = useRef(onSaveViewState);
   onSaveViewStateRef.current = onSaveViewState;
   const prevTabIdRef = useRef(tabId);
+  const autoRunRef = useRef(autoRun);
+  autoRunRef.current = autoRun;
 
   useEffect(() => {
     if (initialSql !== undefined) {
@@ -712,6 +724,13 @@ export function useSqlEditor({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       editor.restoreViewState(saved as any);
     }
+    
+    if (autoRunRef.current) {
+      setTimeout(() => {
+        runQueryRef.current?.(editor.getValue());
+      }, 0);
+    }
+
     editor.focus();
   }, []); // stable — reads from refs only
 

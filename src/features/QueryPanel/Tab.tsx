@@ -14,6 +14,7 @@ export interface TabPayload {
   activeCell?: { row: number; col: number } | null;
   // Hoisted Monaco view state (cursor, scroll, folds) for script tabs
   viewState?: unknown;
+  autoRun?: boolean;
 }
 
 export interface TabData {
