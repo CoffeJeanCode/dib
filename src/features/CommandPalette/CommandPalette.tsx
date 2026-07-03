@@ -4,6 +4,7 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, ChevronLeft, Loader2, Eye, Activity, Network, Wrench, PlusSquare, Rows } from "lucide-react";
 import type { TableInfo, InternalScript } from "@/types/db";
+import type { FsNode } from "@/types/workspace";
 import { dbService } from "@/services/dbService";
 import { workspaceService } from "@/services/workspaceService";
 import { useDangerDialog } from "@/shared/hooks/useDangerDialog";
@@ -39,7 +40,8 @@ type PaletteItem =
   | { kind: "object";   id: string; label: string; subtype: DbObjectSubtype; name: string; schema: string | null }
   | { kind: "diagram";  id: string; label: string; table: TableInfo }
   | { kind: "ddl";      id: string; label: string; action: "alter" | "create"; table: TableInfo }
-  | { kind: "dml";      id: string; label: string; action: "insert"; table: TableInfo };
+  | { kind: "dml";      id: string; label: string; action: "insert"; table: TableInfo }
+  | { kind: "wsfile";   id: string; label: string; path: string };
 
 const OBJECT_ICON: Record<DbObjectSubtype, React.ReactNode> = {
   view:      <Eye      size={16} />,
@@ -66,6 +68,7 @@ const ITEM_ICON: Record<PaletteItem["kind"], React.ReactNode> = {
   diagram:  <Network size={16} />,
   ddl:      <Wrench size={16} />, // Render logic will override this based on action
   dml:      <Rows size={16} />,
+  wsfile:   <FileText size={16} />,
 };
 
 const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
@@ -77,6 +80,7 @@ const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
   diagram:  "ERD Diagram",
   ddl:      "Structure",
   dml:      "Data",
+  wsfile:   "Script",
 };
 
 const DDL_MODE_META: Record<NonNullable<DdlMode>, { label: string; icon: React.ReactNode; danger: boolean; hint: string }> = {
@@ -145,9 +149,10 @@ export function CommandPalette({
 
     // Standalone virtual scripts live in virtual_scripts keyed by the STABLE
     // saved-connection id — same source the Sidebar tree reads, so both stay
-    // in sync.
+    // in sync. Inside a workspace the sidebar shows disk files instead, so
+    // the palette mirrors that and skips virtual scripts (see wsFileItems).
     const savedId = useConnectionStore.getState().active?.savedId;
-    if (savedId) {
+    if (savedId && !useWorkspaceStore.getState().activeWorkspacePath) {
       workspaceService.getVirtualScripts(savedId)
         .then((rows) => setVirtualScripts(
           rows.map((r) => ({
@@ -218,11 +223,33 @@ export function CommandPalette({
   // Single source of truth: same array Sidebar reads, kept live via scriptVersion.
   const internalScripts = useWorkspaceStore((s) => s.internalScripts);
   const [virtualScripts, setVirtualScripts] = useState<InternalScript[]>([]);
+
+  // Workspace files (.sql on disk) — same tree the Sidebar renders. Content
+  // is read lazily on select via readTextFile, mirroring Sidebar's onNodeClick.
+  const workspaceTree = useWorkspaceStore((s) => s.workspaceTree);
+  const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath);
+  const wsFileItems = useMemo<PaletteItem[]>(() => {
+    if (!activeWorkspacePath || !workspaceTree) return [];
+    const out: PaletteItem[] = [];
+    const walk = (n: FsNode) => {
+      if (n.isDir || n.is_dir) { (n.children ?? []).forEach(walk); return; }
+      out.push({ kind: "wsfile", id: `f:${n.path}`, label: n.name, path: n.path });
+    };
+    (workspaceTree.children ?? []).forEach(walk);
+    return out;
+  }, [activeWorkspacePath, workspaceTree]);
+
   const scriptItems = useMemo<PaletteItem[]>(
-    () => [...virtualScripts, ...internalScripts].map(
-      (s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s }),
-    ),
-    [internalScripts, virtualScripts],
+    () => [
+      ...wsFileItems,
+      ...(activeWorkspacePath ? [] : virtualScripts).map(
+        (s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s }),
+      ),
+      ...internalScripts.map(
+        (s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s }),
+      ),
+    ],
+    [internalScripts, virtualScripts, wsFileItems, activeWorkspacePath],
   );
 
   const enterDdlMode = useCallback((mode: NonNullable<DdlMode>) => {
@@ -261,6 +288,7 @@ export function CommandPalette({
         if (rc.type === "action") return actionItems.find(a => a.id === rc.id);
         if (rc.type === "table") return baseItems.find(b => b.kind === "table" && b.id === rc.id);
         if (rc.type === "script") return scriptItems.find(s => s.id === rc.id);
+        if (rc.type === "wsfile") return scriptItems.find(s => s.id === rc.id);
         if (rc.type === "database") return baseItems.find(b => b.kind === "database" && b.id === rc.id);
         if (rc.type === "object") return baseItems.find(b => b.kind === "object" && b.id === rc.id);
         if (rc.type === "diagram") return { kind: "diagram", id: rc.id, label: rc.label, table: rc.table };
@@ -360,6 +388,14 @@ export function CommandPalette({
       if (item.kind === "table") {
         useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
         pushToRecents({ type: "table", id: item.id, label: item.label, table: item.table });
+      }
+      else if (item.kind === "wsfile") {
+        // Disk file — read lazily, same flow as Sidebar's onNodeClick.
+        workspaceService.readTextFile(item.path)
+          .then((content) => useWorkspaceStore.getState().setOpenScript({ sql: content, name: item.label, id: item.path, v: Date.now() }))
+          .catch((e) => useToastStore.getState().error(`Failed to read file: ${String(e)}`));
+        pushToRecents({ type: "wsfile", id: item.id, label: item.label, path: item.path });
+        onClose();
       }
       else if (item.kind === "script") {
         useWorkspaceStore.getState().setOpenScript({ sql: item.script.content, name: item.script.title, id: item.script.id, v: Date.now() } as any);
@@ -492,6 +528,7 @@ export function CommandPalette({
               if (ddlMode && item.kind === "table") hintText = currentDdlMeta?.hint ?? "↵";
               else if (item.kind === "table")    hintText = isMac ? "↵ Open · ⌥↵ ERD · ⌃↵ Structure" : "↵ Open · Alt+↵ ERD · Ctrl+↵ Structure";
               else if (item.kind === "script")   hintText = "↵ Run Script";
+              else if (item.kind === "wsfile")   hintText = "↵ Open Script";
               else if (item.kind === "database") hintText = "↵ Switch DB";
               else if (item.kind === "action")   hintText = "↵ Execute";
               else if (item.kind === "object")   hintText = `↵ View DDL [${OBJECT_TAG[item.subtype]}]`;
