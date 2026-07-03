@@ -21,6 +21,9 @@ export const workspaceService = {
   readTextFile: (path: string) =>
     invoke<string>("read_text_file", { path }),
 
+  writeTextFile: (path: string, content: string) =>
+    invoke<void>("write_text_file", { path, content }),
+
   /** Registers the active workspace in the Rust backend (execution guard). */
   setActiveWorkspace: (workspaceId: string | null) =>
     invoke<void>("set_active_workspace", { workspaceId }),
@@ -31,9 +34,6 @@ export const workspaceService = {
 
   getInternalScripts: (connectionId?: string | null) =>
     invoke<InternalScript[]>("get_internal_scripts", { connectionId: connectionId ?? null }),
-
-  saveInternalScript: (id: string, title: string, content: string, connectionId?: string | null) =>
-    invoke<InternalScript>("save_internal_script", { id, title, content, connectionId: connectionId ?? null }),
 
   deleteInternalScript: (id: string) =>
     invoke<void>("delete_internal_script", { id }),

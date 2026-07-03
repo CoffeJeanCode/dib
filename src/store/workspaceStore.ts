@@ -54,7 +54,6 @@ interface WorkspaceState {
   closeJsonPanel: () => void;
   internalScripts: InternalScript[];
   setInternalScripts: (scripts: InternalScript[]) => void;
-  upsertInternalScript: (script: InternalScript) => void;
 
   activeWorkspacePath: string | null;
   activeWorkspaceId: string | null;
@@ -103,13 +102,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   openJsonPanel: (data) => set({ jsonPanel: data }),
   closeJsonPanel: () => set({ jsonPanel: null }),
   setInternalScripts: (scripts) => set({ internalScripts: scripts }),
-  upsertInternalScript: (script) => set((s) => {
-    const exists = s.internalScripts.some((i) => i.id === script.id);
-    if (exists) {
-      return { internalScripts: s.internalScripts.map((i) => i.id === script.id ? script : i) };
-    }
-    return { internalScripts: [script, ...s.internalScripts] };
-  }),
 
   activeWorkspacePath: null,
   activeWorkspaceId: null,
@@ -170,8 +162,21 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const req = ++treeReq;
     set({ isTreeLoading: true });
     try {
-      const tree = await workspaceService.readWorkspaceTree(rootPath, workspaceId ?? null);
+      let tree = await workspaceService.readWorkspaceTree(rootPath, workspaceId ?? null);
       if (req !== treeReq) return; // stale response — a newer workspace won
+
+      // One-shot: legacy internal scripts become real .sql files in the
+      // workspace, so scripts and files are a single concept here. No-op
+      // once internal_scripts is empty.
+      const { migrateInternalToWorkspace } = await import("@/shared/utils/scriptMigration");
+      const migrated = await migrateInternalToWorkspace(rootPath, tree);
+      if (req !== treeReq) return;
+      if (migrated > 0) {
+        tree = await workspaceService.readWorkspaceTree(rootPath, workspaceId ?? null);
+        if (req !== treeReq) return;
+        set({ internalScripts: [] });
+      }
+
       set({ workspaceTree: tree, activeWorkspacePath: rootPath, activeWorkspaceId: workspaceId ?? null });
     } catch (e) {
       if (req !== treeReq) return;

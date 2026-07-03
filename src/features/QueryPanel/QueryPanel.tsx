@@ -90,7 +90,7 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     setTabs((prev) => prev.map((t) => t.id === tabId ? { ...t, isDirty: false } : t));
   }, []);
 
-  const { tabSql, registerTabSql, removeTabSql, saveSqlTab, saveNewScript, persistContentChange } =
+  const { tabSql, registerTabSql, removeTabSql, saveSqlTab, saveNewScript, persistContentChange, importScript } =
     useWorkspaceService({ tabsRef, markTabClean, setTabs, connectionId });
 
   const tabSqlRef = useRef(tabSql);
@@ -441,19 +441,14 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
       combo: "ctrl+o",
       handler: () => {
         workspaceService.importScriptDialog()
-          .then((result) => {
+          .then(async (result) => {
             if (result) {
-              const newId = crypto.randomUUID();
-              openSqlTab(result.content, result.name, newId);
-              workspaceService.saveInternalScript(newId, result.name, result.content, connectionId)
-                .then((saved) => {
-                  useWorkspaceStore.getState().upsertInternalScript(saved);
-                  useWorkspaceStore.getState().incrementScriptVersion();
-                })
-                .catch(console.error);
+              // Mode-aware: workspace → .sql file on disk, standalone → virtual script.
+              const finalId = await importScript(crypto.randomUUID(), result.name, result.content);
+              openSqlTab(result.content, result.name, finalId);
             }
           })
-          .catch(() => {});
+          .catch(console.error);
       },
       allowInMonaco: true,
     },
@@ -524,15 +519,11 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   }, [persistContentChange]);
 
   const handleImportScriptAndSave = useCallback((sql: string, name: string) => {
-    const newId = crypto.randomUUID();
-    openSqlTab(sql, name, newId);
-    workspaceService.saveInternalScript(newId, name, sql, connectionId)
-      .then((saved) => {
-        useWorkspaceStore.getState().upsertInternalScript(saved);
-        useWorkspaceStore.getState().incrementScriptVersion();
-      })
+    // Mode-aware: workspace → .sql file on disk, standalone → virtual script.
+    importScript(crypto.randomUUID(), name, sql)
+      .then((finalId) => openSqlTab(sql, name, finalId))
       .catch(console.error);
-  }, [openSqlTab, connectionId]);
+  }, [openSqlTab, importScript]);
 
   const handleSaveScript = useCallback((sql: string) => {
     const tab = tabsRef.current.find((t) => t.id === activeTabIdRef.current);

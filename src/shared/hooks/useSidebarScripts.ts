@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { migrateInternalToVirtual } from "@/shared/utils/scriptMigration";
 import type { FsNode } from "@/types/workspace";
 
 export function useSidebarScripts(connectionId?: string | null) {
@@ -15,6 +16,14 @@ export function useSidebarScripts(connectionId?: string | null) {
     }
     setScriptsLoading(true);
     try {
+      // One-shot: legacy internal scripts fold into virtual scripts under the
+      // saved-connection id — standalone has a single script concept. Never
+      // runs inside a workspace (those migrate to disk files instead).
+      // No-op once internal_scripts is empty.
+      if (!useWorkspaceStore.getState().activeWorkspacePath) {
+        await migrateInternalToVirtual(connectionId).catch(() => {});
+      }
+
       const folders = await workspaceService.getVirtualFolders(connectionId);
       const scripts = await workspaceService.getVirtualScripts(connectionId);
 
