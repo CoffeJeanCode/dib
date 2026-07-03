@@ -1,5 +1,5 @@
 import { useUiStore } from "@/store/uiStore";
-import { SettingsPanel } from "@/components/SettingsPanel";
+import { SettingsPanel } from "@/features/Settings/SettingsPanel";
 import { ToastContainer } from "@/shared/ui/Toast";
 import { KeyboardCheatSheet } from "@/components/KeyboardCheatSheet";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
