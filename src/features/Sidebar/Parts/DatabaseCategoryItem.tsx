@@ -147,10 +147,10 @@ export const DatabaseCategoryItem = React.memo(function DatabaseCategoryItem({
               <ChevronRight size={11} />
             </button>
           ) : (
-            <span style={{ width: 16, flexShrink: 0 }} />
+            <span className="sidebar-db-item-spacer--lg" />
           )}
 
-          <icon.Icon size={11} style={{ color: icon.color, flexShrink: 0, opacity: 0.75 }} />
+          <icon.Icon size={11} className="sidebar-db-item-icon" style={{ color: icon.color }} />
 
           {nameMatchesEdit ? (
             <InlineRenameInput
@@ -207,8 +207,7 @@ function InlineRenameInput({ value, onChange, onCommit, onCancel }: InlineRename
       }}
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
-      className="inline-edit-input inline-edit-input--xs"
-      style={{ flex: 1, minWidth: 0, margin: "0 4px" }}
+      className="inline-edit-input inline-edit-input--xs sidebar-db-item-input-wrapper"
     />
   );
 }

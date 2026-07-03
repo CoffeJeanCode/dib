@@ -243,11 +243,6 @@
   flex-shrink: 0;
 }
 
-.scw-change-kind--add_column { background: var(--color-green-light); color: var(--color-green); }
-.scw-change-kind--drop_column { background: var(--color-danger-bg); color: var(--color-red); }
-.scw-change-kind--rename_column { background: var(--color-blue-light); color: var(--color-blue); }
-.scw-change-kind--alter_type { background: var(--color-orange-light); color: var(--color-orange); }
-
 .scw-change-text {
   flex: 1;
   white-space: nowrap;

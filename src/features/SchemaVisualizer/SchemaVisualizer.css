@@ -7,16 +7,9 @@
 }
 
 /* ── ReactFlow overrides ────────────────────────────────────── */
-.sv .react-flow__background {
-  background: var(--bg-base);
-}
-
-.sv .react-flow__minimap {
-  display: none;
-}
 
 /* ── Controls (zoom buttons) ────────────────────────────────── */
-.sv .react-flow__controls,
+
 .sv-controls {
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
@@ -24,49 +17,11 @@
   box-shadow: var(--shadow-sm);
 }
 
-.sv .react-flow__controls-button {
-  background: var(--color-bg-secondary);
-  border: none;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--text-secondary);
-  fill: var(--color-text-secondary);
-  width: 28px;
-  height: 28px;
-  transition: color var(--transition-fastest), background var(--transition-fastest);
-}
-
-.sv .react-flow__controls-button:last-child {
-  border-bottom: none;
-}
-
-.sv .react-flow__controls-button:hover {
-  background: var(--color-bg-active);
-  color: var(--color-teal);
-  fill: var(--color-teal);
-}
-
 /* ── Edges ──────────────────────────────────────────────────── */
-.sv .react-flow__edge-path {
-  stroke: var(--color-teal);
-  stroke-width: 1.5;
-  opacity: 0.8;
-}
-
-.sv .react-flow__edge.selected .react-flow__edge-path {
-  stroke: var(--color-purple);
-  opacity: 1;
-}
 
 /* Edge label text */
-.sv .react-flow__edge-textwrapper text {
-  fill: var(--color-text-tertiary);
-  font-size: 9px;
-}
 
 /* Arrowhead marker */
-.sv .react-flow__arrowhead {
-  fill: var(--color-teal);
-}
 
 /* ── Loading state ──────────────────────────────────────────── */
 .sv-loading {

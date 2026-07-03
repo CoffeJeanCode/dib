@@ -1,8 +1,3 @@
-.app-container {
-  max-width: 720px;
-  padding: var(--space-8);
-}
-
 .app-centered {
   display: flex;
   flex-direction: column;
@@ -25,20 +20,6 @@
   height: 100%;
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
-}
-
-.app-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-teal);
-  letter-spacing: -0.03em;
-  margin-bottom: var(--space-1);
-}
-
-.app-subtitle {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-6);
 }
 
 .app-back-btn {

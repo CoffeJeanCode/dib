@@ -157,23 +157,17 @@
 }
 
 .sqleditor-body {
-  height: 500px;
+  height: 300px;
   flex-shrink: 0;
   overflow: hidden;
 }
 
-.sqleditor-body .monaco-editor,
-.sqleditor-body .monaco-editor-background,
-.sqleditor-body .monaco-editor .overflow-guard,
-.sqleditor-body .monaco-editor .monaco-scrollable-element {
+.sqleditor-body .monaco-editor {
   border-radius: 0;
   background-color: #FAFAFA !important;
 }
 
-[data-theme="dark"] .sqleditor-body .monaco-editor,
-[data-theme="dark"] .sqleditor-body .monaco-editor-background,
-[data-theme="dark"] .sqleditor-body .monaco-editor .overflow-guard,
-[data-theme="dark"] .sqleditor-body .monaco-editor .monaco-scrollable-element {
+[data-theme="dark"] .sqleditor-body .monaco-editor {
   background-color: #121215 !important;
 }
 

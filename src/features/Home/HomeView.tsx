@@ -65,20 +65,20 @@ export function HomeView({ onConnectionSelect, onNewConnection }: HomeViewProps)
         <p className="home-subtitle">Data Illustrative Base</p>
       </div>
 
-      <div className="home-actions" style={{ gap: "12px", justifyContent: "center", display: "flex" }}>
+      <div className="home-actions home-actions-wrapper">
         <button className="home-new-btn" onClick={onNewConnection}>
           <Plus size={16} />
           New Connection
         </button>
-        <button className="home-new-btn" onClick={handleCreateWorkspace} style={{ background: "var(--color-bg-tertiary)", color: "var(--color-text)", border: "1px solid var(--color-border)" }}>
+        <button className="home-new-btn home-new-btn--secondary" onClick={handleCreateWorkspace}>
           <FolderOpen size={16} />
           Open Folder / Workspace
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: "32px", justifyContent: "center", flexWrap: "wrap", width: "100%", maxWidth: "800px" }}>
+      <div className="home-sections-container">
         {(wsLoading || workspaces.length > 0) && (
-          <div className="home-recent" style={{ flex: 1, minWidth: "250px" }}>
+          <div className="home-recent home-recent-col">
             <span className="home-section-label">Workspaces</span>
             <div className="home-conn-list">
               {wsLoading && <><SkeletonCard /><SkeletonCard /></>}
@@ -101,7 +101,7 @@ export function HomeView({ onConnectionSelect, onNewConnection }: HomeViewProps)
         )}
 
         {(!loaded || connections.length > 0) && (
-          <div className="home-recent" style={{ flex: 1, minWidth: "250px" }}>
+          <div className="home-recent home-recent-col">
             <span className="home-section-label">{activeWorkspaceId ? "Workspace Connections" : "Global Connections"}</span>
             <div className="home-conn-list">
               {!loaded && <><SkeletonCard /><SkeletonCard /><SkeletonCard /></>}

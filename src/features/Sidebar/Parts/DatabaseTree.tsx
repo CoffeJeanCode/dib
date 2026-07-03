@@ -68,7 +68,7 @@ const NODE_ICONS: Record<string, typeof Table2> = {
 
 function nodeIcon(type: string) {
   const Icon = NODE_ICONS[type] ?? Database;
-  return <Icon size={11} style={{ flexShrink: 0, opacity: 0.65, color: "var(--color-text-tertiary)" }} />;
+  return <Icon size={11} className="sidebar-db-item-icon--muted" />;
 }
 
 // ── Folder specs ─────────────────────────────────────────────────
@@ -252,8 +252,8 @@ function FolderRow({ def, parentId, depth, sessionId, onNodeClick }: FolderRowPr
             }}
           />
         </button>
-        <Folder size={11} style={{ flexShrink: 0, opacity: 0.65, color: "var(--color-text-tertiary)" }} />
-        <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)" }}>
+        <Folder size={11} className="sidebar-db-item-icon--muted" />
+        <span className="sidebar-db-item-name sidebar-db-item-name--xs">
           {def.label}
         </span>
       </div>
@@ -339,10 +339,10 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
             />
           </button>
         ) : (
-          <span style={{ width: 14, flexShrink: 0 }} />
+          <span className="sidebar-db-item-spacer" />
         )}
         {nodeIcon(node.type)}
-        <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)" }}>
+        <span className="sidebar-db-item-name sidebar-db-item-name--xs">
           {node.label}
         </span>
       </div>
@@ -425,10 +425,9 @@ function ConnectionTreeRoot({
         </button>
         <Database
           size={11}
-          style={{ flexShrink: 0, opacity: 0.75 }}
-          className={`sidebar-icon--${ENGINE_COLORS[conn.engine?.toLowerCase()] ?? "gray"}`}
+          className={`sidebar-db-item-icon sidebar-icon--${ENGINE_COLORS[conn.engine?.toLowerCase()] ?? "gray"}`}
         />
-        <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)", fontWeight: 500 }}>
+        <span className="sidebar-db-item-name sidebar-db-item-name--xs sidebar-db-item-name--bold">
           {conn.name}
         </span>
       </div>

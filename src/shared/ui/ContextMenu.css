@@ -33,19 +33,8 @@
   outline: none;
 }
 
-.ContextMenuItem[data-highlighted],
-.ContextMenuSubTrigger[data-highlighted],
-.ContextMenuSubTrigger[data-state="open"] {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-text-primary);
-}
-
 .ctx-item--danger {
   color: var(--color-red) !important;
-}
-
-.ContextMenuItem[data-highlighted].ctx-item--danger {
-  background: rgba(239, 68, 68, 0.15); /* Red tinted hover */
 }
 
 .ctx-item-icon {

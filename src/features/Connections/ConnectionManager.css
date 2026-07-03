@@ -40,48 +40,6 @@
   width: 100px;
 }
 
-.cm-field--password {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  transition: border-color var(--transition-fast);
-}
-
-.cm-field--password:focus-within {
-  border-color: var(--color-teal);
-}
-
-.cm-field--password .cm-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-}
-
-.cm-field--password .cm-input:focus {
-  border-color: transparent;
-}
-
-.cm-eye {
-  display: flex;
-  align-items: center;
-  padding: 0 var(--space-2);
-  background: none;
-  border: none;
-  border-left: 1px solid var(--color-border);
-  cursor: pointer;
-  color: var(--color-text-muted);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  transition: color var(--transition-fast), background var(--transition-fast);
-}
-
-.cm-eye:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-hover);
-}
-
 .cm-field-label {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);

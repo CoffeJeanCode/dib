@@ -423,21 +423,6 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
-.sv2-badge--timing-before {
-  background: color-mix(in srgb, var(--neon-purple) 12%, transparent);
-  color: var(--color-purple);
-  border: 1px solid color-mix(in srgb, var(--neon-purple) 22%, transparent);
-}
-.sv2-badge--timing-after {
-  background: color-mix(in srgb, var(--neon-green) 10%, transparent);
-  color: var(--color-green);
-  border: 1px solid color-mix(in srgb, var(--neon-green) 22%, transparent);
-}
-.sv2-badge--timing-instead {
-  background: color-mix(in srgb, var(--neon-purple) 12%, transparent);
-  color: var(--color-purple);
-  border: 1px solid color-mix(in srgb, var(--neon-purple) 22%, transparent);
-}
 
 /* ── Boolean icons ────────────────────────────────────────────────────── */
 .sv2-bool--yes { color: var(--color-green); }

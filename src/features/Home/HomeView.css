@@ -126,3 +126,29 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.home-actions-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.home-new-btn--secondary {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.home-sections-container {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 800px;
+}
+
+.home-recent-col {
+  flex: 1;
+  min-width: 250px;
+}

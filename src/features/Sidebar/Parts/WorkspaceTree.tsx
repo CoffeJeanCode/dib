@@ -180,7 +180,7 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
         {node.isDir || node.is_dir ? (
           isExpanded ? <ChevronDown className="tree-item__chevron" /> : <ChevronRight className="tree-item__chevron" />
         ) : (
-          <span style={{ width: 14, flexShrink: 0 }} />
+          <span className="tree-item__spacer--sm" />
         )}
         <FileIcon size={13} className="tree-item__icon" color={node.color || undefined} />
         {renameTargetId === node.path ? (
@@ -196,14 +196,14 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
             }}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
-            style={{ flex: 1, minWidth: 0, margin: "0 4px" }}
-          />
+            className="inline-edit-input inline-edit-input--xs tree-inline-input-wrapper"
+            style={{ margin: "0 4px" }}
         ) : (
           <span className="tree-item__name" style={node.color ? { color: node.color } : undefined}>
             {node.name}
           </span>
         )}
-        {node.is_pinned && <Pin size={10} style={{ opacity: 0.4, marginLeft: "auto", marginRight: 4, flexShrink: 0 }} />}
+        {node.is_pinned && <Pin size={16} className="tree-item-pin" />}
       </div>
     </ScriptsContextMenu>
   );
@@ -556,8 +556,8 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
       </DndContext>
 
       {promptInfo && (
-        <div className="tree-inline-create" style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 16px", paddingLeft: 16 }}>
-          {promptInfo.type === "folder" ? <Folder size={13} style={{ flexShrink: 0, opacity: 0.6 }} /> : <FileCode2 size={13} style={{ flexShrink: 0, opacity: 0.6 }} />}
+        <div className="tree-inline-create tree-inline-create-wrapper">
+          {promptInfo.type === "folder" ? <Folder size={13} className="tree-item-icon--muted" /> : <FileCode2 size={13} className="tree-item-icon--muted" />}
           <input
             autoFocus
             onFocus={(e) => e.target.select()}
@@ -571,7 +571,7 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             placeholder={promptInfo.type === "file" ? "filename.sql" : "folder name"}
-            style={{ flex: 1, minWidth: 0 }}
+            className="inline-edit-input inline-edit-input--xs tree-inline-input-wrapper"
           />
         </div>
       )}

@@ -24,18 +24,6 @@
   position: relative;
 }
 
-.toast--info {
-  border-color: var(--color-teal);
-}
-
-.toast--error {
-  border-color: var(--color-red);
-}
-
-.toast--warning {
-  border-color: var(--color-orange);
-}
-
 .toast-message {
   flex: 1;
   font-size: var(--font-size-sm);
@@ -45,14 +33,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
-}
-
-.toast--error .toast-message {
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 120px;
-  overflow-y: auto;
-  white-space: normal;
 }
 
 .toast-copy-btn {
@@ -124,19 +104,4 @@
   height: 24px;
   flex-shrink: 0;
   color: var(--color-bg-elevated);
-}
-
-.toast-badge--error {
-  background-color: var(--color-red);
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-}
-
-.toast-badge--warning {
-  background-color: var(--color-orange);
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-}
-
-.toast-badge--info {
-  background-color: var(--color-teal);
-  border-radius: 50%;
 }

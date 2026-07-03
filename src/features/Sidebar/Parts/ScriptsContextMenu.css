@@ -23,8 +23,7 @@
 .scripts-ctx-item:hover,
 .scripts-ctx-subtrigger:hover,
 .scripts-ctx-item:focus,
-.scripts-ctx-subtrigger:focus,
-.scripts-ctx-subtrigger[data-state="open"] {
+.scripts-ctx-subtrigger:focus {
   background-color: var(--color-bg-tertiary);
   color: var(--color-text);
   outline: none;

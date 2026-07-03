@@ -361,10 +361,6 @@
   font-size: var(--font-size-sm);
 }
 
-.dg-loading {
-  color: var(--color-text-secondary);
-}
-
 /* ── Ghost row (pending INSERT) ──────────────────────────── */
 .dg-row--ghost {
   background: color-mix(in srgb, var(--color-green) 6%, transparent);

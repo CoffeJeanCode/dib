@@ -113,11 +113,6 @@
   border-color: var(--ve-cost-high);
 }
 
-.ve-node--d1 { margin-left: 20px; }
-.ve-node--d2 { margin-left: 40px; }
-.ve-node--d3 { margin-left: 60px; }
-.ve-node--d4 { margin-left: 80px; }
-
 .ve-node-header {
   display: flex;
   align-items: center;
@@ -141,14 +136,6 @@
   font-size: 11px;
   color: var(--ve-muted);
 }
-.ve-node-chevron {
-  font-size: 9px;
-  color: var(--ve-muted);
-  transition: transform 0.18s;
-  display: inline-block;
-  line-height: 1;
-}
-.ve-node-chevron--open { transform: rotate(90deg); }
 .ve-node-type {
   font-weight: var(--font-weight-semibold);
   font-size: 12px;
@@ -198,9 +185,6 @@
 }
 
 /* ── Children ──────────────────────────────────────────────────────── */
-.ve-children {
-  margin-top: 8px;
-}
 
 /* ── Raw JSON ──────────────────────────────────────────────────────── */
 .ve-raw {

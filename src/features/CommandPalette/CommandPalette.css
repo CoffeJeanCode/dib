@@ -146,17 +146,6 @@
 }
 
 /* ── ORM alias tag ──────────────────────────────────────── */
-.palette-item-alias {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--color-bg-hover);
-  border: 1px solid var(--border-subtle);
-  letter-spacing: 0.02em;
-}
 
 /* ── Shortcut hint badge ────────────────────────────────── */
 .palette-item-shortcut {
@@ -177,28 +166,10 @@
 }
 
 /* ── Category badge (kept for compatibility) ────────────── */
-.palette-item-category {
-  font-size: var(--font-size-xs);
-  color: var(--color-teal);
-  flex-shrink: 0;
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-active);
-}
-
-.palette-item-category--action {
-  color: var(--color-purple);
-  background: var(--neon-magenta-dim);
-}
 
 /* ── DROP TABLE danger variant ──────────────────────────── */
 .palette-item--danger .palette-item-icon {
   color: var(--color-red);
-}
-
-.palette-item--danger .palette-item-category {
-  color: var(--color-red);
-  background: var(--color-danger-bg);
 }
 
 .palette-item--danger:hover .palette-item-label,
@@ -218,50 +189,6 @@
 }
 
 /* ── Hints (empty state) ────────────────────────────────── */
-.palette-hints {
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.palette-hint-row {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.palette-hint {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-base);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-
-.palette-hint-key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: transparent;
-  border: 1px solid var(--color-teal);
-  color: var(--color-teal);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.palette-hint-desc {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-}
 
 /* ── DDL sub-mode bar ───────────────────────────────────────── */
 .palette-ddl-bar {

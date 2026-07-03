@@ -23,7 +23,9 @@
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@xyflow/react": "^12.11.1",
+    "glob": "^13.0.6",
     "lucide-react": "^1.21.0",
+    "purgecss": "^8.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.14"
