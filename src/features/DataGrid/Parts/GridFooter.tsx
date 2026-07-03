@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Check } from "lucide-react";
-import { mod } from "@/utils/platform";
+import { mod } from "@/shared/utils/platform";
 import { useDataGridContext } from "./DataGridContext";
 
 export const GridFooter = memo(function GridFooter() {

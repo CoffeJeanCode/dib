@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { isMac } from "@/utils/platform";
+import { isMac } from "@/shared/utils/platform";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, ChevronLeft, Loader2, Eye, Activity, Network, Wrench, PlusSquare, Rows } from "lucide-react";
 import type { TableInfo, InternalScript } from "@/types/db";
 import { dbService } from "@/services/dbService";
 import { workspaceService } from "@/services/workspaceService";
-import { useDangerDialog } from "@/hooks/useDangerDialog";
+import { useDangerDialog } from "@/shared/hooks/useDangerDialog";
 import { useToastStore } from "@/store/toastStore";
 import { useUiStore } from "@/store/uiStore";
 import "@/shared/ui/dialog-shared.css";

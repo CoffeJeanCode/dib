@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Search, Moon, Sun, Settings, Minus, Square, X } from "lucide-react";
-import { mod } from "@/utils/platform";
+import { mod } from "@/shared/utils/platform";
 import { useUiStore } from "@/store/uiStore";
-import { useTheme, setTheme } from "@/hooks/useTheme";
+import { useTheme, setTheme } from "@/shared/hooks/useTheme";
 import { Dropzone, type ImportResult } from "@/shared/ui/Dropzone";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { OpenScript } from "@/types/workspace";

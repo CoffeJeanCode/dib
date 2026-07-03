@@ -6,7 +6,7 @@ import {
   ChevronRight, Table2, Eye, Zap, Cog, Activity,
   Key, Hash, Type, Calendar,
 } from "lucide-react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/db";
 import { useToastStore } from "@/store/toastStore";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";

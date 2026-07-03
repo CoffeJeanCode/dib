@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useConnectionStore } from "@/store/connectionStore";
 import { ChevronDown, LogOut, Database as DbIcon } from "lucide-react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { getEngineIcon, getDbName } from "./utils";
 import type { SavedConnection } from "@/types/db";
 

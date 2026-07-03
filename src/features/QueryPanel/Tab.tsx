@@ -1,6 +1,6 @@
 import { Table2, Network, FileCode2, Circle, Wrench, Layers, Wand2 } from "lucide-react";
 import type { TableInfo } from "@/types/db";
-import { mod } from "@/utils/platform";
+import { mod } from "@/shared/utils/platform";
 import "./Tab.css";
 
 export type TabType = "table" | "script" | "schema" | "table_builder" | "table_structure" | "mock_generator";

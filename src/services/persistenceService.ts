@@ -1,5 +1,5 @@
-import { safeInvoke as invoke } from "@/utils/ipc";
-import type { UiState } from "@/hooks/useUiState";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
+import type { UiState } from "@/shared/hooks/useUiState";
 
 export const persistenceService = {
   loadUiState: () =>

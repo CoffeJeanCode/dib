@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import type { TabData } from "@/features/QueryPanel/Tab";
 
 /**

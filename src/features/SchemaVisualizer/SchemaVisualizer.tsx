@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import {
   ReactFlow,
   Background,

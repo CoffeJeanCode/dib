@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Database, Plus, FolderOpen, Folder } from "lucide-react";
-import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import { openWorkspaceAndConnect } from "@/utils/quickConnect";
+import { openWorkspaceAndConnect } from "@/shared/utils/quickConnect";
 import { SkeletonCard } from "@/shared/ui/Skeleton";
 import type { SavedConnection } from "@/types/db";
 import type { Workspace } from "@/types/workspace";

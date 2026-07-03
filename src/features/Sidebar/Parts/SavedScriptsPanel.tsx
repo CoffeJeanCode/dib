@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FileCode2, Save, Plus, Clock, Pin } from "lucide-react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import type { ScriptMeta } from "@/types/db";
 import { useFileSystemStore } from "@/store/fileSystemStore";
 import { PinnedSection } from "./PinnedSection";

@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Database, FileCode2, Clock, LayoutGrid, Settings, Compass, FolderOpen } from "lucide-react";
-import { useUiState } from "@/hooks/useUiState";
-import { useKeybindings } from "@/hooks/useKeybindings";
+import { useUiState } from "@/shared/hooks/useUiState";
+import { useKeybindings } from "@/shared/hooks/useKeybindings";
 import { Sidebar } from "@/features/Sidebar";
 import { Titlebar } from "@/app/Titlebar";
 import { JsonPanel } from "@/features/JsonViewer/JsonPanel";

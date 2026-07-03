@@ -6,7 +6,7 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Workspace } from "@/types/workspace";
 import { open } from "@tauri-apps/plugin-dialog";
-import { openWorkspaceAndConnect } from "@/utils/quickConnect";
+import { openWorkspaceAndConnect } from "@/shared/utils/quickConnect";
 import { SkeletonRow } from "@/shared/ui/Skeleton";
 
 interface WorkspaceListProps {

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { mod } from "@/utils/platform";
+import { mod } from "@/shared/utils/platform";
 import { useDataGridContext } from "./DataGridContext";
 import { cellStr, cellId, makeKey } from "../DataGrid.utils";
 

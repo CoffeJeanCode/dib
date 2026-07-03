@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { useConnectionStore } from "@/store/connectionStore";
 
 export function useDatabases(sessionId: string | null | undefined) {

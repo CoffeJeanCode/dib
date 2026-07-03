@@ -75,7 +75,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         }
       });
       const { useWorkspaceStore } = await import("@/store/workspaceStore");
-      const { rememberLastConnection } = await import("@/utils/quickConnect");
+      const { rememberLastConnection } = await import("@/shared/utils/quickConnect");
       rememberLastConnection(useWorkspaceStore.getState().activeWorkspaceId, savedId);
       get().triggerReload();
       return true;

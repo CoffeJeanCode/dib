@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Upload, Loader2 } from "lucide-react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { useToastStore } from "@/store/toastStore";
 import "./Dropzone.css";
 

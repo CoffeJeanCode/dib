@@ -5,10 +5,10 @@ import {
   Folder, KeyRound, Link2, Fingerprint, ShieldCheck, Shapes, Package,
   Languages, GitBranch, Shield, ArrowLeftRight, Plug, Code2, Radio, Rss,
 } from "lucide-react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { SkeletonRow } from "@/shared/ui/Skeleton";
 import { useTreeStateStore, useNodeExpanded } from "@/store/treeStateStore";
-import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
 import { ENGINE_COLORS } from "./utils";
 import type { DbTreeNode } from "@/types/db";
 

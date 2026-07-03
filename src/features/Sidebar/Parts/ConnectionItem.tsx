@@ -5,7 +5,7 @@ import { InstanceContextMenu } from "./InstanceContextMenu";
 import { DbContextMenu } from "./DbContextMenu";
 import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import { DatabaseCategories } from "./DatabaseCategories";
-import { useDatabases } from "@/hooks/useDatabases";
+import { useDatabases } from "@/shared/hooks/useDatabases";
 import type { SavedConnection, TableInfo } from "@/types/db";
 
 interface ConnectionItemProps {

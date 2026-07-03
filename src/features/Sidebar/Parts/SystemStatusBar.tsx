@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 
 interface SystemInfo {
   os_name: string;

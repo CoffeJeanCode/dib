@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./theme.css";
 import "./monaco-overrides.css";
-import { getTheme } from "@/hooks/useTheme";
+import { getTheme } from "@/shared/hooks/useTheme";
 
 // Apply data-theme on startup (respects localStorage override, else OS pref)
 document.documentElement.setAttribute("data-theme", getTheme());

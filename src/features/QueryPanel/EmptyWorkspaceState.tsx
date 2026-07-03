@@ -1,5 +1,5 @@
 import { Database } from "lucide-react";
-import { MOD } from "@/utils/platform";
+import { MOD } from "@/shared/utils/platform";
 import "./EmptyWorkspaceState.css";
 
 const k = (s: string) => s.replace(/\bCtrl\b/g, MOD);

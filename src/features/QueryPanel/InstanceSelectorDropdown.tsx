@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
 import { getEngineIcon, getDbName } from "@/features/Sidebar/Parts/utils";
 import type { SavedConnection } from "@/types/db";

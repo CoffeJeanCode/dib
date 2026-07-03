@@ -4,7 +4,7 @@ import type { TableInfo, QueryResult, InternalScript } from "@/types/db";
 import { workspaceService } from "@/services/workspaceService";
 import { connectionService } from "@/services/connectionService";
 import { useConnectionStore } from "@/store/connectionStore";
-import { disposeAllMonacoModels } from "@/utils/monacoRegistry";
+import { disposeAllMonacoModels } from "@/shared/utils/monacoRegistry";
 
 // Monotonic request id for readWorkspaceTree. A response is applied only if
 // no newer request started meanwhile — otherwise a slow read from Workspace A

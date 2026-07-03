@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { mod } from "@/utils/platform";
+import { mod } from "@/shared/utils/platform";
 import "@/shared/ui/dialog-shared.css";
 import "./KeyboardCheatSheet.css";
 

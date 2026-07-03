@@ -7,8 +7,8 @@ import { useToastStore } from "@/store/toastStore";
 import { useUiStore } from "@/store/uiStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
-import { useUiState } from "@/hooks/useUiState";
-import { setMonacoInstance } from "@/utils/monacoRegistry";
+import { useUiState } from "@/shared/hooks/useUiState";
+import { setMonacoInstance } from "@/shared/utils/monacoRegistry";
 
 function fmtErr(e: unknown): string {
   if (typeof e === "string") return e;

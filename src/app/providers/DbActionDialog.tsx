@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { useConnectionStore } from "@/store/connectionStore";
 import "@/shared/ui/dialog-shared.css";
 import "./DbActionDialog.css";

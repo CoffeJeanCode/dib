@@ -1,6 +1,6 @@
 import { LayoutList, Columns3 } from "lucide-react";
-import { useUiState } from "@/hooks/useUiState";
-import { useTheme, setTheme } from "@/hooks/useTheme";
+import { useUiState } from "@/shared/hooks/useUiState";
+import { useTheme, setTheme } from "@/shared/hooks/useTheme";
 import { useSettingsStore } from "@/store/settingsStore";
 import { FlatCheckbox } from "@/shared/ui/FlatCheckbox";
 import { FlatInput } from "@/shared/ui/FlatInput";

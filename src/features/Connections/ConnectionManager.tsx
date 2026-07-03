@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { safeInvoke as invoke } from "@/utils/ipc";
+import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import type { ConnectionInfo, DbConfig, SavedConnection } from "@/types/db";
-import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useToastStore } from "@/store/toastStore";
 import { PasswordInput } from "@/shared/ui/PasswordInput";

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import Editor, { type BeforeMount, type OnMount } from "@monaco-editor/react";
 import { useUiStore } from "@/store/uiStore";
-import { defineDibThemes, THEME_DARK, THEME_LIGHT } from "@/hooks/useSqlEditor";
+import { defineDibThemes, THEME_DARK, THEME_LIGHT } from "@/shared/hooks/useSqlEditor";
 
 export interface MonacoEditorProps {
   language?: string;

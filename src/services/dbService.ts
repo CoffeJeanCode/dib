@@ -1,4 +1,4 @@
-import { safeInvoke } from "@/utils/ipc";
+import { safeInvoke } from "@/shared/utils/ipc";
 import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects } from "@/types/db";
 
 export const dbService = {
