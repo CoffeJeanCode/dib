@@ -884,6 +884,7 @@ impl DatabaseDriver for PostgresDriver {
                      FROM pg_catalog.pg_proc p \
                      JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace \
                      WHERE n.nspname = $1 AND p.prokind = $2::\"char\" \
+                       AND p.prorettype <> 'pg_catalog.trigger'::pg_catalog.regtype \
                      ORDER BY p.proname",
                 )
                 .bind(&schema)
@@ -899,6 +900,239 @@ impl DatabaseDriver for PostgresDriver {
                         label: format!("{}({})", name, args),
                         node_type: child_type.into(),
                         has_children: false,
+                    });
+                }
+            }
+
+            // ── Trigger functions (parent_id = schema name) ─────
+            "schema_trigger_functions" => {
+                let schema = require_parent()?;
+                let rows = sqlx::query(
+                    "SELECT p.proname AS name, \
+                            pg_catalog.pg_get_function_identity_arguments(p.oid) AS args \
+                     FROM pg_catalog.pg_proc p \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace \
+                     WHERE n.nspname = $1 AND p.prokind = 'f' \
+                       AND p.prorettype = 'pg_catalog.trigger'::pg_catalog.regtype \
+                     ORDER BY p.proname",
+                )
+                .bind(&schema)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let args: String = r.get("args");
+                    nodes.push(DbTreeNode {
+                        id: format!("trigger_function_{}.{}({})", schema, name, args),
+                        label: format!("{}({})", name, args),
+                        node_type: "trigger_function".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── User types in a schema (enum / composite / range)
+            "schema_types" => {
+                let schema = require_parent()?;
+                let rows = sqlx::query(
+                    "SELECT t.typname AS name, t.typtype::text AS kind \
+                     FROM pg_catalog.pg_type t \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace \
+                     LEFT JOIN pg_catalog.pg_class c ON c.oid = t.typrelid \
+                     WHERE n.nspname = $1 AND t.typtype IN ('e', 'c', 'r') \
+                       AND (c.oid IS NULL OR c.relkind = 'c') \
+                     ORDER BY t.typname",
+                )
+                .bind(&schema)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let kind: String = r.get("kind");
+                    let kind_label = match kind.as_str() {
+                        "e" => "enum",
+                        "c" => "composite",
+                        _ => "range",
+                    };
+                    nodes.push(DbTreeNode {
+                        id: format!("type_{}.{}", schema, name),
+                        label: format!("{} ({})", name, kind_label),
+                        node_type: "type".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Domains in a schema ─────────────────────────────
+            "schema_domains" => {
+                let schema = require_parent()?;
+                let rows = sqlx::query(
+                    "SELECT t.typname AS name, \
+                            pg_catalog.format_type(t.typbasetype, t.typtypmod) AS base \
+                     FROM pg_catalog.pg_type t \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace \
+                     WHERE n.nspname = $1 AND t.typtype = 'd' \
+                     ORDER BY t.typname",
+                )
+                .bind(&schema)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let base: String = r.get("base");
+                    nodes.push(DbTreeNode {
+                        id: format!("domain_{}.{}", schema, name),
+                        label: format!("{} : {}", name, base),
+                        node_type: "domain".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Collations in a schema ──────────────────────────
+            "schema_collations" => {
+                let schema = require_parent()?;
+                let rows = sqlx::query(
+                    "SELECT col.collname AS name \
+                     FROM pg_catalog.pg_collation col \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = col.collnamespace \
+                     WHERE n.nspname = $1 \
+                     ORDER BY col.collname",
+                )
+                .bind(&schema)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("collation_{}.{}", schema, name),
+                        label: name,
+                        node_type: "collation".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Table constraints (parent_id = "schema.table") ──
+            // One arm, contype selected by node_type: p / f / u / c.
+            "table_constraints_pk" | "table_constraints_fk" | "table_constraints_unique" | "table_constraints_check" => {
+                let (contype, child_type) = match node_type {
+                    "table_constraints_pk" => ("p", "constraint_pk"),
+                    "table_constraints_fk" => ("f", "constraint_fk"),
+                    "table_constraints_unique" => ("u", "constraint_unique"),
+                    _ => ("c", "constraint_check"),
+                };
+                let (schema, table) = split_parent()?;
+                let rows = sqlx::query(
+                    "SELECT con.conname AS name \
+                     FROM pg_catalog.pg_constraint con \
+                     JOIN pg_catalog.pg_class c ON c.oid = con.conrelid \
+                     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
+                     WHERE n.nspname = $1 AND c.relname = $2 AND con.contype = $3::\"char\" \
+                     ORDER BY con.conname",
+                )
+                .bind(&schema)
+                .bind(&table)
+                .bind(contype)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("{}_{}.{}.{}", child_type, schema, table, name),
+                        label: name,
+                        node_type: child_type.into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Rewrite rules on a table ────────────────────────
+            "table_rules" => {
+                let (schema, table) = split_parent()?;
+                let rows = sqlx::query(
+                    "SELECT r.rulename AS name \
+                     FROM pg_catalog.pg_rules r \
+                     WHERE r.schemaname = $1 AND r.tablename = $2 \
+                     ORDER BY r.rulename",
+                )
+                .bind(&schema)
+                .bind(&table)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("rule_{}.{}.{}", schema, table, name),
+                        label: name,
+                        node_type: "rule".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Row-level security policies on a table ──────────
+            "table_policies" => {
+                let (schema, table) = split_parent()?;
+                let rows = sqlx::query(
+                    "SELECT p.policyname AS name, p.cmd AS cmd \
+                     FROM pg_catalog.pg_policies p \
+                     WHERE p.schemaname = $1 AND p.tablename = $2 \
+                     ORDER BY p.policyname",
+                )
+                .bind(&schema)
+                .bind(&table)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let cmd: Option<String> = r.try_get("cmd").ok();
+                    nodes.push(DbTreeNode {
+                        id: format!("policy_{}.{}.{}", schema, table, name),
+                        label: match cmd {
+                            Some(c) => format!("{} ({})", name, c),
+                            None => name,
+                        },
+                        node_type: "policy".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Partitions of a table ───────────────────────────
+            // Children are real tables (recursively expandable).
+            "table_partitions" => {
+                let (schema, table) = split_parent()?;
+                let rows = sqlx::query(
+                    "SELECT c.relname AS name, cn.nspname AS child_schema \
+                     FROM pg_catalog.pg_inherits i \
+                     JOIN pg_catalog.pg_class c ON c.oid = i.inhrelid \
+                     JOIN pg_catalog.pg_namespace cn ON cn.oid = c.relnamespace \
+                     JOIN pg_catalog.pg_class p ON p.oid = i.inhparent \
+                     JOIN pg_catalog.pg_namespace pn ON pn.oid = p.relnamespace \
+                     WHERE pn.nspname = $1 AND p.relname = $2 \
+                     ORDER BY c.relname",
+                )
+                .bind(&schema)
+                .bind(&table)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let child_schema: String = r.get("child_schema");
+                    nodes.push(DbTreeNode {
+                        id: format!("table_{}.{}", child_schema, name),
+                        label: name,
+                        node_type: "table".into(),
+                        has_children: true,
                     });
                 }
             }
@@ -924,6 +1158,185 @@ impl DatabaseDriver for PostgresDriver {
                         id: format!("ftsdict_{}.{}", schema, name),
                         label: name,
                         node_type: "fts_dictionary".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Full-text search configs / parsers / templates ──
+            // Same scoping contract as fts_dictionaries.
+            "fts_configurations" | "fts_parsers" | "fts_templates" => {
+                let (sql, child_type) = match node_type {
+                    "fts_configurations" => (
+                        "SELECT c.cfgname AS name, n.nspname AS schema \
+                         FROM pg_catalog.pg_ts_config c \
+                         JOIN pg_catalog.pg_namespace n ON n.oid = c.cfgnamespace \
+                         WHERE $1::text IS NULL OR n.nspname = $1 \
+                         ORDER BY n.nspname, c.cfgname",
+                        "fts_configuration",
+                    ),
+                    "fts_parsers" => (
+                        "SELECT p.prsname AS name, n.nspname AS schema \
+                         FROM pg_catalog.pg_ts_parser p \
+                         JOIN pg_catalog.pg_namespace n ON n.oid = p.prsnamespace \
+                         WHERE $1::text IS NULL OR n.nspname = $1 \
+                         ORDER BY n.nspname, p.prsname",
+                        "fts_parser",
+                    ),
+                    _ => (
+                        "SELECT t.tmplname AS name, n.nspname AS schema \
+                         FROM pg_catalog.pg_ts_template t \
+                         JOIN pg_catalog.pg_namespace n ON n.oid = t.tmplnamespace \
+                         WHERE $1::text IS NULL OR n.nspname = $1 \
+                         ORDER BY n.nspname, t.tmplname",
+                        "fts_template",
+                    ),
+                };
+                let rows = sqlx::query(sql)
+                    .bind(parent_id)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let schema: String = r.get("schema");
+                    nodes.push(DbTreeNode {
+                        id: format!("{}_{}.{}", child_type, schema, name),
+                        label: name,
+                        node_type: child_type.into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Global: user-defined casts ──────────────────────
+            // oid >= 16384 (FirstNormalObjectId) filters built-in casts,
+            // matching pgAdmin's default of hiding system objects.
+            "casts" => {
+                let rows = sqlx::query(
+                    "SELECT pg_catalog.format_type(ct.castsource, NULL) AS source, \
+                            pg_catalog.format_type(ct.casttarget, NULL) AS target \
+                     FROM pg_catalog.pg_cast ct \
+                     WHERE ct.oid >= 16384 \
+                     ORDER BY 1, 2",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let source: String = r.get("source");
+                    let target: String = r.get("target");
+                    nodes.push(DbTreeNode {
+                        id: format!("cast_{}_{}", source, target),
+                        label: format!("{} → {}", source, target),
+                        node_type: "cast".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Global: event triggers ──────────────────────────
+            "event_triggers" => {
+                let rows = sqlx::query(
+                    "SELECT e.evtname AS name, e.evtevent AS event \
+                     FROM pg_catalog.pg_event_trigger e \
+                     ORDER BY e.evtname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    let event: String = r.get("event");
+                    nodes.push(DbTreeNode {
+                        id: format!("event_trigger_{}", name),
+                        label: format!("{} ({})", name, event),
+                        node_type: "event_trigger".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Global: foreign data wrappers ───────────────────
+            "fdws" => {
+                let rows = sqlx::query(
+                    "SELECT f.fdwname AS name \
+                     FROM pg_catalog.pg_foreign_data_wrapper f \
+                     ORDER BY f.fdwname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("fdw_{}", name),
+                        label: name,
+                        node_type: "fdw".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Global: procedural languages ────────────────────
+            "languages" => {
+                let rows = sqlx::query(
+                    "SELECT l.lanname AS name \
+                     FROM pg_catalog.pg_language l \
+                     ORDER BY l.lanname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("language_{}", name),
+                        label: name,
+                        node_type: "language".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            // ── Global: logical replication ─────────────────────
+            "publications" => {
+                let rows = sqlx::query(
+                    "SELECT p.pubname AS name \
+                     FROM pg_catalog.pg_publication p \
+                     ORDER BY p.pubname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("publication_{}", name),
+                        label: name,
+                        node_type: "publication".into(),
+                        has_children: false,
+                    });
+                }
+            }
+
+            "subscriptions" => {
+                let rows = sqlx::query(
+                    "SELECT s.subname AS name \
+                     FROM pg_catalog.pg_subscription s \
+                     WHERE s.subdbid = (SELECT d.oid FROM pg_catalog.pg_database d \
+                                        WHERE d.datname = pg_catalog.current_database()) \
+                     ORDER BY s.subname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(err)?;
+                for r in rows {
+                    let name: String = r.get("name");
+                    nodes.push(DbTreeNode {
+                        id: format!("subscription_{}", name),
+                        label: name,
+                        node_type: "subscription".into(),
                         has_children: false,
                     });
                 }

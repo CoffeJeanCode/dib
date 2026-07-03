@@ -1,7 +1,8 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import type { PendingChange, ColumnInfo, GridFilter, TableRelation } from "@/types/db";
 import { useDataGridState } from "./DataGrid.hooks";
 import { DataGridContext } from "./Parts/DataGridContext";
+import { Skeleton } from "@/components/Skeleton";
 import { GridHeader } from "./Parts/GridHeader";
 import { GridBody } from "./Parts/GridBody";
 import { GridFooter } from "./Parts/GridFooter";
@@ -73,12 +74,28 @@ export const DataGrid = memo(function DataGrid({
     onFkNavigate,
     onSaveError,
   });
+  const columnsState = useMemo(() => {
+    return {
+      ...state,
+      columns: effectiveCols,
+      filters,
+      footerRight,
+    };
+  }, [state, effectiveCols, filters, footerRight]);
 
-  if (loading) return <div className="dg-empty dg-loading">Loading…</div>;
+  if (loading) {
+    return (
+      <div className="skeleton-panel" style={{ padding: 12, gap: 8 }} aria-busy>
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton key={i} height={30} style={{ opacity: 1 - i * 0.1 }} />
+        ))}
+      </div>
+    );
+  }
   if (!effectiveCols.length) return <div className="dg-empty">No data</div>;
 
   return (
-    <DataGridContext.Provider value={{ ...state, columns: effectiveCols, filters, footerRight }}>
+    <DataGridContext.Provider value={columnsState}>
       <div
         className="dg-wrap"
         role="table"
@@ -87,11 +104,31 @@ export const DataGrid = memo(function DataGrid({
         ref={state.gridRef}
         onKeyDown={state.handleGridKeyDown}
       >
-        <div className="dg-scroll" ref={state.containerRef} onScroll={state.onScroll}>
+        <div className="dg-scroll" ref={state.setContainerEl} onScroll={state.onScroll}>
           <GridHeader />
           <GridBody />
         </div>
         <FilterPopover />
+        {state.fkMenu && (
+          <div
+            className="dg-fk-menu"
+            ref={state.fkMenuRef}
+            style={{ left: state.fkMenu.x, top: state.fkMenu.y }}
+            role="menu"
+          >
+            <button
+              className="dg-fk-menu-item"
+              role="menuitem"
+              onClick={() => {
+                state.generateJoinQuery(state.fkMenu!.col);
+                state.setFkMenu(null);
+              }}
+            >
+              <span>Generate JOIN Query</span>
+              <kbd>Alt+Click</kbd>
+            </button>
+          </div>
+        )}
         <GridFooter />
       </div>
     </DataGridContext.Provider>

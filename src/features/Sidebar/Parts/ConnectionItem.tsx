@@ -61,7 +61,7 @@ export function ConnectionItem({
               title={expanded ? "Collapse" : "Expand databases"}
               onClick={(e) => { e.stopPropagation(); useTreeStateStore.getState().toggleNode(`conn:${conn.id}`, isActive); }}
             >
-              {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                {expanded ? <ChevronDown /> : <ChevronRight />}
             </button>
           ) : (
             <span className="sidebar-item-expand-spacer" />
@@ -86,14 +86,14 @@ export function ConnectionItem({
                 title="Edit connection (F2)"
                 onClick={(e) => { e.stopPropagation(); onEdit(conn); }}
               >
-                <Pencil size={12} />
+                <Pencil />
               </button>
               <button
                 className="sidebar-item-action-btn sidebar-item-action-btn--danger"
                 title="Delete (Delete)"
                 onClick={(e) => { e.stopPropagation(); onDelete(conn); }}
               >
-                <Trash2 size={12} />
+                <Trash2 />
               </button>
             </div>
           )}

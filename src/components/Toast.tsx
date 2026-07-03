@@ -1,26 +1,33 @@
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Copy, X, AlertTriangle, Info } from "lucide-react";
 import { useToastStore, type Toast as ToastType } from "@/store/toastStore";
 import "./Toast.css";
 
 const HIDE_ANIM_MS = 300;
+const INFO_TIMEOUT = 4000;
+const WARN_TIMEOUT = 5000;
+const ERROR_TIMEOUT = 8000;
 
 function ToastItem({ toast }: { toast: ToastType }) {
   const remove = useToastStore((s) => s.remove);
   const [hiding, setHiding] = useState(false);
 
-  useEffect(() => {
-    if (!toast.dismissible) {
-      const t = setTimeout(() => setHiding(true), 6000 - HIDE_ANIM_MS);
-      return () => clearTimeout(t);
-    }
-  }, [toast.dismissible]);
-
-  const dismiss = () => {
+  const doRemove = useCallback(() => {
     setHiding(true);
     setTimeout(() => remove(toast.id), HIDE_ANIM_MS);
-  };
+  }, [remove, toast.id]);
+
+  useEffect(() => {
+    const timeout =
+      toast.type === "error" ? ERROR_TIMEOUT
+      : toast.type === "warning" ? WARN_TIMEOUT
+      : INFO_TIMEOUT;
+    const t = setTimeout(doRemove, timeout);
+    return () => clearTimeout(t);
+  }, [toast.type, doRemove]);
+
+  const dismiss = () => doRemove();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(toast.message).catch(() => {});
@@ -35,13 +42,11 @@ function ToastItem({ toast }: { toast: ToastType }) {
       </div>
       <span className="toast-message">{toast.message}</span>
       <button className="toast-copy-btn" onClick={handleCopy} title="Copy message">
-        <Copy size={14} />
+        <Copy />
       </button>
-      {toast.dismissible && (
-        <button className="toast-close-btn" onClick={dismiss} title="Close">
-          <X size={14} />
-        </button>
-      )}
+      <button className="toast-close-btn" onClick={dismiss} title="Close">
+        <X />
+      </button>
     </div>
   );
 }

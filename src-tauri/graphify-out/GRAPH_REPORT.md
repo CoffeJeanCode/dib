@@ -1,16 +1,16 @@
-# Graph Report - src-tauri  (2026-07-01)
+# Graph Report - src-tauri  (2026-07-02)
 
 ## Corpus Check
-- 26 files · ~52,288 words
+- 26 files · ~54,294 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 491 nodes · 1196 edges · 40 communities
+- 503 nodes · 1250 edges · 41 communities
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a8da0144`
+- Built from commit: `86b641b3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -50,11 +50,12 @@
 - [[_COMMUNITY_Community 32|Community 32]]
 - [[_COMMUNITY_Community 33|Community 33]]
 - [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 40|Community 40]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `QueryError` - 70 edges
 2. `DbState` - 42 edges
-3. `AppDb` - 35 edges
+3. `AppDb` - 40 edges
 4. `PostgresDriver` - 27 edges
 5. `SqliteDriver` - 17 edges
 6. `create_driver()` - 11 edges
@@ -64,8 +65,6 @@
 10. `definitions` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `DbState` --references--> `DatabaseDriver`  [EXTRACTED]
-  src/commands/connection.rs → src/db/driver.rs
 - `assert_connection_in_active_workspace()` --references--> `AppDb`  [EXTRACTED]
   src/commands/connection.rs → src/storage/mod.rs
 - `connect_to_db()` --calls--> `create_driver()`  [INFERRED]
@@ -74,22 +73,24 @@
   src/commands/connection.rs → src/db/driver.rs
 - `connect_saved()` --calls--> `create_driver()`  [INFERRED]
   src/commands/connection.rs → src/db/driver.rs
+- `connect_saved()` --references--> `AppDb`  [EXTRACTED]
+  src/commands/connection.rs → src/storage/mod.rs
 
 ## Import Cycles
 - None detected.
 
-## Communities (40 total, 0 thin omitted)
+## Communities (41 total, 0 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.07
-Nodes (60): AppHandle, delete_connection(), get_data_path(), get_saved_connections(), load_ui_state(), save_connection(), save_ui_state(), UiState (+52 more)
+Nodes (64): AppHandle, delete_connection(), get_saved_connections(), save_connection(), check_system_status(), SystemStatus, create_file(), create_folder() (+56 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.05
-Nodes (48): AtomicI32, DatabaseDriver, build_where_pg(), decode_fk_action(), execute_query_inner(), is_select(), parse_explain_node(), pg_bind_json() (+40 more)
+Nodes (46): AtomicI32, build_where_pg(), decode_fk_action(), execute_query_inner(), is_select(), parse_explain_node(), pg_bind_json(), pg_cast_suffix() (+38 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (50): Arc, Box, assert_connection_in_active_workspace(), connect_db_lazily(), connect_saved(), connect_to_db(), create_database(), DbState (+42 more)
 
 ### Community 3 - "Community 3"
@@ -106,7 +107,7 @@ Nodes (15): definitions, Identifier, Number, PermissionEntry, Target, Value, one
 
 ### Community 6 - "Community 6"
 Cohesion: 0.13
-Nodes (15): definitions, Identifier, Number, PermissionEntry, ShellScopeEntryAllowedArgs, Target, oneOf, anyOf (+7 more)
+Nodes (15): definitions, Identifier, Number, PermissionEntry, Target, Value, oneOf, anyOf (+7 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.18
@@ -217,8 +218,12 @@ Cohesion: 0.67
 Nodes (3): ShellScopeEntryAllowedArg, anyOf, description
 
 ### Community 34 - "Community 34"
+Cohesion: 0.36
+Nodes (5): get_data_path(), load_ui_state(), save_ui_state(), UiState, PathBuf
+
+### Community 40 - "Community 40"
 Cohesion: 0.67
-Nodes (3): Value, anyOf, description
+Nodes (3): ShellScopeEntryAllowedArgs, anyOf, description
 
 ## Knowledge Gaps
 - **148 isolated node(s):** `$schema`, `identifier`, `description`, `windows`, `permissions` (+143 more)
@@ -228,16 +233,16 @@ Nodes (3): Value, anyOf, description
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `QueryError` connect `Community 2` to `Community 0`, `Community 1`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Why does `definitions` connect `Community 4` to `Community 16`, `Community 20`, `Community 23`, `Community 29`, `Community 30`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **Why does `definitions` connect `Community 5` to `Community 32`, `Community 17`, `Community 21`, `Community 25`, `Community 31`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **What connects `$schema`, `identifier`, `description` to the rest of the system?**
   _148 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.06875699888017917 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07212121212121213 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.0519311911716975 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.050286058416139714 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.09743589743589744 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.09453551912568306 - nodes in this community are weakly interconnected._

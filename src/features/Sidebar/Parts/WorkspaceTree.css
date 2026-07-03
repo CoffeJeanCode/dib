@@ -1,5 +1,8 @@
 .workspace-tree {
   user-select: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .tree-empty {
@@ -42,6 +45,32 @@
 .tree-item--dragging {
   opacity: 0.35;
   z-index: 0;
+}
+
+.tree-item--selected {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+}
+
+.tree-item--selected .tree-item__icon {
+  opacity: 1;
+}
+
+/* Item marked with Ctrl+X, awaiting paste */
+.tree-item--cut {
+  opacity: 0.45;
+}
+
+.workspace-tree-root {
+  flex: 1;
+}
+
+.workspace-tree-root:focus {
+  outline: none;
+}
+
+.workspace-tree-root--over {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .tree-item--fade {

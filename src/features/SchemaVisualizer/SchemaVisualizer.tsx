@@ -37,8 +37,8 @@ function gridLayout(count: number): { x: number; y: number }[] {
   const cols = Math.max(1, Math.min(5, Math.ceil(Math.sqrt(count))));
   const nodeW = 230;
   const nodeH = 220;
-  const gapX = 60;
-  const gapY = 60;
+  const gapX = 200;
+  const gapY = 150;
   return Array.from({ length: count }, (_, i) => ({
     x: (i % cols) * (nodeW + gapX),
     y: Math.floor(i / cols) * (nodeH + gapY),
@@ -272,7 +272,7 @@ function RelationView({
           const relatedNodes: Node<TableNodeData>[] = uniqueTargets.map((tgt, i) => ({
             id: tgt,
             type: "tableNode",
-            position: { x: i * 290, y: 400 },
+            position: { x: i * 290, y: 450 },
             data: { tableName: tgt, engine, columns: tgtColsArray[i] ?? [] },
           }));
 
@@ -342,7 +342,7 @@ function RelationView({
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1}
-          color="rgba(0,238,255,0.07)"
+          color="var(--color-bg-elevated)"
         />
         <Controls showInteractive={false} className="sv-controls" />
         {!hasRelations && (

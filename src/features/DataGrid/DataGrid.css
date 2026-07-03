@@ -407,3 +407,45 @@
 .dg-cell--fk:hover .dg-fk-link {
   text-decoration: underline;
 }
+
+/* ── FK context menu (glass) ─────────────────────────────── */
+.dg-fk-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-bg-secondary) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.dg-fk-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-size: 12px;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.dg-fk-menu-item:hover,
+.dg-fk-menu-item:focus-visible {
+  background: var(--color-bg-hover);
+  outline: none;
+}
+
+.dg-fk-menu-item kbd {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  opacity: 0.6;
+}

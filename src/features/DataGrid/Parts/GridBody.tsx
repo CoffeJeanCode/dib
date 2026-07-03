@@ -23,6 +23,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
     deletedRowIndices,
     inputRef,
     handleCellClick,
+    handleCellContextMenu,
     startEdit,
     commitEdit,
   } = useDataGridContext();
@@ -68,8 +69,11 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
               minWidth: cssW,
               maxWidth: cssW,
             }}
-            title={isFk ? `${mod("Ctrl+Click")} → ${fkMap[col].targetTable} (${cellStr(value)})` : cellStr(value)}
+            title={isFk
+              ? `${mod("Ctrl+Click")} → ${fkMap[col].targetTable} (${cellStr(value)})\nAlt+Click: Generate JOIN query`
+              : cellStr(value)}
             onClick={(e) => handleCellClick(absIdx, j, e)}
+            onContextMenu={isFk ? (e) => handleCellContextMenu(j, e) : undefined}
             onDoubleClick={() => startEdit(absIdx, j)}
           >
             {isEditingThis ? (
@@ -93,7 +97,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
 });
 
 export const GridBody = memo(function GridBody() {
-  const { editState, start, end, topPad, bottomPad, totalRows } = useDataGridContext();
+  const { editState, start, end, topPad, totalRows } = useDataGridContext();
 
   return (
     <div className="dg-body" style={{ height: totalRows * ROW_H }}>
@@ -102,7 +106,6 @@ export const GridBody = memo(function GridBody() {
           <GridRow key={start + i} absIdx={start + i} />
         ))}
       </div>
-      {bottomPad > 0 && <div style={{ height: bottomPad }} />}
     </div>
   );
 });

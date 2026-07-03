@@ -34,6 +34,7 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
   // quick succession), and without this the slower one can resolve last and
   // clobber the UI with stale data. Only the most-recently-issued request applies.
   const fetchIdRef = useRef(0);
+  const fetchingRef = useRef(false);
 
   const fetchHistory = useCallback(async (reset = false) => {
     if (!activeConnectionId) {
@@ -42,7 +43,11 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
       setHasMore(false);
       return;
     }
+    // Prevent virtual scroll appending while a fetch is already in flight
+    if (!reset && fetchingRef.current) return;
+
     const myId = ++fetchIdRef.current;
+    fetchingRef.current = true;
     setLoading(true);
     try {
       if (reset) {
@@ -61,7 +66,10 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
     } catch (e) {
       console.error(e);
     } finally {
-      if (myId === fetchIdRef.current) setLoading(false);
+      if (myId === fetchIdRef.current) {
+        setLoading(false);
+        fetchingRef.current = false;
+      }
     }
   }, [activeConnectionId]);
 
@@ -113,7 +121,7 @@ export function QueryHistoryPanel({ activeConnectionId, onScriptOpen }: QueryHis
       <div className="history-panel-header">
         <span className="sidebar-section-title">Query History</span>
         <button className="sidebar-item-action-btn" onClick={() => fetchHistory(true)} title="Refrescar">
-          <Clock size={12} />
+          <Clock />
         </button>
       </div>
 

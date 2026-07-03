@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { FolderPlus, FilePlus, Pin, PinOff, Palette, ChevronRight } from "lucide-react";
+import { FolderPlus, FilePlus, Pin, PinOff, Palette, ChevronRight, Trash2, Edit2 } from "lucide-react";
 import "./ScriptsContextMenu.css";
 
 interface ScriptsContextMenuProps {
@@ -9,8 +9,11 @@ interface ScriptsContextMenuProps {
   currentColor?: string | null;
   onNewFolder?: () => void;
   onNewScript?: () => void;
+  onRename?: () => void;
   onTogglePin?: () => void;
   onColorChange?: (color: string | null) => void;
+  onDelete?: () => void;
+  isFolder?: boolean;
 }
 
 export function ScriptsContextMenu({
@@ -19,8 +22,11 @@ export function ScriptsContextMenu({
   currentColor,
   onNewFolder,
   onNewScript,
+  onRename,
   onTogglePin,
   onColorChange,
+  onDelete,
+  isFolder,
 }: ScriptsContextMenuProps) {
   const PASTEL_COLORS = [
     { value: null, label: "None" },
@@ -57,6 +63,15 @@ export function ScriptsContextMenu({
             >
               <FilePlus className="mr-2 h-3.5 w-3.5" size={14} />
               New Script
+            </ContextMenu.Item>
+          )}
+          {onRename && (
+            <ContextMenu.Item
+              onSelect={onRename}
+              className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200"
+            >
+              <Edit2 className="mr-2 h-3.5 w-3.5" size={14} />
+              Rename
             </ContextMenu.Item>
           )}
 
@@ -109,6 +124,19 @@ export function ScriptsContextMenu({
                 </ContextMenu.SubContent>
               </ContextMenu.Portal>
             </ContextMenu.Sub>
+          )}
+
+          {onDelete && (
+            <>
+              <ContextMenu.Separator className="scripts-ctx-separator -mx-1 my-1 h-px bg-gray-700" />
+              <ContextMenu.Item
+                onSelect={onDelete}
+                className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-red-900/50 focus:bg-red-900/50 text-red-400"
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" size={14} />
+                {isFolder ? "Delete Folder" : "Delete Script"}
+              </ContextMenu.Item>
+            </>
           )}
         </ContextMenu.Content>
       </ContextMenu.Portal>

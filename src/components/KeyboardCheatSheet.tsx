@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { mod } from "@/utils/platform";
+import "./dialog-shared.css";
 import "./KeyboardCheatSheet.css";
 
 interface KeyboardCheatSheetProps {
@@ -71,11 +72,11 @@ export function KeyboardCheatSheet({ onClose }: KeyboardCheatSheetProps) {
   }, [onClose]);
 
   return (
-    <div className="kcs-backdrop" onClick={onClose}>
-      <div className="kcs" onClick={(e) => e.stopPropagation()}>
-        <div className="kcs-header">
-          <span className="kcs-title">Keyboard Shortcuts</span>
-          <button className="kcs-close" onClick={onClose}>✕</button>
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className="dialog kcs" onClick={(e) => e.stopPropagation()}>
+        <div className="dialog-header">
+          <span className="dialog-title">Keyboard Shortcuts</span>
+          <button className="dialog-close" onClick={onClose}>✕</button>
         </div>
         <div className="kcs-body">
           {SECTIONS.map((s) => (

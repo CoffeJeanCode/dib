@@ -34,8 +34,8 @@ interface WorkspaceState {
   pendingOpenRelations: TableInfo | null;
   /** Pending insert-row trigger — replaces dib:insert-row */
   pendingInsertRow: number;
-  /** Pending tab action from Monaco keybindings — replaces dib:close-tab / dib:new-tab */
-  tabAction: { type: "close" | "new"; v: number } | null;
+  /** Pending tab action from Monaco keybindings or sidebar deletes */
+  tabAction: { type: "close" | "new" | "close_by_path"; payload?: string; v: number } | null;
   /** Right-side sliding JSON viewer panel */
   jsonPanel: JsonPanelData | null;
 
@@ -49,7 +49,7 @@ interface WorkspaceState {
   openTableRelations: (t: TableInfo) => void;
   clearPendingOpenRelations: () => void;
   triggerInsertRow: () => void;
-  dispatchTabAction: (type: "close" | "new") => void;
+  dispatchTabAction: (type: "close" | "new" | "close_by_path", payload?: string) => void;
   openJsonPanel: (data: JsonPanelData) => void;
   closeJsonPanel: () => void;
   internalScripts: InternalScript[];
@@ -99,7 +99,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   openTableRelations: (t) => set({ pendingOpenRelations: t }),
   clearPendingOpenRelations: () => set({ pendingOpenRelations: null }),
   triggerInsertRow: () => set((s) => ({ pendingInsertRow: s.pendingInsertRow + 1 })),
-  dispatchTabAction: (type) => set({ tabAction: { type, v: Date.now() } }),
+  dispatchTabAction: (type, payload) => set({ tabAction: { type, payload, v: Date.now() } }),
   openJsonPanel: (data) => set({ jsonPanel: data }),
   closeJsonPanel: () => set({ jsonPanel: null }),
   setInternalScripts: (scripts) => set({ internalScripts: scripts }),
@@ -196,7 +196,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ isMovingItem: true });
     try {
       const req = treeReq;
-      await workspaceService.moveFsItem(sourcePath, targetDir);
+      // move_fs_item is a rename — build the full destination path.
+      const sep = targetDir.includes("\\") ? "\\" : "/";
+      const base = sourcePath.split(/[\\/]/).pop() ?? sourcePath;
+      await workspaceService.moveFsItem(sourcePath, `${targetDir}${sep}${base}`, wid, root);
       if (root && req === treeReq) {
         const tree = await workspaceService.readWorkspaceTree(root, wid);
         if (req === treeReq) set({ workspaceTree: tree });

@@ -2,9 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ChevronRight, Table2, Eye, Layers, Hash, FileCode2, Zap,
   FolderTree, Users, Puzzle, BookA, Columns3, ListOrdered, Database,
+  Folder, KeyRound, Link2, Fingerprint, ShieldCheck, Shapes, Package,
+  Languages, GitBranch, Shield, ArrowLeftRight, Plug, Code2, Radio, Rss,
 } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
+import { SkeletonRow } from "@/components/Skeleton";
 import { useTreeStateStore, useNodeExpanded } from "@/store/treeStateStore";
+import { useSavedConnections } from "@/hooks/useSavedConnections";
+import { ENGINE_COLORS } from "./utils";
 import type { DbTreeNode } from "@/types/db";
 
 /**
@@ -16,7 +21,10 @@ import type { DbTreeNode } from "@/types/db";
  * in place; Split passes one that pushes the node id into global state for
  * another panel to consume. The tree only owns expansion + lazy fetching.
  *
- * Children come from the Rust `get_node_children` router on first expand.
+ * Hierarchy pattern (pgAdmin-style): real catalog nodes come from the Rust
+ * `get_node_children` router; the category level between them ("Tables",
+ * "Constraints", …) is declarative — FOLDER SPECS below synthesize virtual
+ * folder rows client-side that cost zero backend calls until expanded.
  * Expansion state lives in useTreeStateStore (`dbtree:` namespace), so it
  * survives layout switches and panel remounts.
  */
@@ -31,9 +39,28 @@ const NODE_ICONS: Record<string, typeof Table2> = {
   column: Columns3,
   index: Hash,
   trigger: Zap,
+  trigger_function: Zap,
   function: FileCode2,
   procedure: FileCode2,
+  type: Shapes,
+  domain: Package,
+  collation: Languages,
+  constraint_pk: KeyRound,
+  constraint_fk: Link2,
+  constraint_unique: Fingerprint,
+  constraint_check: ShieldCheck,
+  rule: GitBranch,
+  policy: Shield,
+  fts_configuration: BookA,
   fts_dictionary: BookA,
+  fts_parser: BookA,
+  fts_template: BookA,
+  cast: ArrowLeftRight,
+  event_trigger: Zap,
+  fdw: Plug,
+  language: Code2,
+  publication: Radio,
+  subscription: Rss,
   role_login: Users,
   role_group: Users,
   extension: Puzzle,
@@ -44,23 +71,227 @@ function nodeIcon(type: string) {
   return <Icon size={11} style={{ flexShrink: 0, opacity: 0.65, color: "var(--color-text-tertiary)" }} />;
 }
 
-/** Maps a node to the node_type its children are requested with. */
+// ── Folder specs ─────────────────────────────────────────────────
+// A folder either fetches a backend node_type (scoped by the parent's id)
+// or nests more folders. Purely declarative: add a line here + a match arm
+// in postgres.rs to grow the tree.
+
+interface FolderDef {
+  label: string;
+  fetch?: string;
+  children?: FolderDef[];
+}
+
+const SCHEMA_FOLDERS: FolderDef[] = [
+  { label: "Tables", fetch: "schema_tables" },
+  { label: "Views", fetch: "schema_views" },
+  { label: "Materialized Views", fetch: "schema_matviews" },
+  { label: "Foreign Tables", fetch: "schema_foreign_tables" },
+  { label: "Sequences", fetch: "schema_sequences" },
+  { label: "Functions", fetch: "schema_functions" },
+  { label: "Procedures", fetch: "schema_procedures" },
+  { label: "Trigger Functions", fetch: "schema_trigger_functions" },
+  { label: "Types", fetch: "schema_types" },
+  { label: "Domains", fetch: "schema_domains" },
+  { label: "Collations", fetch: "schema_collations" },
+  {
+    label: "Full Text Search",
+    children: [
+      { label: "Configurations", fetch: "fts_configurations" },
+      { label: "Dictionaries", fetch: "fts_dictionaries" },
+      { label: "Parsers", fetch: "fts_parsers" },
+      { label: "Templates", fetch: "fts_templates" },
+    ],
+  },
+];
+
+const TABLE_FOLDERS: FolderDef[] = [
+  { label: "Columns", fetch: "table_columns" },
+  {
+    label: "Constraints",
+    children: [
+      { label: "Primary Key", fetch: "table_constraints_pk" },
+      { label: "Foreign Keys", fetch: "table_constraints_fk" },
+      { label: "Unique", fetch: "table_constraints_unique" },
+      { label: "Check", fetch: "table_constraints_check" },
+    ],
+  },
+  { label: "Indexes", fetch: "table_indexes" },
+  { label: "Triggers", fetch: "table_triggers" },
+  { label: "Rules", fetch: "table_rules" },
+  { label: "Policies", fetch: "table_policies" },
+  { label: "Partitions", fetch: "table_partitions" },
+];
+
+/** Database-level containers under a connection root. */
+const GLOBAL_FOLDERS: FolderDef[] = [
+  { label: "Schemas", fetch: "schema_list" },
+  { label: "Casts", fetch: "casts" },
+  { label: "Event Triggers", fetch: "event_triggers" },
+  { label: "Extensions", fetch: "extensions" },
+  { label: "Foreign Data Wrappers", fetch: "fdws" },
+  { label: "Languages", fetch: "languages" },
+  { label: "Publications", fetch: "publications" },
+  { label: "Subscriptions", fetch: "subscriptions" },
+  { label: "Roles", fetch: "roles" },
+];
+
+/** Category folders shown when a real catalog node is expanded. */
+const NODE_FOLDERS: Record<string, FolderDef[]> = {
+  schema: SCHEMA_FOLDERS,
+  table: TABLE_FOLDERS,
+  foreign_table: TABLE_FOLDERS,
+  view: [{ label: "Columns", fetch: "table_columns" }],
+  matview: [
+    { label: "Columns", fetch: "table_columns" },
+    { label: "Indexes", fetch: "table_indexes" },
+  ],
+};
+
+/** Direct (non-folder) child fetch for node types without categories. */
 function childNodeType(node: DbTreeNode): string | null {
   switch (node.type) {
-    case "schema": return "schema_tables";
-    case "table":
-    case "foreign_table": return "table_columns";
-    case "view":
-    case "matview": return "table_columns";
     case "role_group": return "role_members";
     default: return null;
   }
+}
+
+/** Derives the parent_id the backend expects for a node's children. */
+function parentIdFor(node: DbTreeNode): string | null {
+  // Composite ids are "<type>_<qualified name>" — strip the type prefix.
+  const prefix = `${node.type}_`;
+  return node.id.startsWith(prefix) ? node.id.slice(prefix.length) : node.id;
+}
+
+// ── Lazy fetch (shared by real nodes, folders and roots) ─────────
+// Rehydration, not reset: children load whenever the node is expanded and
+// data is missing — covers first expand AND remounts (layout switch,
+// restart) where persisted expansion outlives the in-memory cache.
+function useLazyChildren(
+  enabled: boolean,
+  sessionId: string,
+  fetchType: string | null,
+  parentId: string | null,
+) {
+  const [children, setChildren] = useState<DbTreeNode[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled || children !== null || loading || !fetchType) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    invoke<DbTreeNode[]>("get_node_children", {
+      instanceId: sessionId,
+      nodeType: fetchType,
+      parentNodeId: parentId,
+    })
+      .then((kids) => { if (!cancelled) setChildren(kids); })
+      .catch((err) => { if (!cancelled) setError(String(err)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, children, sessionId, fetchType, parentId]);
+
+  return { children, loading, error };
+}
+
+function TreeStatus({ depth, loading, error, empty }: { depth: number; loading: boolean; error: string | null; empty: boolean }) {
+  const pad = { paddingLeft: 20 + depth * 12 };
+  if (loading) return <><SkeletonRow indent={12 + depth * 12} /><SkeletonRow indent={12 + depth * 12} /></>;
+  if (error) return <span className="sidebar-item-text sidebar-item-text--muted" style={{ ...pad, color: "var(--color-red)" }}>{error}</span>;
+  if (empty) return <span className="sidebar-item-text sidebar-item-text--muted" style={pad}>(empty)</span>;
+  return null;
 }
 
 interface DatabaseTreeProps {
   onNodeClick?: (node: DbTreeNode) => void;
 }
 
+// ── Virtual folder row ───────────────────────────────────────────
+interface FolderRowProps {
+  def: FolderDef;
+  /** parent_id scope forwarded to the backend for this folder's fetch. */
+  parentId: string | null;
+  depth: number;
+  sessionId: string;
+  onNodeClick?: (node: DbTreeNode) => void;
+}
+
+function FolderRow({ def, parentId, depth, sessionId, onNodeClick }: FolderRowProps) {
+  const stateId = `dbtree:${sessionId}:${parentId ?? "root"}:folder:${def.label}`;
+  const expanded = useNodeExpanded(stateId);
+  const { children, loading, error } = useLazyChildren(
+    expanded && !def.children, sessionId, def.fetch ?? null, parentId,
+  );
+
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    useTreeStateStore.getState().toggleNode(stateId);
+  }, [stateId]);
+
+  return (
+    <div>
+      <div
+        className="sidebar-db-item"
+        style={{ cursor: "pointer", padding: "3px 8px", paddingLeft: 8 + depth * 12 }}
+        onClick={handleToggle}
+        title={def.label}
+      >
+        <button
+          className="sidebar-icon-btn"
+          aria-label={expanded ? "Colapsar" : "Expandir"}
+          style={{ padding: 0, width: 14, height: 14, display: "flex", alignItems: "center" }}
+        >
+          <ChevronRight
+            size={10}
+            style={{
+              transition: "transform var(--transition-fast, 0.15s)",
+              transform: expanded ? "rotate(90deg)" : undefined,
+            }}
+          />
+        </button>
+        <Folder size={11} style={{ flexShrink: 0, opacity: 0.65, color: "var(--color-text-tertiary)" }} />
+        <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)" }}>
+          {def.label}
+        </span>
+      </div>
+
+      {expanded && (
+        <div>
+          {def.children ? (
+            def.children.map((sub) => (
+              <FolderRow
+                key={sub.label}
+                def={sub}
+                parentId={parentId}
+                depth={depth + 1}
+                sessionId={sessionId}
+                onNodeClick={onNodeClick}
+              />
+            ))
+          ) : (
+            <>
+              <TreeStatus depth={depth} loading={loading} error={error} empty={children?.length === 0} />
+              {children?.map((child) => (
+                <TreeNodeRow
+                  key={child.id}
+                  node={child}
+                  depth={depth + 1}
+                  sessionId={sessionId}
+                  onNodeClick={onNodeClick}
+                />
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Real catalog node row ────────────────────────────────────────
 interface TreeNodeRowProps {
   node: DbTreeNode;
   depth: number;
@@ -71,37 +302,18 @@ interface TreeNodeRowProps {
 function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) {
   const stateId = `dbtree:${sessionId}:${node.id}`;
   const expanded = useNodeExpanded(stateId);
-  const [children, setChildren] = useState<DbTreeNode[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Rehydration, not reset: children load whenever the node is expanded and
-  // data is missing — covers first expand AND remounts (layout switch,
-  // restart) where persisted expansion outlives the in-memory cache.
-  useEffect(() => {
-    const type = childNodeType(node);
-    if (!expanded || children !== null || loading || !type) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    invoke<DbTreeNode[]>("get_node_children", {
-      instanceId: sessionId,
-      nodeType: type,
-      parentNodeId: parentIdFor(node),
-    })
-      .then((kids) => { if (!cancelled) setChildren(kids); })
-      .catch((err) => { if (!cancelled) setError(String(err)); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, children, sessionId, node.id]);
+  const folders = NODE_FOLDERS[node.type];
+  const directType = folders ? null : childNodeType(node);
+  const { children, loading, error } = useLazyChildren(
+    expanded && !folders, sessionId, directType, parentIdFor(node),
+  );
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     useTreeStateStore.getState().toggleNode(stateId);
   }, [stateId]);
 
-  const canExpand = node.has_children && childNodeType(node) !== null;
+  const canExpand = node.has_children && (!!folders || directType !== null);
 
   return (
     <div>
@@ -137,72 +349,53 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
 
       {expanded && (
         <div>
-          {loading && (
-            <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 20 + depth * 12 }}>
-              Loading…
-            </span>
+          {folders ? (
+            folders.map((def) => (
+              <FolderRow
+                key={def.label}
+                def={def}
+                parentId={parentIdFor(node)}
+                depth={depth + 1}
+                sessionId={sessionId}
+                onNodeClick={onNodeClick}
+              />
+            ))
+          ) : (
+            <>
+              <TreeStatus depth={depth} loading={loading} error={error} empty={children?.length === 0} />
+              {children?.map((child) => (
+                <TreeNodeRow
+                  key={child.id}
+                  node={child}
+                  depth={depth + 1}
+                  sessionId={sessionId}
+                  onNodeClick={onNodeClick}
+                />
+              ))}
+            </>
           )}
-          {error && (
-            <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 20 + depth * 12, color: "var(--color-red)" }}>
-              {error}
-            </span>
-          )}
-          {children?.map((child) => (
-            <TreeNodeRow
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              sessionId={sessionId}
-              onNodeClick={onNodeClick}
-            />
-          ))}
         </div>
       )}
     </div>
   );
 }
 
-/** Derives the parent_id the backend expects for a node's children. */
-function parentIdFor(node: DbTreeNode): string | null {
-  // Composite ids are "<type>_<qualified name>" — strip the type prefix.
-  const prefix = `${node.type}_`;
-  return node.id.startsWith(prefix) ? node.id.slice(prefix.length) : node.id;
-}
-
-import { useSavedConnections } from "@/hooks/useSavedConnections";
-import { ENGINE_COLORS } from "./utils";
-
+// ── Connection root ──────────────────────────────────────────────
 function ConnectionTreeRoot({
   conn,
-  onNodeClick
+  onNodeClick,
 }: {
   conn: { id: string; name: string; engine: string };
   onNodeClick?: (node: DbTreeNode) => void;
 }) {
   const stateId = `dbtree:conn:${conn.id}`;
   const expanded = useNodeExpanded(stateId);
-  const [roots, setRoots] = useState<DbTreeNode[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Same rehydration contract as TreeNodeRow: persisted expansion triggers
-  // a (re)fetch on mount, so open connections fill back in after remounts.
-  useEffect(() => {
-    if (!expanded || roots !== null || loading) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    invoke<DbTreeNode[]>("get_node_children", {
-      instanceId: conn.id,
-      nodeType: "schema_list",
-      parentNodeId: null,
-    })
-      .then((r) => { if (!cancelled) setRoots(r); })
-      .catch((err) => { if (!cancelled) setError(String(err)); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, roots, conn.id]);
+  // Postgres gets the full pgAdmin-style catalog; other engines fall back
+  // to a flat schema listing (their drivers reject unknown node_types).
+  const isPostgres = /postgres/i.test(conn.engine ?? "");
+  const { children, loading, error } = useLazyChildren(
+    expanded && !isPostgres, conn.id, "schema_list", null,
+  );
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -239,22 +432,28 @@ function ConnectionTreeRoot({
           {conn.name}
         </span>
       </div>
-      
+
       {expanded && (
         <div>
-          {loading && (
-            <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 32 }}>
-              Loading…
-            </span>
+          {isPostgres ? (
+            GLOBAL_FOLDERS.map((def) => (
+              <FolderRow
+                key={def.label}
+                def={def}
+                parentId={null}
+                depth={1}
+                sessionId={conn.id}
+                onNodeClick={onNodeClick}
+              />
+            ))
+          ) : (
+            <>
+              <TreeStatus depth={1} loading={loading} error={error} empty={children?.length === 0} />
+              {children?.map((n) => (
+                <TreeNodeRow key={n.id} node={n} depth={1} sessionId={conn.id} onNodeClick={onNodeClick} />
+              ))}
+            </>
           )}
-          {error && (
-            <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 32, color: "var(--color-red)" }}>
-              {error}
-            </span>
-          )}
-          {roots?.map((n) => (
-            <TreeNodeRow key={n.id} node={n} depth={1} sessionId={conn.id} onNodeClick={onNodeClick} />
-          ))}
         </div>
       )}
     </div>

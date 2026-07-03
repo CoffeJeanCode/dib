@@ -5,9 +5,9 @@
   padding: 24px;
   gap: 20px;
   overflow: auto;
-  background: var(--bg-primary, #12121e);
-  color: var(--text-primary, #e2e4f0);
-  font-family: 'JetBrains Mono', monospace;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
 }
 
 .mock-gen-header {
@@ -20,16 +20,16 @@
   font-size: 15px;
   font-weight: 600;
   margin: 0;
-  color: var(--text-primary, #e2e4f0);
+  color: var(--color-text-primary);
 }
 
 .mock-gen-table-badge {
   font-size: 12px;
   padding: 3px 10px;
   border-radius: 12px;
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  color: #a78bfa;
+  background: color-mix(in srgb, var(--color-purple) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-purple) 35%, transparent);
+  color: var(--color-purple);
 }
 
 .mock-gen-row-count {
@@ -40,33 +40,32 @@
 
 .mock-gen-label {
   font-size: 12px;
-  color: var(--text-muted, #888);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
 .mock-gen-input {
   width: 120px;
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
-  color: var(--text-primary, #e2e4f0);
+  color: var(--color-text-primary);
   font-size: 13px;
   font-family: inherit;
 }
 
 .mock-gen-input:focus {
   outline: none;
-  border-color: rgba(139, 92, 246, 0.5);
+  border-color: var(--color-purple);
 }
 
 .mock-gen-table-wrap {
   flex: 1;
   overflow: auto;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
 }
 
 .mock-gen-cols {
@@ -79,41 +78,40 @@
   padding: 10px 14px;
   text-align: left;
   font-weight: 500;
-  color: var(--text-muted, #888);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
   position: sticky;
   top: 0;
-  background: rgba(18, 18, 30, 0.95);
-  backdrop-filter: blur(8px);
+  background: var(--color-bg-elevated);
 }
 
 .mock-gen-cols td {
   padding: 8px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
 
 .mock-gen-row--active td {
-  background: rgba(139, 92, 246, 0.05);
+  background: color-mix(in srgb, var(--color-purple) 8%, transparent);
 }
 
 .mock-gen-col-name {
   font-weight: 500;
-  color: var(--text-primary, #e2e4f0);
+  color: var(--color-text-primary);
 }
 
 .mock-gen-col-type {
-  color: var(--text-muted, #888);
+  color: var(--color-text-secondary);
   font-size: 11px;
 }
 
 .mock-gen-select {
   padding: 5px 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 5px;
-  color: var(--text-primary, #e2e4f0);
+  color: var(--color-text-primary);
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
@@ -122,23 +120,28 @@
 
 .mock-gen-select:focus {
   outline: none;
-  border-color: rgba(139, 92, 246, 0.5);
+  border-color: var(--color-purple);
+}
+
+.mock-gen-select option {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
 }
 
 .mock-gen-null-input {
   width: 60px;
   padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 5px;
-  color: var(--text-muted, #aaa);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-family: inherit;
 }
 
 .mock-gen-null-input:focus {
   outline: none;
-  border-color: rgba(139, 92, 246, 0.4);
+  border-color: var(--color-purple);
 }
 
 .mock-gen-footer {
@@ -150,24 +153,24 @@
 
 .mock-gen-summary {
   font-size: 12px;
-  color: var(--text-muted, #888);
+  color: var(--color-text-secondary);
 }
 
 .mock-gen-btn {
   padding: 8px 20px;
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: color-mix(in srgb, var(--color-purple) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-purple) 40%, transparent);
   border-radius: 7px;
-  color: #c4b5fd;
+  color: var(--color-purple);
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .mock-gen-btn:hover:not(:disabled) {
-  background: rgba(139, 92, 246, 0.35);
-  border-color: rgba(139, 92, 246, 0.6);
+  background: color-mix(in srgb, var(--color-purple) 35%, transparent);
+  border-color: color-mix(in srgb, var(--color-purple) 60%, transparent);
 }
 
 .mock-gen-btn:disabled {

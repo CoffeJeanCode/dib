@@ -1,19 +1,14 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
+import { useUiStore } from "@/store/uiStore";
 import type { TableInfo } from "@/types/db";
-
-interface DangerDialog {
-  message: string;
-  onConfirm: () => Promise<void>;
-}
 
 export function useDangerDialog(
   activeConnectionId: string | null,
   onInfo: (msg: string) => void,
   onError: (msg: string) => void,
 ) {
-  const [dangerDialog, setDangerDialog] = useState<DangerDialog | null>(null);
   const triggerReload = useConnectionStore((s) => s.triggerReload);
 
   const handleDropTable = useCallback(
@@ -21,10 +16,10 @@ export function useDangerDialog(
       if (!activeConnectionId) return;
       const label = table.schema ? `${table.schema}.${table.name}` : table.name;
       const connId = activeConnectionId;
-      setDangerDialog({
+      useUiStore.getState().setDangerDialog({
         message: `Drop table "${label}"? This action cannot be undone.`,
         onConfirm: async () => {
-          setDangerDialog(null);
+          useUiStore.getState().setDangerDialog(null);
           try {
             await dbService.dropTable(connId, table.name, table.schema ?? null);
             onInfo(`Table "${label}" dropped`);
@@ -46,10 +41,10 @@ export function useDangerDialog(
       if (!activeConnectionId) return;
       const label = table.schema ? `${table.schema}.${table.name}` : table.name;
       const connId = activeConnectionId;
-      setDangerDialog({
+      useUiStore.getState().setDangerDialog({
         message: `Truncate table "${label}"? ALL records will be deleted. This action cannot be undone.`,
         onConfirm: async () => {
-          setDangerDialog(null);
+          useUiStore.getState().setDangerDialog(null);
           try {
             const sql = table.schema
               ? `TRUNCATE TABLE "${table.schema}"."${table.name}"`
@@ -70,9 +65,7 @@ export function useDangerDialog(
   );
 
   return {
-    dangerDialog,
     handleDropTable,
     handleTruncateTable,
-    clearDangerDialog: () => setDangerDialog(null),
   };
 }

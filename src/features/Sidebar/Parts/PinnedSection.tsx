@@ -7,6 +7,8 @@ import { Pin, PinOff, FileCode2 } from "lucide-react";
  * without touching the main tree below it.
  */
 
+import { ScriptsContextMenu } from "@/components/ScriptsContextMenu";
+
 export interface PinnedItem {
   id: string;
   name: string;
@@ -16,9 +18,10 @@ interface PinnedSectionProps {
   items: PinnedItem[];
   onOpen: (item: PinnedItem) => void;
   onUnpin: (item: PinnedItem) => void;
+  onDelete?: (item: PinnedItem) => void;
 }
 
-export function PinnedSection({ items, onOpen, onUnpin }: PinnedSectionProps) {
+export function PinnedSection({ items, onOpen, onUnpin, onDelete }: PinnedSectionProps) {
   if (items.length === 0) return null;
 
   return (
@@ -47,26 +50,34 @@ export function PinnedSection({ items, onOpen, onUnpin }: PinnedSectionProps) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {items.map((item) => (
-          <div
+          <ScriptsContextMenu
             key={item.id}
-            className="sidebar-db-item"
-            style={{ cursor: "pointer", padding: "3px 8px" }}
-            onClick={() => onOpen(item)}
-            title={item.name}
+            isPinned={true}
+            currentColor={null}
+            onTogglePin={() => onUnpin(item)}
+            onDelete={onDelete ? () => onDelete(item) : undefined}
+            isFolder={false}
           >
-            <FileCode2 size={11} style={{ flexShrink: 0, opacity: 0.6, color: "var(--color-text-tertiary)" }} />
-            <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)" }}>
-              {item.name}
-            </span>
+            <div
+              className="sidebar-db-item"
+              style={{ cursor: "pointer", padding: "3px 8px" }}
+              onClick={() => onOpen(item)}
+              title={item.name}
+            >
+              <FileCode2 size={11} style={{ flexShrink: 0, opacity: 0.6, color: "var(--color-text-tertiary)" }} />
+              <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)" }}>
+                {item.name}
+              </span>
             <button
               className="sidebar-icon-btn"
               title="Unpin"
               onClick={(e) => { e.stopPropagation(); onUnpin(item); }}
               style={{ marginLeft: "auto", padding: 2, flexShrink: 0 }}
             >
-              <PinOff size={10} />
+              <PinOff />
             </button>
           </div>
+        </ScriptsContextMenu>
         ))}
       </div>
     </div>

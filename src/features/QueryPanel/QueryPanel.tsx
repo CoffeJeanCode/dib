@@ -53,11 +53,12 @@ interface QueryPanelProps {
   connectionId: string;
   connectionName: string;
   engine?: string;
+  scopeKey?: string;
   navigateTo?: { table: TableInfo; v: number } | null;
   openScript?: { sql: string; name: string; id: string; v: number } | null;
 }
 
-export function QueryPanel({ connectionId, connectionName, engine, navigateTo, openScript }: QueryPanelProps) {
+export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _scopeKey, navigateTo, openScript }: QueryPanelProps) {
   const toast = useToastStore.getState();
 
   // ── Engine: tables, columns, relations, data fetching, commits ─────────
@@ -344,7 +345,10 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
       const tab = activeTabRef.current;
       const tabId = activeTabIdRef.current;
       if (tab?.closeable) handleTabClose(tabId);
-    } else {
+    } else if (tabAction.type === "close_by_path" && tabAction.payload) {
+      const tabToClose = tabsRef.current.find((t) => t.payload.scriptId === tabAction.payload);
+      if (tabToClose) performClose(tabToClose.id);
+    } else if (tabAction.type === "new") {
       // Find next available "Untitled N" number from current tabs
       const currentTabs = tabsRef.current;
       let maxUntitled = 0;
@@ -533,7 +537,7 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
   const handleSaveScript = useCallback((sql: string) => {
     const tab = tabsRef.current.find((t) => t.id === activeTabIdRef.current);
     if (!tab) return;
-    if (tab.payload.scriptId == null) {
+    if (tab.payload.scriptId == null || tab.payload.scriptId.startsWith("new-")) {
       setSaveAsTabId(tab.id);
       setSaveAsName(tab.title);
     } else {
@@ -541,18 +545,18 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
     }
   }, [saveSqlTab]);
 
-  const handleSaveAsConfirm = useCallback(async () => {
-    if (!saveAsTabId || !saveAsName.trim()) return;
+  const handleSaveAsConfirm = useCallback(async (finalName: string) => {
+    if (!saveAsTabId || !finalName.trim()) return;
     const sql = tabSqlRef.current[saveAsTabId]
       ?? tabsRef.current.find((t) => t.id === saveAsTabId)?.payload.sql ?? "";
-    await saveNewScript(saveAsTabId, saveAsName.trim(), sql);
+    await saveNewScript(saveAsTabId, finalName.trim(), sql);
     const tabId = saveAsTabId;
     const shouldClose = closeAfterSaveAs;
     setSaveAsTabId(null);
     setSaveAsName("");
     setCloseAfterSaveAs(false);
     if (shouldClose) performClose(tabId);
-  }, [saveAsTabId, saveAsName, closeAfterSaveAs, saveNewScript, performClose]);
+  }, [saveAsTabId, closeAfterSaveAs, saveNewScript, performClose]);
 
   const handleGridActiveCellChange = useCallback((cell: { row: number; col: number } | null) => {
     const tabId = activeTabIdRef.current;
@@ -804,14 +808,14 @@ export function QueryPanel({ connectionId, connectionName, engine, navigateTo, o
               value={saveAsName}
               onChange={(e) => setSaveAsName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleSaveAsConfirm();
+                if (e.key === "Enter") handleSaveAsConfirm(saveAsName);
                 if (e.key === "Escape") { setSaveAsTabId(null); setSaveAsName(""); setCloseAfterSaveAs(false); }
               }}
               autoFocus
             />
             <div className="qp-save-as-actions">
               <button onClick={() => { setSaveAsTabId(null); setSaveAsName(""); setCloseAfterSaveAs(false); }}>Cancel</button>
-              <button className="qp-save-as-confirm" onClick={handleSaveAsConfirm} disabled={!saveAsName.trim()}>Save</button>
+              <button className="qp-save-as-confirm" onClick={() => handleSaveAsConfirm(saveAsName)} disabled={!saveAsName.trim()}>Save</button>
             </div>
           </div>
         </div>

@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { isMac } from "@/utils/platform";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, Workflow, ChevronLeft, Loader2, Eye, Activity } from "lucide-react";
+import { useConnectionStore } from "@/store/connectionStore";
+import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, ChevronLeft, Loader2, Eye, Activity, Network, Wrench, PlusSquare, Rows } from "lucide-react";
 import type { TableInfo, InternalScript } from "@/types/db";
 import { dbService } from "@/services/dbService";
 import { workspaceService } from "@/services/workspaceService";
+import { useDangerDialog } from "@/hooks/useDangerDialog";
+import { useToastStore } from "@/store/toastStore";
+import { useUiStore } from "@/store/uiStore";
+import "./dialog-shared.css";
 import "./CommandPalette.css";
 
 export function generateOrmAlias(tableName: string): string {
@@ -22,7 +27,7 @@ export interface CommandAction {
   onAction: () => void;
 }
 
-type DdlMode = "drop" | "truncate" | "rename" | "alter" | null;
+type DdlMode = "drop" | "truncate" | "rename" | "alter" | "insert" | null;
 
 type DbObjectSubtype = "view" | "mat_view" | "function" | "procedure" | "trigger";
 
@@ -31,7 +36,10 @@ type PaletteItem =
   | { kind: "script";   id: string; label: string; script: InternalScript }
   | { kind: "action";   id: string; label: string; onAction: () => void }
   | { kind: "database"; id: string; label: string; dbName: string }
-  | { kind: "object";   id: string; label: string; subtype: DbObjectSubtype; name: string; schema: string | null };
+  | { kind: "object";   id: string; label: string; subtype: DbObjectSubtype; name: string; schema: string | null }
+  | { kind: "diagram";  id: string; label: string; table: TableInfo }
+  | { kind: "ddl";      id: string; label: string; action: "alter" | "create"; table: TableInfo }
+  | { kind: "dml";      id: string; label: string; action: "insert"; table: TableInfo };
 
 const OBJECT_ICON: Record<DbObjectSubtype, React.ReactNode> = {
   view:      <Eye      size={16} />,
@@ -55,6 +63,9 @@ const ITEM_ICON: Record<PaletteItem["kind"], React.ReactNode> = {
   action:   <Zap size={16} />,
   database: <Database size={16} />,
   object:   <Eye size={16} />,
+  diagram:  <Network size={16} />,
+  ddl:      <Wrench size={16} />, // Render logic will override this based on action
+  dml:      <Rows size={16} />,
 };
 
 const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
@@ -63,43 +74,28 @@ const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
   action:   "Action",
   database: "Database",
   object:   "DB Object",
+  diagram:  "ERD Diagram",
+  ddl:      "Structure",
+  dml:      "Data",
 };
 
 const DDL_MODE_META: Record<NonNullable<DdlMode>, { label: string; icon: React.ReactNode; danger: boolean; hint: string }> = {
   drop:     { label: "DROP TABLE",     icon: <Trash2   size={14} />, danger: true,  hint: "↵ Confirm delete" },
   truncate: { label: "TRUNCATE TABLE", icon: <Scissors size={14} />, danger: true,  hint: "↵ Confirm truncate" },
   rename:   { label: "RENAME TABLE",   icon: <Edit3    size={14} />, danger: false, hint: "↵ Rename table" },
-  alter:    { label: "ALTER TABLE",    icon: <Workflow size={14} />, danger: false, hint: "↵ Open Schema Wizard" },
+  alter:    { label: "ALTER TABLE",    icon: <Wrench   size={14} />, danger: false, hint: "↵ Open Schema Wizard" },
+  insert:   { label: "INSERT ROW",     icon: <PlusSquare size={14} />, danger: false, hint: "↵ Insert row" },
 };
-
-type DbActionType = "create" | "rename" | "drop";
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
-  connectionId?: string | null;
-  onTableSelect?: (table: TableInfo) => void;
-  onScriptOpen?: (sql: string, name: string, id?: string) => void;
-  onDatabaseSwitch?: (dbName: string) => void;
-  onDropTable?: (table: TableInfo) => void;
-  onTruncateTable?: (table: TableInfo) => void;
-  onRenameTable?: (table: TableInfo) => void;
-  onAlterTable?: (table: TableInfo) => void;
-  onDbAction?: (action: DbActionType) => void;
   actions?: CommandAction[];
 }
 
 export function CommandPalette({
   open,
   onClose,
-  connectionId,
-  onTableSelect,
-  onScriptOpen,
-  onDatabaseSwitch,
-  onDropTable,
-  onTruncateTable,
-  onRenameTable,
-  onAlterTable,
   actions = [],
 }: CommandPaletteProps) {
   const [query, setQuery]               = useState("");
@@ -110,27 +106,14 @@ export function CommandPalette({
   const inputRef        = useRef<HTMLInputElement>(null);
   const resultsRef      = useRef<HTMLDivElement>(null);
   const pointerActiveRef = useRef(false);
-  
-  const [recentIds, setRecentIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("dib_recent_palette_ids");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const connectionId = useConnectionStore((s) => s.active?.activeId ?? null);
+  const info = useToastStore((s) => s.info);
+  const error = useToastStore((s) => s.error);
+  const { handleDropTable, handleTruncateTable } = useDangerDialog(connectionId, info, error);
+  const recentCommands = useUiStore((s) => s.recentCommands);
+  const pushToRecents = useUiStore((s) => s.pushToRecents);
 
-  const saveRecentId = useCallback((id: string) => {
-    setRecentIds((prev) => {
-      const next = [id, ...prev.filter((existingId) => existingId !== id)].slice(0, 5);
-      try {
-        localStorage.setItem("dib_recent_palette_ids", JSON.stringify(next));
-      } catch (e) {
-        console.error("Failed to save recent ids", e);
-      }
-      return next;
-    });
-  }, []);
+
 
   useEffect(() => {
     if (!resultsRef.current) return;
@@ -159,6 +142,27 @@ export function CommandPalette({
     workspaceService.getInternalScripts()
       .then((scripts) => useWorkspaceStore.getState().setInternalScripts(scripts))
       .catch(console.error);
+
+    // Standalone virtual scripts live in virtual_scripts keyed by the STABLE
+    // saved-connection id — same source the Sidebar tree reads, so both stay
+    // in sync.
+    const savedId = useConnectionStore.getState().active?.savedId;
+    if (savedId) {
+      workspaceService.getVirtualScripts(savedId)
+        .then((rows) => setVirtualScripts(
+          rows.map((r) => ({
+            id: r.id,
+            title: r.name,
+            content: r.content ?? "",
+            created_at: r.created_at ?? "",
+            updated_at: r.updated_at ?? "",
+            connection_id: r.connection_id,
+          })),
+        ))
+        .catch(() => setVirtualScripts([]));
+    } else {
+      setVirtualScripts([]);
+    }
 
     if (connectionId) {
       loaders.push(
@@ -213,9 +217,12 @@ export function CommandPalette({
 
   // Single source of truth: same array Sidebar reads, kept live via scriptVersion.
   const internalScripts = useWorkspaceStore((s) => s.internalScripts);
+  const [virtualScripts, setVirtualScripts] = useState<InternalScript[]>([]);
   const scriptItems = useMemo<PaletteItem[]>(
-    () => internalScripts.map((s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s })),
-    [internalScripts],
+    () => [...virtualScripts, ...internalScripts].map(
+      (s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s }),
+    ),
+    [internalScripts, virtualScripts],
   );
 
   const enterDdlMode = useCallback((mode: NonNullable<DdlMode>) => {
@@ -232,6 +239,7 @@ export function CommandPalette({
     { kind: "action", id: "ddl:truncate", label: "Truncate Table…", onAction: () => enterDdlMode("truncate") },
     { kind: "action", id: "ddl:rename",   label: "Rename Table…",   onAction: () => enterDdlMode("rename") },
     { kind: "action", id: "ddl:alter",    label: "Alter Table…",    onAction: () => enterDdlMode("alter") },
+    { kind: "action", id: "dml:insert",   label: "Insert Row…",     onAction: () => enterDdlMode("insert") },
   ] : [], [connectionId, enterDdlMode]);
 
   const filtered = useMemo<PaletteItem[]>(() => {
@@ -249,8 +257,18 @@ export function CommandPalette({
 
     const q = query.trim();
     if (!q) {
-      const allItems = [...baseItems, ...scriptItems, ...actionItems];
-      const recent = recentIds.map((id) => allItems.find((i) => i.id === id)).filter(Boolean) as PaletteItem[];
+      const recent = recentCommands.map((rc) => {
+        if (rc.type === "action") return actionItems.find(a => a.id === rc.id);
+        if (rc.type === "table") return baseItems.find(b => b.kind === "table" && b.id === rc.id);
+        if (rc.type === "script") return scriptItems.find(s => s.id === rc.id);
+        if (rc.type === "database") return baseItems.find(b => b.kind === "database" && b.id === rc.id);
+        if (rc.type === "object") return baseItems.find(b => b.kind === "object" && b.id === rc.id);
+        if (rc.type === "diagram") return { kind: "diagram", id: rc.id, label: rc.label, table: rc.table };
+        if (rc.type === "ddl") return { kind: "ddl", id: rc.id, label: rc.label, action: rc.action, table: rc.table };
+        if (rc.type === "dml") return { kind: "dml", id: rc.id, label: rc.label, action: rc.action, table: rc.table };
+        return null;
+      }).filter(Boolean) as PaletteItem[];
+      
       if (recent.length > 0) return recent;
       return connectionId
         ? [...actionItems, ...baseItems.filter(i => i.kind === "table")].slice(0, 5)
@@ -301,18 +319,56 @@ export function CommandPalette({
 
       // DDL sub-mode table selection
       if (ddlMode && item.kind === "table") {
-        if (ddlMode === "drop")     onDropTable?.(item.table);
-        if (ddlMode === "truncate") onTruncateTable?.(item.table);
-        if (ddlMode === "rename")   onRenameTable?.(item.table);
-        if (ddlMode === "alter")    onAlterTable?.(item.table);
+        if (ddlMode === "drop")     handleDropTable(item.table);
+        if (ddlMode === "truncate") handleTruncateTable(item.table);
+        if (ddlMode === "rename")   import("@/store/uiStore").then(m => m.useUiStore.getState().setRenameTarget(item.table));
+        if (ddlMode === "alter") {
+          import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(item.table));
+          pushToRecents({ type: "ddl", id: `ddl:alter:${item.id}`, label: `Alter ${item.table.name}`, action: "alter", table: item.table });
+        }
+        if (ddlMode === "insert") {
+          useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
+          useWorkspaceStore.getState().triggerInsertRow();
+          pushToRecents({ type: "dml", id: `dml:insert:${item.id}`, label: `Insert ${item.table.name}`, action: "insert", table: item.table });
+        }
+        onClose();
+        return;
+      }
+      
+      if (item.kind === "diagram") {
+        useWorkspaceStore.getState().openTableRelations(item.table);
+        pushToRecents({ type: "diagram", id: item.id, label: item.label, table: item.table });
+        onClose();
+        return;
+      }
+      
+      if (item.kind === "ddl" && item.action === "alter") {
+        import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(item.table));
+        pushToRecents({ type: "ddl", id: item.id, label: item.label, action: item.action, table: item.table });
+        onClose();
+        return;
+      }
+      
+      if (item.kind === "dml" && item.action === "insert") {
+        useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
+        useWorkspaceStore.getState().triggerInsertRow();
+        pushToRecents({ type: "dml", id: item.id, label: item.label, action: item.action, table: item.table });
         onClose();
         return;
       }
 
-      saveRecentId(item.id);
-      if (item.kind === "table")         onTableSelect?.(item.table);
-      else if (item.kind === "script")   onScriptOpen?.(item.script.content, item.script.title, item.script.id);
-      else if (item.kind === "database") onDatabaseSwitch?.(item.dbName);
+      if (item.kind === "table") {
+        useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
+        pushToRecents({ type: "table", id: item.id, label: item.label, table: item.table });
+      }
+      else if (item.kind === "script") {
+        useWorkspaceStore.getState().setOpenScript({ sql: item.script.content, name: item.script.title, id: item.script.id, v: Date.now() } as any);
+        pushToRecents({ type: "script", id: item.id, label: item.label, script: item.script });
+      }
+      else if (item.kind === "database") {
+        useConnectionStore.getState().switchDatabase(item.dbName);
+        pushToRecents({ type: "database", id: item.id, label: item.label, dbName: item.dbName });
+      }
       else if (item.kind === "object" && connectionId) {
         const { subtype, name, schema } = item;
         const fetcher =
@@ -321,12 +377,16 @@ export function CommandPalette({
           : subtype === "procedure" ? dbService.getFunctionDdl(connectionId, name, schema)
           : subtype === "trigger"   ? dbService.getTriggerDdl(connectionId, name, schema)
           : Promise.resolve({ ddl: "" });
-        fetcher.then((res) => onScriptOpen?.(res.ddl, `${OBJECT_TAG[subtype]}·${name}`, `obj-${item.id}`)).catch(() => {});
+        fetcher.then((res) => useWorkspaceStore.getState().setOpenScript({ sql: res.ddl, name: `${OBJECT_TAG[subtype]}·${name}`, id: `obj-${item.id}`, v: Date.now() } as any)).catch(() => {});
+        pushToRecents({ type: "object", id: item.id, label: item.label, subtype, name, schema });
       }
-      else if (item.kind === "action") item.onAction();
+      else if (item.kind === "action") {
+        item.onAction();
+        pushToRecents({ type: "action", id: item.id, label: item.label });
+      }
       onClose();
     },
-    [ddlMode, onDropTable, onTruncateTable, onRenameTable, onAlterTable, onTableSelect, onScriptOpen, onDatabaseSwitch, onClose, saveRecentId],
+    [ddlMode, handleDropTable, handleTruncateTable, connectionId, onClose, pushToRecents],
   );
 
   const handleKeyDown = useCallback(
@@ -342,7 +402,9 @@ export function CommandPalette({
       } else if (e.key === "Enter" && e.altKey && filtered[selectedIndex]?.kind === "table") {
         // Alt+Enter → open ERD for focused table
         e.preventDefault();
-        useWorkspaceStore.getState().openTableRelations(filtered[selectedIndex].table!);
+        const item = filtered[selectedIndex] as { kind: "table"; id: string; label: string; table: TableInfo };
+        useWorkspaceStore.getState().openTableRelations(item.table);
+        pushToRecents({ type: "diagram", id: `diagram:${item.id}`, label: `Diagram: ${item.table.name}`, table: item.table });
         onClose();
       } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && filtered[selectedIndex]?.kind === "table") {
         useWorkspaceStore.getState().openTableStructure(filtered[selectedIndex].table!);
@@ -356,7 +418,7 @@ export function CommandPalette({
         else onClose();
       }
     },
-    [filtered, selectedIndex, execute, ddlMode, onClose],
+    [filtered, selectedIndex, execute, ddlMode, onClose, pushToRecents],
   );
 
   useEffect(() => {
@@ -376,7 +438,7 @@ export function CommandPalette({
   const currentDdlMeta = ddlMode ? DDL_MODE_META[ddlMode] : null;
 
   return (
-    <div className="palette-backdrop" onClick={onClose}>
+    <div className="dialog-backdrop palette-backdrop" onClick={onClose}>
       <div className="palette" onClick={(e) => e.stopPropagation()}>
         {/* DDL sub-mode indicator */}
         {ddlMode && currentDdlMeta && (
@@ -417,7 +479,7 @@ export function CommandPalette({
             <div className="palette-empty">No results</div>
           ) : (
             filtered.map((item, i) => {
-              const isRecentView = !ddlMode && isEmpty && recentIds.length > 0;
+              const isRecentView = !ddlMode && isEmpty && recentCommands.length > 0;
               const prevItem = i > 0 ? filtered[i - 1] : null;
               const showHeader = ddlMode
                 ? i === 0
@@ -433,6 +495,9 @@ export function CommandPalette({
               else if (item.kind === "database") hintText = "↵ Switch DB";
               else if (item.kind === "action")   hintText = "↵ Execute";
               else if (item.kind === "object")   hintText = `↵ View DDL [${OBJECT_TAG[item.subtype]}]`;
+              else if (item.kind === "diagram")  hintText = "↵ Open ERD";
+              else if (item.kind === "ddl")      hintText = item.action === "create" ? "↵ Create DB" : "↵ Alter Table";
+              else if (item.kind === "dml")      hintText = "↵ Insert row";
 
               const isDdlAction = item.kind === "action" && item.id.startsWith("ddl:");
               const isDangerItem = ddlMode === "drop" || ddlMode === "truncate";
@@ -454,6 +519,7 @@ export function CommandPalette({
                     <span className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}>
                       {ddlMode && item.kind === "table" ? currentDdlMeta?.icon
                         : item.kind === "object" ? OBJECT_ICON[item.subtype]
+                        : item.kind === "ddl" ? (item.action === "create" ? <PlusSquare size={16} /> : <Wrench size={16} />)
                         : ITEM_ICON[item.kind]}
                     </span>
                     <span className="palette-item-label">{item.label}</span>

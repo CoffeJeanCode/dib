@@ -7,7 +7,7 @@ import { Titlebar } from "@/components/Titlebar";
 import { JsonPanel } from "@/features/JsonViewer/JsonPanel";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useSettingsStore } from "@/store/settingsStore";
-import type { SavedConnection, TableInfo } from "@/types/db";
+import { useConnectionStore } from "@/store/connectionStore";
 import "./Layout.css";
 
 const SIDEBAR_MIN = 160;
@@ -37,25 +37,14 @@ const SPLIT_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> =
   { id: "history",     icon: <Clock size={20} />,       title: "History" },
 ];
 
-type DbActionType = "create" | "rename" | "drop";
-
 interface LayoutProps {
   children: React.ReactNode;
-  activeConnectionId?: string | null;
-  activeSessionId?: string | null;
-  onConnectionSelect?: (connectionId: string) => void;
-  connectionName?: string;
-  onScriptOpen?: (sql: string, title: string, id: string) => void;
-  onTableSelect?: (table: TableInfo) => void;
-  onDatabaseSwitch?: (db: string) => void;
-  onDisconnect?: () => void;
-  onEditConnection?: (conn: SavedConnection) => void;
   onSettingsOpen?: () => void;
-  onDbAction?: (action: DbActionType, dbName?: string) => void;
 }
 
-export function Layout({ children, activeConnectionId, activeSessionId, connectionName, onConnectionSelect, onScriptOpen, onTableSelect, onDatabaseSwitch, onDisconnect, onEditConnection, onSettingsOpen, onDbAction }: LayoutProps) {
+export function Layout({ children, onSettingsOpen }: LayoutProps) {
   const { state, loaded, updateState } = useUiState();
+  const activeConnectionId = useConnectionStore((s) => s.active?.activeId ?? null);
   const workspaceLayout = useSettingsStore((s) => s.workspaceLayout);
   // No active connection AND no active workspace = Home (instance selection screen)
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -208,18 +197,7 @@ export function Layout({ children, activeConnectionId, activeSessionId, connecti
           <Sidebar
             activeView={activePanel}
             width={sidebarW}
-            activeConnectionId={activeConnectionId}
-            activeSessionId={activeSessionId}
             onResizeStart={handleResizeStart}
-            connectionName={connectionName}
-            onConnectionSelect={onConnectionSelect}
-            onScriptOpen={onScriptOpen}
-            onTableSelect={onTableSelect}
-            onDatabaseSwitch={onDatabaseSwitch}
-            onDisconnect={onDisconnect}
-            onEditConnection={onEditConnection}
-            onDbAction={onDbAction}
-            activeDb={connectionName}
           />
         )}
 

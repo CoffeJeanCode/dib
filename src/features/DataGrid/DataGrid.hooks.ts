@@ -70,7 +70,7 @@ export function useDataGridState({
   const pkColIdxRef = useRef(-1);
 
   // Refs
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,19 +92,42 @@ export function useDataGridState({
   const [editState, setEditState] = useState<EditState>(() => makeEditState(rows));
   displayedRowsRef.current = editState.rows; // keep in sync every render for post-save reordering
 
-  // Freeze controlled mode on mount — never switch between controlled/uncontrolled
+  // Freeze persistence mode on mount — never switch on/off
   const isControlledRef = useRef(onActiveCellChange !== undefined);
 
-  // Internal fallback state for uncontrolled mode (e.g. SqlEditor results grid)
-  const [internalActiveCell, setInternalActiveCell] = useState<{ row: number; col: number } | null>(null);
+  // Internal state is ALWAYS the source of truth for navigation. Routing
+  // arrow keys through the parent (setTabs → full QueryPanel re-render →
+  // prop echo) made rapid keypresses read stale positions: the cell bounced
+  // and the auto-scroll effect chased it ("springs"). The prop is only a
+  // persistence channel now: we emit changes up, and adopt the prop only
+  // when it is NOT an echo of what we just emitted (e.g. tab switch restore).
+  const [internalActiveCell, setInternalActiveCell] = useState<{ row: number; col: number } | null>(activeCellProp ?? null);
+  const lastEmittedCellRef = useRef<{ row: number; col: number } | null | undefined>(undefined);
 
-  const activeCell = isControlledRef.current ? (activeCellProp ?? null) : internalActiveCell;
+  useEffect(() => {
+    if (!isControlledRef.current) return;
+    const prop = activeCellProp ?? null;
+    const emitted = lastEmittedCellRef.current;
+    const isEcho = emitted !== undefined && (
+      prop === emitted || (prop !== null && emitted !== null && prop.row === emitted.row && prop.col === emitted.col)
+    );
+    if (!isEcho) setInternalActiveCell(prop); // external restore (tab switch)
+  }, [activeCellProp]);
+
+  const activeCell = internalActiveCell;
+  const emitTimeoutRef = useRef<number | null>(null);
+  
   const setActiveCell = useCallback(
     (next: { row: number; col: number } | null) => {
+      setInternalActiveCell(next);
       if (isControlledRef.current) {
-        onActiveCellChangeRef.current?.(next);
-      } else {
-        setInternalActiveCell(next);
+        lastEmittedCellRef.current = next;
+        if (emitTimeoutRef.current !== null) {
+          window.clearTimeout(emitTimeoutRef.current);
+        }
+        emitTimeoutRef.current = window.setTimeout(() => {
+          onActiveCellChangeRef.current?.(next);
+        }, 150);
       }
     },
     [],
@@ -145,6 +168,48 @@ export function useDataGridState({
     for (const r of (relations ?? [])) map[r.source_column] = { targetTable: r.target_table, targetColumn: r.target_column };
     return map;
   }, [relations]);
+
+  // FK interactions: Alt+Click / context menu → JOIN script in a new tab
+  const [fkMenu, setFkMenu] = useState<{ x: number; y: number; col: string } | null>(null);
+  const fkMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const generateJoinQuery = useCallback((col: string) => {
+    const fk = fkMap[col];
+    if (!fk || !tableName) return;
+    const sql = `SELECT src.*, ref.*\nFROM ${tableName} src\nJOIN ${fk.targetTable} ref ON src.${col} = ref.${fk.targetColumn};\n`;
+    // Same channel the command palette uses — QueryPanel opens it as a new tab.
+    useWorkspaceStore.getState().setOpenScript({
+      sql,
+      name: `join_${tableName}_${fk.targetTable}.sql`,
+      id: `ext-${Date.now()}`,
+      v: Date.now(),
+    });
+  }, [fkMap, tableName]);
+
+  const handleCellContextMenu = useCallback(
+    (colIdx: number, e: React.MouseEvent) => {
+      const col = columns[colIdx];
+      if (!fkMap[col]) return;
+      e.preventDefault();
+      setFkMenu({ x: e.clientX, y: e.clientY, col });
+    },
+    [columns, fkMap],
+  );
+
+  useEffect(() => {
+    if (!fkMenu) return;
+    const close = (e: PointerEvent) => {
+      if (e.target instanceof Node && fkMenuRef.current?.contains(e.target)) return;
+      setFkMenu(null);
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setFkMenu(null); };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [fkMenu]);
 
   const getPkStr = useCallback(
     (rowIdx: number, currentRows: unknown[][]): string =>
@@ -232,7 +297,7 @@ export function useDataGridState({
     if (disableAutoFocus || rows.length === 0) return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        gridRef.current?.focus();
+        gridRef.current?.focus({ preventScroll: true });
       });
     });
   }, [disableAutoFocus, rows.length]);
@@ -241,29 +306,39 @@ export function useDataGridState({
     onPendingChangesRef.current?.(Array.from(editState.changes.values()));
   }, [editState.changes]);
 
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    setViewH(el.clientHeight);
-    const ro = new ResizeObserver(([e]) => setViewH(e.contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
+  // Callback ref, not mount effect: the container doesn't exist while the
+  // loading early-return renders, so a []-dep effect would never observe it
+  // and viewH would stay at its 400px default (blank rows on tall viewports).
+  const viewObserverRef = useRef<ResizeObserver | null>(null);
+  const setContainerEl = useCallback((el: HTMLDivElement | null) => {
+    containerRef.current = el;
+    viewObserverRef.current?.disconnect();
+    viewObserverRef.current = null;
+    if (el) {
+      setViewH(el.clientHeight);
+      viewObserverRef.current = new ResizeObserver(([e]) => setViewH(e.contentRect.height));
+      viewObserverRef.current.observe(el);
+    }
   }, []);
 
   useEffect(() => {
-    if (isEditing) setTimeout(() => inputRef.current?.focus(), 0);
+    if (isEditing) setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 0);
   }, [isEditing]);
 
   useEffect(() => {
     if (!activeCell || !containerRef.current) return;
     const el = containerRef.current;
     const cw = columnWidthsRef.current;
+    // Rows begin below the sticky header inside the same scroll container, so
+    // the usable row viewport is viewH minus the header's height.
+    const headerH = headerRef.current?.offsetHeight ?? 0;
+    const rowViewH = viewH - headerH;
     const top = activeCell.row * ROW_H;
     const bottom = top + ROW_H;
-    if (top < el.scrollTop + ROW_H) {
-      el.scrollTop = Math.max(0, top - ROW_H);
-    } else if (bottom > el.scrollTop + viewH - ROW_H) {
-      el.scrollTop = bottom - viewH + ROW_H;
+    if (top < el.scrollTop) {
+      el.scrollTop = top;
+    } else if (bottom > el.scrollTop + rowViewH) {
+      el.scrollTop = bottom - rowViewH;
     }
     const colLeft = columns.slice(0, activeCell.col).reduce<number>(
       (sum, col) => sum + (cw[col] ?? DEFAULT_COL_W), 0,
@@ -394,7 +469,7 @@ export function useDataGridState({
 
       setIsEditing(false);
       setEditValue("");
-      requestAnimationFrame(() => gridRef.current?.focus());
+      requestAnimationFrame(() => gridRef.current?.focus({ preventScroll: true }));
 
       const totalR = editState.rows.length;
       if (moveDirection === "down" && row + 1 < totalR) setActiveCell({ row: row + 1, col });
@@ -406,7 +481,7 @@ export function useDataGridState({
   const cancelEdit = useCallback(() => {
     setIsEditing(false);
     setEditValue("");
-    requestAnimationFrame(() => gridRef.current?.focus());
+    requestAnimationFrame(() => gridRef.current?.focus({ preventScroll: true }));
   }, []);
 
   const startEdit = useCallback(
@@ -570,7 +645,7 @@ export function useDataGridState({
         onSaveErrorRef.current?.(msg);
       })
       .finally(() => {
-        requestAnimationFrame(() => gridRef.current?.focus());
+        requestAnimationFrame(() => gridRef.current?.focus({ preventScroll: true }));
       });
   }, [editState.changes]);
 
@@ -758,14 +833,29 @@ export function useDataGridState({
         return;
       }
 
+      const maxRow = Math.max(0, totalR - 1);
+      const maxCol = Math.max(0, columns.length - 1);
+
+      if (!activeCell) {
+        if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
+          e.preventDefault();
+          if (totalR > 0 && columns.length > 0) {
+            setActiveCell({ row: 0, col: 0 });
+            setAnchorCell({ row: 0, col: 0 });
+            setSelectedCells(new Set([cellId(0, 0)]));
+          }
+          return;
+        }
+      }
+
       if (e.shiftKey && ["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
         e.preventDefault();
         const anchor = anchorCell ?? { row, col };
         if (!anchorCell) setAnchorCell(anchor);
         let nr = row, nc = col;
-        if (e.key === "ArrowDown") nr = Math.min(totalR - 1, row + 1);
+        if (e.key === "ArrowDown") nr = Math.min(maxRow, row + 1);
         if (e.key === "ArrowUp") nr = Math.max(0, row - 1);
-        if (e.key === "ArrowRight") nc = Math.min(columns.length - 1, col + 1);
+        if (e.key === "ArrowRight") nc = Math.min(maxCol, col + 1);
         if (e.key === "ArrowLeft") nc = Math.max(0, col - 1);
         setActiveCell({ row: nr, col: nc });
         setSelectedCells(buildRangeSet(anchor.row, anchor.col, nr, nc));
@@ -773,23 +863,19 @@ export function useDataGridState({
       }
 
       const move = (nr: number, nc: number) => {
+        if (totalR === 0 || columns.length === 0) return;
+        nr = Math.max(0, Math.min(nr, maxRow));
+        nc = Math.max(0, Math.min(nc, maxCol));
         const next = { row: nr, col: nc };
         setActiveCell(next);
         setAnchorCell(next);
         setSelectedCells(new Set([cellId(nr, nc)]));
       };
-      if (e.key === "ArrowDown") { e.preventDefault(); if (row + 1 < totalR) move(row + 1, col); return; }
-      if (e.key === "ArrowUp") { e.preventDefault(); if (row > 0) move(row - 1, col); return; }
-      if (e.key === "ArrowRight" || (e.key === "Tab" && !e.shiftKey)) {
-        e.preventDefault();
-        if (col + 1 < columns.length) move(row, col + 1);
-        return;
-      }
-      if (e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) {
-        e.preventDefault();
-        if (col > 0) move(row, col - 1);
-        return;
-      }
+
+      if (e.key === "ArrowDown") { e.preventDefault(); move(row + 1, col); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); move(row - 1, col); return; }
+      if (e.key === "ArrowRight" || (e.key === "Tab" && !e.shiftKey)) { e.preventDefault(); move(row, col + 1); return; }
+      if (e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) { e.preventDefault(); move(row, col - 1); return; }
       if (e.key === "Enter" || e.key === "F2") { e.preventDefault(); startEdit(row, col); return; }
 
       if (e.key.length === 1 && !ctrl && !e.altKey) {
@@ -808,6 +894,12 @@ export function useDataGridState({
   const handleCellClick = useCallback(
     (rowIdx: number, colIdx: number, e: React.MouseEvent) => {
       const col = columns[colIdx];
+      // FK Alt+Click → generate JOIN query in a new script tab
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && fkMap[col]) {
+        e.preventDefault();
+        generateJoinQuery(col);
+        return;
+      }
       // FK Ctrl+Click → navigate to parent table
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && fkMap[col] && onFkNavigateRef.current) {
         e.preventDefault();
@@ -819,7 +911,7 @@ export function useDataGridState({
         }
       }
       if (isEditing) commitEdit(null);
-      gridRef.current?.focus();
+      gridRef.current?.focus({ preventScroll: true });
       const id = cellId(rowIdx, colIdx);
       if (e.shiftKey && anchorCell) {
         setSelectedCells(buildRangeSet(anchorCell.row, anchorCell.col, rowIdx, colIdx));
@@ -838,7 +930,7 @@ export function useDataGridState({
         setActiveCell({ row: rowIdx, col: colIdx });
       }
     },
-    [isEditing, commitEdit, anchorCell, columns, fkMap, editState.rows, setActiveCell],
+    [isEditing, commitEdit, anchorCell, columns, fkMap, editState.rows, setActiveCell, generateJoinQuery],
   );
 
   // Resize
@@ -917,6 +1009,7 @@ export function useDataGridState({
   return {
     // refs
     containerRef,
+    setContainerEl,
     gridRef,
     headerRef,
     inputRef,
@@ -955,6 +1048,12 @@ export function useDataGridState({
     colInfoMap,
     fkMap,
     deletedRowIndices,
+    // FK context menu
+    fkMenu,
+    setFkMenu,
+    fkMenuRef,
+    generateJoinQuery,
+    handleCellContextMenu,
     // handlers
     handleGridKeyDown,
     handleCellClick,

@@ -4,6 +4,7 @@ import { safeInvoke as invoke } from "@/utils/ipc";
 import type { ScriptMeta } from "@/types/db";
 import { useFileSystemStore } from "@/store/fileSystemStore";
 import { PinnedSection } from "./PinnedSection";
+import { ScriptsContextMenu } from "@/components/ScriptsContextMenu";
 
 interface SavedScriptsPanelProps {
   onScriptOpen?: (sql: string, title: string, id: string) => void;
@@ -27,6 +28,8 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [newFilename, setNewFilename] = useState("");
+  const [renameTarget, setRenameTarget] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(() => {
@@ -104,17 +107,8 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
               onChange={(e) => setNewFilename(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setNewFilename(""); }}
               placeholder="filename.sql"
-              style={{
-                flex: 1,
-                background: "var(--color-bg)",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--radius-sm)",
-                padding: "4px 8px",
-                fontSize: "var(--font-size-xs)",
-                color: "var(--color-text-primary)",
-                fontFamily: "var(--font-mono)",
-                outline: "none",
-              }}
+              className="inline-edit-input"
+              style={{ padding: "4px 8px" }}
             />
             <button
               className="sidebar-icon-btn"
@@ -123,7 +117,7 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
               title="Save"
               style={{ color: "var(--color-teal)" }}
             >
-              <Save size={14} />
+              <Save />
             </button>
           </div>
         )}
@@ -162,39 +156,108 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
               items={pinnedScripts.map((s) => ({ id: s.name, name: s.name }))}
               onOpen={(item) => handleRead(item.name)}
               onUnpin={(item) => togglePin(item.id)}
+              onDelete={async (item) => {
+                try {
+                  await invoke("delete_script", { filename: item.name });
+                  refresh();
+                } catch (e: unknown) {
+                  setError(String(e));
+                }
+              }}
             />
             {unpinnedScripts.map((s) => (
-              <div
+              <ScriptsContextMenu
                 key={s.name}
-                className="sidebar-db-item"
-                style={{ cursor: "pointer", padding: "3px 8px" }}
-                onClick={() => handleRead(s.name)}
-                title={`${s.name} · ${fmtSize(s.size_bytes)}`}
+                isPinned={false}
+                currentColor={null}
+                onTogglePin={() => togglePin(s.name)}
+                onDelete={async () => {
+                  try {
+                    await invoke("delete_script", { filename: s.name });
+                    refresh();
+                  } catch (e: unknown) {
+                    setError(String(e));
+                  }
+                }}
+                isFolder={false}
               >
-                <FileCode2 size={11} style={{ flexShrink: 0, opacity: 0.6, color: "var(--color-text-tertiary)" }} />
-                <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)" }}>
-                  {s.name}
-                </span>
-                <span style={{
-                  fontSize: 9,
-                  color: "var(--color-text-tertiary)",
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 3,
-                }}>
-                  <Clock size={9} />
-                  {fmtTime(s.modified_ms)}
-                </span>
-                <button
-                  className="sidebar-icon-btn"
-                  title="Pin script"
-                  onClick={(e) => { e.stopPropagation(); togglePin(s.name); }}
-                  style={{ padding: 2, flexShrink: 0 }}
+                <div
+                  className="sidebar-db-item"
+                  style={{ cursor: "pointer", padding: "3px 8px" }}
+                  onClick={() => handleRead(s.name)}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setRenameTarget(s.name);
+                    setRenameValue(s.name);
+                  }}
+                  title={`${s.name} · ${fmtSize(s.size_bytes)}`}
                 >
-                  <Pin size={10} />
-                </button>
-              </div>
+                  <FileCode2 size={11} style={{ flexShrink: 0, opacity: 0.6, color: "var(--color-text-tertiary)" }} />
+                  {renameTarget === s.name ? (
+                    <input
+                      ref={(el) => {
+                        if (el && document.activeElement !== el) {
+                          el.focus();
+                          el.select();
+                        }
+                      }}
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") {
+                          e.stopPropagation();
+                          if (renameValue.trim() && renameValue !== s.name) {
+                            try {
+                              await invoke("rename_script", { old_name: s.name, new_name: renameValue.trim() });
+                              setRenameTarget(null);
+                              refresh();
+                            } catch (err: unknown) {
+                              setError(String(err));
+                            }
+                          } else {
+                            setRenameTarget(null);
+                          }
+                        }
+                        if (e.key === "Escape") {
+                          e.stopPropagation();
+                          setRenameTarget(null);
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => e.stopPropagation()}
+                      className="inline-edit-input inline-edit-input--xs"
+                      style={{ flex: 1, minWidth: 0, margin: "0 4px" }}
+                    />
+                  ) : (
+                    <span className="sidebar-db-item-name" style={{ fontSize: "var(--font-size-xs)" }}>
+                      {s.name}
+                    </span>
+                  )}
+                  {renameTarget !== s.name && (
+                    <>
+                      <span style={{
+                        fontSize: 9,
+                        color: "var(--color-text-tertiary)",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 3,
+                      }}>
+                        <Clock size={9} />
+                        {fmtTime(s.modified_ms)}
+                      </span>
+                      <button
+                        className="sidebar-icon-btn"
+                        title="Pin script"
+                        onClick={(e) => { e.stopPropagation(); togglePin(s.name); }}
+                        style={{ padding: 2, flexShrink: 0 }}
+                      >
+                        <Pin size={10} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </ScriptsContextMenu>
             ))}
           </div>
         )}

@@ -6,9 +6,9 @@ import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useToastStore } from "@/store/toastStore";
 import { PasswordInput } from "@/components/PasswordInput";
-import { GlassInput } from "@/components/GlassInput";
-import { GlassSelect } from "@/components/GlassSelect";
-import { GlassCheckbox } from "@/components/GlassCheckbox";
+import { FlatInput } from "@/components/FlatInput";
+import { FlatSelect } from "@/components/FlatSelect";
+import { FlatCheckbox } from "@/components/FlatCheckbox";
 import "./ConnectionManager.css";
 
 interface ConnectionManagerProps {
@@ -155,7 +155,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
       </div>
 
       <form className="cm-form" onSubmit={handleSubmit}>
-        <GlassInput
+        <FlatInput
           label="Name"
           id="connection-name"
           value={name}
@@ -163,7 +163,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           placeholder="My Database"
         />
 
-        <GlassSelect
+        <FlatSelect
           label="Type"
           id="db-type"
           value={dbType}
@@ -171,12 +171,12 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         >
           <option value="sqlite">SQLite</option>
           <option value="postgres">PostgreSQL</option>
-        </GlassSelect>
+        </FlatSelect>
 
         {dbType !== "sqlite" && (
           <>
             <div className="cm-row">
-              <GlassInput
+              <FlatInput
                 label="Host"
                 id="host"
                 className="cm-field--flex"
@@ -184,7 +184,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
                 onChange={(e) => setHost(e.target.value)}
                 placeholder="localhost"
               />
-              <GlassInput
+              <FlatInput
                 label="Port"
                 id="port"
                 type="number"
@@ -196,7 +196,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
             </div>
 
             <div className="cm-row">
-              <GlassInput
+              <FlatInput
                 label="Username"
                 id="username"
                 className="cm-field--flex"
@@ -215,7 +215,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
               </div>
             </div>
 
-            <GlassCheckbox
+            <FlatCheckbox
               label="Remember password"
               checked={savePassword}
               onChange={(e) => setSavePassword(e.target.checked)}
@@ -223,7 +223,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           </>
         )}
 
-        <GlassInput
+        <FlatInput
           label={dbType === "sqlite" ? "File Path" : "Database"}
           id="database"
           value={database}

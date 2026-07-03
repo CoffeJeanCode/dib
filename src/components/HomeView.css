@@ -99,6 +99,10 @@
   color: var(--color-teal);
 }
 
+.home-conn-icon--yellow {
+  color: var(--color-orange);
+}
+
 .home-conn-info {
   display: flex;
   flex-direction: column;

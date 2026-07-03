@@ -20,34 +20,133 @@ function fmtErr(e: unknown): string {
 }
 
 export const SQL_KEYWORDS = [
-  "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "IN", "IS", "NULL",
-  "JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "FULL", "CROSS", "ON", "AS",
-  "ORDER", "BY", "GROUP", "HAVING", "LIMIT", "OFFSET", "DISTINCT",
-  "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "TRUNCATE",
-  "CREATE", "TABLE", "ALTER", "DROP", "INDEX", "VIEW", "UNIQUE",
-  "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "DEFAULT", "NOT", "NULL",
-  "CASE", "WHEN", "THEN", "ELSE", "END", "EXISTS", "BETWEEN", "LIKE",
-  "UNION", "ALL", "INTERSECT", "EXCEPT", "WITH", "RECURSIVE",
-  "ASC", "DESC", "NULLS", "FIRST", "LAST", "RETURNING",
+  "SELECT",
+  "FROM",
+  "WHERE",
+  "AND",
+  "OR",
+  "NOT",
+  "IN",
+  "IS",
+  "NULL",
+  "JOIN",
+  "LEFT",
+  "RIGHT",
+  "INNER",
+  "OUTER",
+  "FULL",
+  "CROSS",
+  "ON",
+  "AS",
+  "ORDER",
+  "BY",
+  "GROUP",
+  "HAVING",
+  "LIMIT",
+  "OFFSET",
+  "DISTINCT",
+  "INSERT",
+  "INTO",
+  "VALUES",
+  "UPDATE",
+  "SET",
+  "DELETE",
+  "TRUNCATE",
+  "CREATE",
+  "TABLE",
+  "ALTER",
+  "DROP",
+  "INDEX",
+  "VIEW",
+  "UNIQUE",
+  "PRIMARY",
+  "KEY",
+  "FOREIGN",
+  "REFERENCES",
+  "DEFAULT",
+  "NOT",
+  "NULL",
+  "CASE",
+  "WHEN",
+  "THEN",
+  "ELSE",
+  "END",
+  "EXISTS",
+  "BETWEEN",
+  "LIKE",
+  "UNION",
+  "ALL",
+  "INTERSECT",
+  "EXCEPT",
+  "WITH",
+  "RECURSIVE",
+  "ASC",
+  "DESC",
+  "NULLS",
+  "FIRST",
+  "LAST",
+  "RETURNING",
 ];
 
 export const SQL_FUNCTIONS = [
-  "COUNT", "SUM", "AVG", "MIN", "MAX",
-  "COALESCE", "NULLIF", "GREATEST", "LEAST",
-  "UPPER", "LOWER", "TRIM", "LTRIM", "RTRIM", "LENGTH", "SUBSTR", "SUBSTRING",
-  "REPLACE", "CONCAT", "SPLIT_PART", "POSITION", "STRPOS",
-  "NOW", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
-  "DATE_TRUNC", "DATE_PART", "EXTRACT", "AGE", "TO_DATE", "TO_TIMESTAMP",
-  "CAST", "CONVERT",
-  "ROUND", "FLOOR", "CEIL", "ABS", "MOD", "POWER", "SQRT",
-  "ROW_NUMBER", "RANK", "DENSE_RANK", "LAG", "LEAD", "FIRST_VALUE", "LAST_VALUE",
-  "ARRAY_AGG", "STRING_AGG", "JSON_AGG", "JSONB_AGG",
-  "TO_CHAR", "TO_NUMBER",
+  "COUNT",
+  "SUM",
+  "AVG",
+  "MIN",
+  "MAX",
+  "COALESCE",
+  "NULLIF",
+  "GREATEST",
+  "LEAST",
+  "UPPER",
+  "LOWER",
+  "TRIM",
+  "LTRIM",
+  "RTRIM",
+  "LENGTH",
+  "SUBSTR",
+  "SUBSTRING",
+  "REPLACE",
+  "CONCAT",
+  "SPLIT_PART",
+  "POSITION",
+  "STRPOS",
+  "NOW",
+  "CURRENT_DATE",
+  "CURRENT_TIME",
+  "CURRENT_TIMESTAMP",
+  "DATE_TRUNC",
+  "DATE_PART",
+  "EXTRACT",
+  "AGE",
+  "TO_DATE",
+  "TO_TIMESTAMP",
+  "CAST",
+  "CONVERT",
+  "ROUND",
+  "FLOOR",
+  "CEIL",
+  "ABS",
+  "MOD",
+  "POWER",
+  "SQRT",
+  "ROW_NUMBER",
+  "RANK",
+  "DENSE_RANK",
+  "LAG",
+  "LEAD",
+  "FIRST_VALUE",
+  "LAST_VALUE",
+  "ARRAY_AGG",
+  "STRING_AGG",
+  "JSON_AGG",
+  "JSONB_AGG",
+  "TO_CHAR",
+  "TO_NUMBER",
 ];
 
 export const THEME_LIGHT = "dib-light";
-export const THEME_DARK  = "dib-dark";
-
+export const THEME_DARK = "dib-dark";
 
 export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
   // ── LIGHT THEME ──────────────────────────────────────────────
@@ -55,40 +154,40 @@ export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
     base: "vs",
     inherit: true,
     rules: [
-      { token: "comment",    foreground: "8a8a96", fontStyle: "italic" },
-      { token: "keyword",    foreground: "3b82f6", fontStyle: "bold" },
-      { token: "string",     foreground: "059669" },
-      { token: "number",     foreground: "d97706" },
-      { token: "operator",   foreground: "6b7280" },
+      { token: "comment", foreground: "8a8a96", fontStyle: "italic" },
+      { token: "keyword", foreground: "3b82f6", fontStyle: "bold" },
+      { token: "string", foreground: "059669" },
+      { token: "number", foreground: "d97706" },
+      { token: "operator", foreground: "6b7280" },
       { token: "identifier", foreground: "111118" },
-      { token: "type",       foreground: "8b5cf6" },
+      { token: "type", foreground: "8b5cf6" },
       { token: "predefined", foreground: "0891b2" },
     ],
     colors: {
-      "editor.background":                  "#FAFAFA",
-      "editor.foreground":                  "#111118",
-      "editor.lineHighlightBackground":     "#F0F0F3",
-      "editor.selectionBackground":         "#BFDBFE88",
+      "editor.background": "#FAFAFA",
+      "editor.foreground": "#111118",
+      "editor.lineHighlightBackground": "#F0F0F3",
+      "editor.selectionBackground": "#BFDBFE88",
       "editor.inactiveSelectionBackground": "#BFDBFE44",
-      "editorCursor.foreground":            "#3b82f6",
-      "editorWhitespace.foreground":        "#DCDCE0",
-      "editorIndentGuide.background":       "#DCDCE0",
+      "editorCursor.foreground": "#3b82f6",
+      "editorWhitespace.foreground": "#DCDCE0",
+      "editorIndentGuide.background": "#DCDCE0",
       "editorIndentGuide.activeBackground": "#C8C8CE",
-      "editorLineNumber.foreground":        "#9090A0",
-      "editorLineNumber.activeForeground":  "#5A5A6A",
+      "editorLineNumber.foreground": "#9090A0",
+      "editorLineNumber.activeForeground": "#5A5A6A",
       "editor.selectionHighlightBackground": "#BFDBFE44",
-      "editorBracketMatch.background":      "#BFDBFE66",
-      "editorBracketMatch.border":          "#3b82f6",
-      "scrollbarSlider.background":         "#DCDCE080",
-      "scrollbarSlider.hoverBackground":    "#C8C8CEAA",
-      "scrollbarSlider.activeBackground":   "#9090A0",
-      "editorSuggestWidget.background":     "#FFFFFF",
-      "editorSuggestWidget.border":         "#DCDCE0",
-      "editorSuggestWidget.foreground":     "#111118",
+      "editorBracketMatch.background": "#BFDBFE66",
+      "editorBracketMatch.border": "#3b82f6",
+      "scrollbarSlider.background": "#DCDCE080",
+      "scrollbarSlider.hoverBackground": "#C8C8CEAA",
+      "scrollbarSlider.activeBackground": "#9090A0",
+      "editorSuggestWidget.background": "#FFFFFF",
+      "editorSuggestWidget.border": "#DCDCE0",
+      "editorSuggestWidget.foreground": "#111118",
       "editorSuggestWidget.selectedBackground": "#0068C914",
       "editorSuggestWidget.highlightForeground": "#3b82f6",
-      "editorHoverWidget.background":       "#FFFFFF",
-      "editorHoverWidget.border":           "#DCDCE0",
+      "editorHoverWidget.background": "#FFFFFF",
+      "editorHoverWidget.border": "#DCDCE0",
     },
   });
 
@@ -97,40 +196,40 @@ export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "comment",    foreground: "6b7280", fontStyle: "italic" },
-      { token: "keyword",    foreground: "67e8f9", fontStyle: "bold" },
-      { token: "string",     foreground: "86efac" },
-      { token: "number",     foreground: "c084fc" },
-      { token: "operator",   foreground: "888888" },
+      { token: "comment", foreground: "6b7280", fontStyle: "italic" },
+      { token: "keyword", foreground: "67e8f9", fontStyle: "bold" },
+      { token: "string", foreground: "86efac" },
+      { token: "number", foreground: "c084fc" },
+      { token: "operator", foreground: "888888" },
       { token: "identifier", foreground: "F3F4F6" },
-      { token: "type",       foreground: "a78bfa" },
+      { token: "type", foreground: "a78bfa" },
       { token: "predefined", foreground: "5eead4" },
     ],
     colors: {
-      "editor.background":                  "#121215",
-      "editor.foreground":                  "#F3F4F6",
-      "editor.lineHighlightBackground":     "#1A1A1E",
-      "editor.selectionBackground":         "#67e8f922",
+      "editor.background": "#121215",
+      "editor.foreground": "#F3F4F6",
+      "editor.lineHighlightBackground": "#1A1A1E",
+      "editor.selectionBackground": "#67e8f922",
       "editor.inactiveSelectionBackground": "#67e8f911",
-      "editorCursor.foreground":            "#67e8f9",
-      "editorWhitespace.foreground":        "#2A2A30",
-      "editorIndentGuide.background":       "#2A2A30",
+      "editorCursor.foreground": "#67e8f9",
+      "editorWhitespace.foreground": "#2A2A30",
+      "editorIndentGuide.background": "#2A2A30",
       "editorIndentGuide.activeBackground": "#67e8f933",
-      "editorLineNumber.foreground":        "#555560",
-      "editorLineNumber.activeForeground":  "#888888",
+      "editorLineNumber.foreground": "#555560",
+      "editorLineNumber.activeForeground": "#888888",
       "editor.selectionHighlightBackground": "#67e8f918",
-      "editorBracketMatch.background":      "#67e8f922",
-      "editorBracketMatch.border":          "#67e8f9",
-      "scrollbarSlider.background":         "#2A2A3080",
-      "scrollbarSlider.hoverBackground":    "#67e8f933",
-      "scrollbarSlider.activeBackground":   "#67e8f955",
-      "editorSuggestWidget.background":     "#1A1A1E",
-      "editorSuggestWidget.border":         "#2A2A30",
-      "editorSuggestWidget.foreground":     "#F3F4F6",
+      "editorBracketMatch.background": "#67e8f922",
+      "editorBracketMatch.border": "#67e8f9",
+      "scrollbarSlider.background": "#2A2A3080",
+      "scrollbarSlider.hoverBackground": "#67e8f933",
+      "scrollbarSlider.activeBackground": "#67e8f955",
+      "editorSuggestWidget.background": "#1A1A1E",
+      "editorSuggestWidget.border": "#2A2A30",
+      "editorSuggestWidget.foreground": "#F3F4F6",
       "editorSuggestWidget.selectedBackground": "#67e8f914",
       "editorSuggestWidget.highlightForeground": "#67e8f9",
-      "editorHoverWidget.background":       "#1A1A1E",
-      "editorHoverWidget.border":           "#2A2A30",
+      "editorHoverWidget.background": "#1A1A1E",
+      "editorHoverWidget.border": "#2A2A30",
     },
   });
 }
@@ -223,7 +322,6 @@ export function useSqlEditor({
   // Holds reference to the monaco namespace so cleanup can access it
   const monacoRef = useRef<Parameters<OnMount>[1] | null>(null);
 
-
   /** columns per table, populated lazily on first dot-trigger */
   const schemaRef = useRef<Record<string, ColumnInfo[]>>({});
   /** table/view names fetched eagerly on connect for top-level autocomplete */
@@ -231,7 +329,9 @@ export function useSqlEditor({
   /** tracks which tables have had their columns fetched */
   const colsFetchedRef = useRef<Set<string>>(new Set());
   const completionDisposable = useRef<{ dispose(): void } | null>(null);
-  const fetchColumnsLazyRef = useRef<(tableName: string) => Promise<ColumnInfo[]>>(() => Promise.resolve([]));
+  const fetchColumnsLazyRef = useRef<(tableName: string) => Promise<ColumnInfo[]>>(() =>
+    Promise.resolve([]),
+  );
   const runQueryRef = useRef<((sqlText: string) => void) | null>(null);
   const onSaveScriptRef = useRef(onSaveScript);
   onSaveScriptRef.current = onSaveScript;
@@ -242,7 +342,9 @@ export function useSqlEditor({
   sqlRef.current = sql;
 
   useEffect(() => {
-    return () => { completionDisposable.current?.dispose(); };
+    return () => {
+      completionDisposable.current?.dispose();
+    };
   }, []);
 
   // Lazy schema: refetch table names on connect AND after schema mutations (reloadVersion)
@@ -252,21 +354,29 @@ export function useSqlEditor({
     colsFetchedRef.current = new Set();
     tableNamesRef.current = [];
     if (!connectionId) return;
-    dbService.fetchSchemaObjects(connectionId)
-      .then((obj) => { tableNamesRef.current = [...obj.tables, ...obj.views]; })
+    dbService
+      .fetchSchemaObjects(connectionId)
+      .then((obj) => {
+        tableNamesRef.current = [...obj.tables, ...obj.views];
+      })
       .catch(console.error);
   }, [connectionId, reloadVersion]);
 
-  const fetchColumnsLazy = useCallback(async (tableName: string): Promise<ColumnInfo[]> => {
-    const key = tableName.toLowerCase();
-    if (colsFetchedRef.current.has(key)) return schemaRef.current[key] ?? [];
-    colsFetchedRef.current.add(key);
-    const t = tableNamesRef.current.find((x) => x.name.toLowerCase() === key);
-    if (!t) return [];
-    const cols = await dbService.fetchTableSchema(connectionId, t.name, t.schema ?? null).catch(() => [] as ColumnInfo[]);
-    schemaRef.current[key] = cols;
-    return cols;
-  }, [connectionId]);
+  const fetchColumnsLazy = useCallback(
+    async (tableName: string): Promise<ColumnInfo[]> => {
+      const key = tableName.toLowerCase();
+      if (colsFetchedRef.current.has(key)) return schemaRef.current[key] ?? [];
+      colsFetchedRef.current.add(key);
+      const t = tableNamesRef.current.find((x) => x.name.toLowerCase() === key);
+      if (!t) return [];
+      const cols = await dbService
+        .fetchTableSchema(connectionId, t.name, t.schema ?? null)
+        .catch(() => [] as ColumnInfo[]);
+      schemaRef.current[key] = cols;
+      return cols;
+    },
+    [connectionId],
+  );
 
   const showStatus = useCallback((msg: string, ok: boolean) => {
     setFileStatus({ msg, ok });
@@ -327,7 +437,8 @@ export function useSqlEditor({
         if (!cancelledRef.current) {
           setLoading(false);
         }
-        dbService.saveQueryHistory(connectionId, sqlText, success, Date.now() - t0, uiState.history_limit)
+        dbService
+          .saveQueryHistory(connectionId, sqlText, success, Date.now() - t0, uiState.history_limit)
           .then(() => useWorkspaceStore.getState().incrementQueryVersion())
           .catch(() => {});
         runningRef.current = false;
@@ -402,74 +513,68 @@ export function useSqlEditor({
       editor.focus();
     };
 
-    editor.addCommand(
-      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter,
-      executeQuery,
-    );
+    editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.Enter, executeQuery);
 
-    editor.addCommand(
-      monacoInstance.KeyCode.F5,
-      executeQuery,
-    );
+    editor.addCommand(monacoInstance.KeyCode.F5, executeQuery);
 
     const executeCurrentCommand = () => {
       const position = editor.getPosition();
       const model = editor.getModel();
       if (!position || !model) return;
-      
+
       const fullText = model.getValue();
       const offset = model.getOffsetAt(position);
-      
+
       let end = fullText.length;
       let inSingle = false;
       let inDouble = false;
       let inLineComment = false;
       let inBlockComment = false;
       let lastSemi = 0;
-      
+
       for (let i = 0; i < fullText.length; i++) {
         const c = fullText[i];
         const nextC = fullText[i + 1] || "";
-        
+
         if (inSingle) {
           if (c === "'") {
-             if (nextC === "'") i++; // escaped
-             else inSingle = false;
+            if (nextC === "'")
+              i++; // escaped
+            else inSingle = false;
           }
         } else if (inDouble) {
           if (c === '"') {
-             if (nextC === '"') i++; // escaped
-             else inDouble = false;
+            if (nextC === '"')
+              i++; // escaped
+            else inDouble = false;
           }
         } else if (inBlockComment) {
-          if (c === '*' && nextC === '/') {
-             inBlockComment = false;
-             i++;
+          if (c === "*" && nextC === "/") {
+            inBlockComment = false;
+            i++;
           }
         } else if (inLineComment) {
-          if (c === '\n') inLineComment = false;
+          if (c === "\n") inLineComment = false;
         } else {
           if (c === "'") inSingle = true;
           else if (c === '"') inDouble = true;
-          else if (c === '-' && nextC === '-') {
-             inLineComment = true;
-             i++;
-          }
-          else if (c === '/' && nextC === '*') {
-             inBlockComment = true;
-             i++;
-          }
-          else if (c === ';') {
-             if (i < offset) {
-                lastSemi = i + 1;
-             } else {
-                end = i;
-                break;
-             }
+          else if (c === "-" && nextC === "-") {
+            inLineComment = true;
+            i++;
+          } else if (c === "/" && nextC === "*") {
+            inBlockComment = true;
+            i++;
+          } else if (c === ";") {
+            if (i < offset) {
+              lastSemi = i + 1;
+            } else {
+              end = i;
+              break;
+            }
           }
         }
       }
-      
+
       const statement = fullText.substring(lastSemi, end).trim();
       if (statement) {
         runQueryRef.current?.(statement);
@@ -482,27 +587,21 @@ export function useSqlEditor({
       executeCurrentCommand,
     );
 
+    editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS, () => {
+      onSaveScriptRef.current?.(editor.getValue());
+    });
 
+    editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyP, () => {
+      useUiStore.getState().togglePalette();
+    });
 
-    editor.addCommand(
-      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
-      () => { onSaveScriptRef.current?.(editor.getValue()); },
-    );
+    editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyW, () => {
+      useWorkspaceStore.getState().dispatchTabAction("close");
+    });
 
-    editor.addCommand(
-      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyP,
-      () => { useUiStore.getState().togglePalette(); },
-    );
-
-    editor.addCommand(
-      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyW,
-      () => { useWorkspaceStore.getState().dispatchTabAction("close"); },
-    );
-
-    editor.addCommand(
-      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyT,
-      () => { useWorkspaceStore.getState().dispatchTabAction("new"); },
-    );
+    editor.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyT, () => {
+      useWorkspaceStore.getState().dispatchTabAction("new");
+    });
 
     // Ctrl+Shift+E — run Visual EXPLAIN for the current query
     editor.addCommand(
@@ -557,7 +656,8 @@ export function useSqlEditor({
         const contextCols: { name: string; tableName: string; info: ColumnInfo }[] = [];
         for (const tblName of contextTables) {
           const cols = schemaRef.current[tblName] ?? [];
-          for (const col of cols) contextCols.push({ name: col.name, tableName: tblName, info: col });
+          for (const col of cols)
+            contextCols.push({ name: col.name, tableName: tblName, info: col });
         }
 
         return {
@@ -567,7 +667,11 @@ export function useSqlEditor({
               kind: monacoInstance.languages.CompletionItemKind.Field,
               insertText: c.name,
               detail: `${c.tableName}.${c.info.data_type}`,
-              documentation: c.info.is_primary_key ? "primary key" : c.info.is_nullable ? "nullable" : "not null",
+              documentation: c.info.is_primary_key
+                ? "primary key"
+                : c.info.is_nullable
+                  ? "nullable"
+                  : "not null",
               sortText: "0" + c.name,
               range,
             })),
@@ -583,7 +687,8 @@ export function useSqlEditor({
               label: fn,
               kind: monacoInstance.languages.CompletionItemKind.Function,
               insertText: fn + "($0)",
-              insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules:
+                monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               detail: "funcion SQL",
               sortText: "2" + fn,
               range,
@@ -610,19 +715,22 @@ export function useSqlEditor({
     editor.focus();
   }, []); // stable — reads from refs only
 
-  const handleChange = useCallback((value: string | undefined) => {
-    if (value === undefined) return;
-    setSql(value);
-    if (!wasDirtyRef.current && value !== initialSqlRef.current) {
-      wasDirtyRef.current = true;
-      onDirty?.();
-    }
-    // Debounce sync to global tab state so unsaved content survives tab switches
-    if (contentChangeTimerRef.current) clearTimeout(contentChangeTimerRef.current);
-    contentChangeTimerRef.current = setTimeout(() => {
-      onContentChangeRef.current?.(value);
-    }, 300);
-  }, [onDirty]);
+  const handleChange = useCallback(
+    (value: string | undefined) => {
+      if (value === undefined) return;
+      setSql(value);
+      if (!wasDirtyRef.current && value !== initialSqlRef.current) {
+        wasDirtyRef.current = true;
+        onDirty?.();
+      }
+      // Debounce sync to global tab state so unsaved content survives tab switches
+      if (contentChangeTimerRef.current) clearTimeout(contentChangeTimerRef.current);
+      contentChangeTimerRef.current = setTimeout(() => {
+        onContentChangeRef.current?.(value);
+      }, 300);
+    },
+    [onDirty],
+  );
 
   return {
     sql,

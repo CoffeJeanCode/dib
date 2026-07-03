@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
+import "./dialog-shared.css";
 import "./RenameDialog.css";
 
 interface RenameDialogProps {
@@ -59,22 +60,22 @@ export function RenameDialog({ connectionId, entityType, entityName, schema, onC
   const displayLabel = schema ? `${schema}.${entityName}` : entityName;
 
   return (
-    <div className="rd-backdrop" onClick={onClose}>
-      <div className="rd" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <span className="rd-title">Rename {entityType}</span>
-        <div className="rd-entity">{displayLabel}</div>
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className="dialog rd" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <span className="dialog-title">Rename {entityType}</span>
+        <div className="dialog-entity">{displayLabel}</div>
         <input
           ref={inputRef}
-          className="rd-input"
+          className="dialog-input"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") handleRename(); }}
           placeholder="New name"
         />
-        {error && <span className="rd-error">{error}</span>}
-        <div className="rd-actions">
-          <button className="rd-btn rd-btn--cancel" onClick={onClose} disabled={renaming}>Cancel</button>
-          <button className="rd-btn rd-btn--confirm" onClick={handleRename} disabled={renaming || !newName.trim() || newName.trim() === entityName}>
+        {error && <span className="dialog-error">{error}</span>}
+        <div className="dialog-actions">
+          <button className="dialog-btn dialog-btn--cancel" onClick={onClose} disabled={renaming}>Cancel</button>
+          <button className="dialog-btn dialog-btn--primary" onClick={handleRename} disabled={renaming || !newName.trim() || newName.trim() === entityName}>
             {renaming ? "Renaming…" : "Rename"}
           </button>
         </div>

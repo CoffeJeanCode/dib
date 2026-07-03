@@ -96,6 +96,29 @@ pub fn list_scripts(app: tauri::AppHandle) -> Result<Vec<ScriptMeta>, String> {
     Ok(scripts)
 }
 
+#[tauri::command]
+pub fn delete_script(app: tauri::AppHandle, filename: String) -> Result<(), String> {
+    let dir = workspace_path(&app)?;
+    let path = dir.join(safe_filename(&filename)?);
+    if path.exists() {
+        fs::remove_file(&path).map_err(|e| e.to_string())
+    } else {
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub fn rename_script(app: tauri::AppHandle, old_name: String, new_name: String) -> Result<(), String> {
+    let dir = workspace_path(&app)?;
+    let old_path = dir.join(safe_filename(&old_name)?);
+    let new_path = dir.join(safe_filename(&new_name)?);
+    if old_path.exists() {
+        fs::rename(&old_path, &new_path).map_err(|e| e.to_string())
+    } else {
+        Err("Script not found".to_string())
+    }
+}
+
 /// Returns raw file content (SQL or full Markdown).
 #[tauri::command]
 pub fn read_script(app: tauri::AppHandle, filename: String) -> Result<String, String> {
@@ -323,14 +346,24 @@ pub async fn delete_virtual_script(app_handle: tauri::AppHandle, id: String) -> 
 #[tauri::command]
 pub fn save_query_history(
     app_handle: tauri::AppHandle,
+    state: tauri::State<'_, crate::commands::connection::DbState>,
     connection_id: String,
     query_text: String,
     success: bool,
     execution_time_ms: i64,
     history_limit: Option<u32>,
 ) -> Result<(), String> {
+    // The frontend executes with a per-session uuid, but history must survive
+    // reconnects: store it under the stable saved-connection id (the same key
+    // QueryHistoryPanel reads with). Unsaved ad-hoc connections have no
+    // mapping and keep their session id.
+    let effective_id = state
+        .session_to_saved
+        .get(&connection_id)
+        .map(|e| e.value().clone())
+        .unwrap_or(connection_id);
     let db = app_handle.state::<crate::storage::AppDb>();
-    db.save_query_history_internal(&connection_id, &query_text, success, execution_time_ms, history_limit.unwrap_or(500))
+    db.save_query_history_internal(&effective_id, &query_text, success, execution_time_ms, history_limit.unwrap_or(500))
 }
 
 #[tauri::command]

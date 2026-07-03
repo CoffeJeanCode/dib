@@ -35,7 +35,7 @@
     "semantic_hash": ""
   },
   "src/commands/connection.rs": {
-    "mtime": 1782935541.2328248,
+    "mtime": 1783007435.056336,
     "ast_hash": "a47c298fe4dd12259cd87c6babc40664",
     "semantic_hash": ""
   },
@@ -70,7 +70,7 @@
     "semantic_hash": ""
   },
   "src/commands/schema.rs": {
-    "mtime": 1782943299.6639724,
+    "mtime": 1783007435.0574243,
     "ast_hash": "915537b183ea9952c27b92243d216fd1",
     "semantic_hash": ""
   },
@@ -80,8 +80,8 @@
     "semantic_hash": ""
   },
   "src/commands/workspace.rs": {
-    "mtime": 1782943446.560902,
-    "ast_hash": "161156cc1b3d5d7859b6a60ee83e130d",
+    "mtime": 1783015857.7090824,
+    "ast_hash": "869d4c4d424b87233299c4557b36b596",
     "semantic_hash": ""
   },
   "src/db/driver.rs": {
@@ -95,8 +95,8 @@
     "semantic_hash": ""
   },
   "src/db/postgres.rs": {
-    "mtime": 1782940795.1069121,
-    "ast_hash": "6c9b9314a395eaf37f188d7eec9079ef",
+    "mtime": 1783032534.082502,
+    "ast_hash": "db8a41051f2030675ee158bcd6d6aea9",
     "semantic_hash": ""
   },
   "src/db/sqlite.rs": {
@@ -110,8 +110,8 @@
     "semantic_hash": ""
   },
   "src/lib.rs": {
-    "mtime": 1782943452.8951356,
-    "ast_hash": "62035da836de8cddceea0badecd206a4",
+    "mtime": 1783015793.9426126,
+    "ast_hash": "600e71df527c58c53c2db022b56c6fd5",
     "semantic_hash": ""
   },
   "src/main.rs": {
@@ -120,8 +120,8 @@
     "semantic_hash": ""
   },
   "src/storage/mod.rs": {
-    "mtime": 1782943350.0248215,
-    "ast_hash": "b030319af8bb06b7a4aad36251e81e7e",
+    "mtime": 1783008659.8954377,
+    "ast_hash": "4335c9435dc7c3b2291c6bd3b265fdf8",
     "semantic_hash": ""
   },
   "tauri.conf.json": {

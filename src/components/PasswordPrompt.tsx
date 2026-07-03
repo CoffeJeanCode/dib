@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
+import "./dialog-shared.css";
 import "./PasswordPrompt.css";
 
 interface PasswordPromptProps {
@@ -24,7 +25,6 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
     setIsConnecting(true);
     try {
       const success = await onSubmit(password);
-      // Focus again only if explicitly returning false (failure)
       if (success === false) {
         setTimeout(() => inputRef.current?.focus(), 50);
       }
@@ -38,16 +38,16 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
   };
 
   return (
-    <div className="pp-overlay" onClick={onCancel} onKeyDown={handleKeyDown}>
-      <div className="pp-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="pp-header">
-          <span className="pp-label">Password Required</span>
+    <div className="dialog-backdrop" onClick={onCancel} onKeyDown={handleKeyDown}>
+      <div className="dialog pp-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="dialog-header">
+          <span className="dialog-label">Password Required</span>
         </div>
         <form className="pp-form" onSubmit={handleSubmit}>
-          <p className="pp-description">
+          <p className="dialog-message">
             Enter the password for <strong>{connectionName}</strong>.
           </p>
-          <div className="pp-field pp-field--password">
+          <div className="pp-field--password">
             <PasswordInput
               value={password}
               onChange={setPassword}
@@ -57,11 +57,11 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
               autoFocus={true}
             />
           </div>
-          <div className="pp-actions">
-            <button type="button" className="pp-button pp-button--ghost" onClick={onCancel} disabled={isConnecting}>
+          <div className="dialog-actions">
+            <button type="button" className="dialog-btn dialog-btn--cancel" onClick={onCancel} disabled={isConnecting}>
               Cancel
             </button>
-            <button type="submit" className="pp-button pp-button--primary" disabled={!password || isConnecting}>
+            <button type="submit" className="dialog-btn dialog-btn--primary" disabled={!password || isConnecting}>
               {isConnecting && <Loader2 size={14} className="animate-spin" style={{ marginRight: '6px' }} />}
               {isConnecting ? "Connecting…" : "Connect"}
             </button>

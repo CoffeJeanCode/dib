@@ -10,27 +10,18 @@ pub async fn run_query(
     state: State<'_, DbState>,
     app_handle: tauri::AppHandle,
 ) -> Result<QueryResult, QueryError> {
-    let start = std::time::Instant::now();
-
     let app_db = app_handle.state::<crate::storage::AppDb>();
     crate::commands::connection::assert_connection_in_active_workspace(&state, &app_db, &connection_id)?;
 
-    let result = {
-        let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
-            message: format!("Connection not found: {}", connection_id),
-            code: None,
-            severity: Some("ERROR".to_string()),
-        })?.clone();
-        driver.execute_query(&sql).await
-    };
-
-    if result.is_ok() {
-        let elapsed_ms = start.elapsed().as_millis() as i64;
-        let db = app_handle.state::<crate::storage::AppDb>();
-        let _ = db.save_query_history_internal(&connection_id, &sql, true, elapsed_ms, 500);
-    }
-
-    result
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
+    // History is recorded solely by the frontend via save_query_history:
+    // it covers failures too and honors the configurable history_limit.
+    // Saving here as well produced duplicate entries.
+    driver.execute_query(&sql).await
 }
 
 #[tauri::command]

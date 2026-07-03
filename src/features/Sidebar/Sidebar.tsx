@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Database, Folder } from "lucide-react";
+import { Database, Folder, RefreshCw, FilePlus, FolderPlus } from "lucide-react";
+import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
 import { SystemStatusBar } from "@/components/SystemStatusBar";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useSidebarScripts } from "@/hooks/useSidebarScripts";
@@ -15,48 +16,48 @@ import {
   WorkspaceList,
   QueryHistoryPanel,
 } from "./Parts";
+import type { WorkspaceTreeRef } from "./Parts/WorkspaceTree";
 import type { SavedConnection, TableInfo } from "@/types/db";
 import "./Sidebar.css";
 
-// "explorer" only exists in unified layout; the other 4 only exist in split layout — kept in sync with Layout.tsx's Panel type.
+import { useUiStore } from "@/store/uiStore";
+
 type Panel = "explorer" | "connections" | "scripts" | "history" | "database" | "workspaces";
 type DbActionType = "create" | "rename" | "drop";
 
 interface SidebarProps {
   activeView: Panel;
   width?: number;
-  activeConnectionId?: string | null;
-  activeSessionId?: string | null;
   onResizeStart?: (e: React.MouseEvent) => void;
-  onConnectionSelect?: (savedId: string) => void;
-  connectionName?: string;
-  onScriptOpen?: (sql: string, title: string, id: string) => void;
-  onTableSelect?: (table: TableInfo) => void;
-  onDatabaseSwitch?: (db: string) => void;
-  onDisconnect?: () => void;
-  onEditConnection?: (conn: SavedConnection) => void;
-  onDbAction?: (action: DbActionType, dbName?: string) => void;
-  activeDb?: string;
 }
 
 export function Sidebar({
   activeView,
   width,
-  activeConnectionId,
-  activeSessionId,
   onResizeStart,
-  connectionName,
-  onConnectionSelect,
-  onScriptOpen,
-  onTableSelect,
-  onDatabaseSwitch,
-  onDisconnect,
-  onEditConnection,
-  onDbAction,
-  activeDb,
 }: SidebarProps) {
   const { connections, remove } = useSavedConnections();
+  
+  const { active, selectConnection, switchDatabase, disconnect } = useConnectionStore();
+  const activeConnectionId = active?.savedId ?? null;
+  const activeSessionId = active?.activeId ?? null;
+  const connectionName = active?.name;
+  const activeDb = active?.name;
+
+  const setOpenScript = useWorkspaceStore((s) => s.setOpenScript);
+  const setNavigateTo = useWorkspaceStore((s) => s.setNavigateTo);
+  const onScriptOpen = useCallback((sql: string, name: string, id: string) => setOpenScript({ sql, name, id: id ?? `ext-${Date.now()}`, v: Date.now() } as any), [setOpenScript]);
+  const onTableSelect = useCallback((table: TableInfo) => setNavigateTo({ table, v: Date.now() } as any), [setNavigateTo]);
+
+  const setDbAction = useUiStore((s) => s.setDbAction);
+  const setEditingConn = useUiStore((s) => s.setEditingConn);
+  const onDbAction = useCallback((action: DbActionType, dbName?: string) => setDbAction({ action, dbName }), [setDbAction]);
+  const onEditConnection = useCallback((conn: SavedConnection) => setEditingConn(conn), [setEditingConn]);
   const { virtualTree, scriptsLoading, refreshScripts } = useSidebarScripts(activeConnectionId);
+
+  const workspaceTreeRef = useRef<WorkspaceTreeRef>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<SavedConnection | null>(null);
   const [undoStack, setUndoStack] = useState<SavedConnection[]>([]);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workspaceTree = useWorkspaceStore((s) => s.workspaceTree);
@@ -78,6 +79,7 @@ export function Sidebar({
         setActive(null);
       }
       remove(conn.id);
+      setDeleteTarget(null);
     },
     [remove],
   );
@@ -96,9 +98,9 @@ export function Sidebar({
         activeConnectionId={activeConnectionId}
         activeSessionId={activeSessionId}
         connectionName={connectionName}
-        onConnectionSelect={onConnectionSelect}
-        onDatabaseSwitch={onDatabaseSwitch}
-        onDisconnect={onDisconnect}
+        onConnectionSelect={selectConnection}
+        onDatabaseSwitch={switchDatabase}
+        onDisconnect={disconnect}
       />
 
       {activeView === "explorer" ? (
@@ -112,34 +114,34 @@ export function Sidebar({
               </div>
             ) : (
               connections.map((conn) => (
-                <ConnectionItem
-                  key={conn.id}
-                  conn={conn}
-                  compact
-                  showEntities
-                  isSelected={false}
-                  isActive={conn.id === activeConnectionId}
-                  navIdx={-1}
-                  sessionId={conn.id === activeConnectionId ? activeSessionId : null}
-                  activeDb={conn.id === activeConnectionId ? activeDb : undefined}
-                  onSelect={(_navIdx, connId) => onConnectionSelect?.(connId)}
-                  onDbSwitch={onDatabaseSwitch}
-                  onEdit={onEditConnection ?? (() => {})}
-                  onDelete={deleteConn}
-                  onNewQuery={conn.id === activeConnectionId ? () => onScriptOpen?.("", "New Query", `new-${Date.now()}`) : undefined}
-                  onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction?.("create") : undefined}
-                  onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction?.("rename", db) : undefined}
-                  onDropDb={conn.id === activeConnectionId ? (db) => onDbAction?.("drop", db) : undefined}
-                  onTableSelect={onTableSelect}
-                  onScriptOpen={onScriptOpen}
-                />
-              ))
-            )}
-          </div>
-        </nav>
-      ) : activeView === "workspaces" ? (
+                  <ConnectionItem
+                    key={conn.id}
+                    conn={conn}
+                    compact
+                    showEntities
+                    isSelected={false}
+                    isActive={conn.id === activeConnectionId}
+                    navIdx={-1}
+                    sessionId={conn.id === activeConnectionId ? activeSessionId : null}
+                    activeDb={conn.id === activeConnectionId ? activeDb : undefined}
+                    onSelect={(_navIdx, connId) => selectConnection(connId)}
+                    onDbSwitch={switchDatabase}
+                    onEdit={onEditConnection}
+                    onDelete={setDeleteTarget}
+                    onNewQuery={!activeWorkspacePath && conn.id === activeConnectionId ? () => onScriptOpen("", "New Query", `new-${Date.now()}`) : undefined}
+                    onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction("create") : undefined}
+                    onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction("rename", db) : undefined}
+                    onDropDb={conn.id === activeConnectionId ? (db) => onDbAction("drop", db) : undefined}
+                    onTableSelect={onTableSelect}
+                    onScriptOpen={onScriptOpen}
+                  />
+               ))
+             )}
+           </div>
+          </nav>
+       ) : activeView === "workspaces" ? (
         <nav className="sidebar-nav dg-scroll" aria-label="Workspaces">
-          <WorkspaceList />
+          <WorkspaceList onConnectionSelect={selectConnection} />
         </nav>
       ) : activeView === "history" ? (
         // Unified tab 3/3, and split tab 4/4 — same panel, both layouts.
@@ -165,20 +167,20 @@ export function Sidebar({
                   navIdx={-1}
                   sessionId={conn.id === activeConnectionId ? activeSessionId : null}
                   activeDb={conn.id === activeConnectionId ? activeDb : undefined}
-                  onSelect={(_navIdx, connId) => onConnectionSelect?.(connId)}
-                  onDbSwitch={onDatabaseSwitch}
-                  onEdit={onEditConnection ?? (() => {})}
-                  onDelete={deleteConn}
-                  onNewQuery={conn.id === activeConnectionId ? () => onScriptOpen?.("", "New Query", `new-${Date.now()}`) : undefined}
-                  onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction?.("create") : undefined}
-                  onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction?.("rename", db) : undefined}
-                  onDropDb={conn.id === activeConnectionId ? (db) => onDbAction?.("drop", db) : undefined}
-                />
-              ))
-            )}
-          </div>
-        </nav>
-      ) : activeView === "database" ? (
+                  onSelect={(_navIdx, connId) => selectConnection(connId)}
+                  onDbSwitch={switchDatabase}
+                  onEdit={onEditConnection}
+                   onDelete={setDeleteTarget}
+                   onNewQuery={conn.id === activeConnectionId ? () => onScriptOpen("", "New Query", `new-${Date.now()}`) : undefined}
+                   onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction("create") : undefined}
+                   onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction("rename", db) : undefined}
+                   onDropDb={conn.id === activeConnectionId ? (db) => onDbAction("drop", db) : undefined}
+                 />
+               ))
+             )}
+           </div>
+         </nav>
+       ) : activeView === "database" ? (
         // Split layout, tab 2/4 — Entities (tables/views/functions/procedures/triggers), isolated.
         <nav className="sidebar-nav dg-scroll" aria-label="Entities">
           <DatabaseCategories
@@ -188,12 +190,22 @@ export function Sidebar({
           />
         </nav>
       ) : (
-        // Unified tab 2/3, and split tab 3/4 — Scripts, isolated (own tab, own mount).
         <nav className="sidebar-nav dg-scroll" aria-label="Scripts">
-          <div className="sidebar-section-block">
-            <SectionHeader Icon={activeWorkspacePath ? Folder : Database} label={activeWorkspacePath ? "Workspace" : "Scripts"} />
+          <div className="sidebar-section-block" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <SectionHeader 
+              Icon={activeWorkspacePath ? Folder : Database} 
+              label={activeWorkspacePath ? "Workspace" : "Scripts"} 
+              onRefresh={activeWorkspacePath ? () => useWorkspaceStore.getState().loadWorkspaceTree(activeWorkspacePath, useWorkspaceStore.getState().activeWorkspaceId) : undefined} 
+              actions={
+                <>
+                  <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFile(); }} title="New File"><FilePlus /></button>
+                  <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFolder(); }} title="New Folder"><FolderPlus /></button>
+                </>
+              }
+            />
             {(activeWorkspacePath ? workspaceTree : virtualTree) ? (
               <WorkspaceTree 
+                ref={workspaceTreeRef}
                 tree={(activeWorkspacePath ? workspaceTree : virtualTree)!} 
                 connectionId={activeWorkspacePath ? undefined : activeConnectionId}
                 onRefresh={activeWorkspacePath ? undefined : refreshScripts}
@@ -225,15 +237,36 @@ export function Sidebar({
       )}
 
       <SystemStatusBar />
+
+      {deleteTarget && (
+        <DangerConfirmDialog
+          message={`Delete connection "${deleteTarget.name}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={async () => deleteConn(deleteTarget)}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </aside>
   );
 }
 
-function SectionHeader({ Icon, label }: { Icon: React.ComponentType<{ size?: number | string }>; label: string }) {
+function SectionHeader({ Icon, label, onRefresh, actions }: { Icon: React.ComponentType<{ size?: number | string }>; label: string; onRefresh?: () => void; actions?: React.ReactNode }) {
   return (
     <div className="sidebar-section-header">
       <Icon size={13} />
       <span>{label}</span>
+      <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
+        {actions}
+        {onRefresh && (
+          <button
+            className="sidebar-section-header-action"
+            onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+            title="Refresh file tree"
+          >
+            <RefreshCw />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

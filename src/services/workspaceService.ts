@@ -25,8 +25,9 @@ export const workspaceService = {
   setActiveWorkspace: (workspaceId: string | null) =>
     invoke<void>("set_active_workspace", { workspaceId }),
 
-  moveFsItem: (sourcePath: string, targetDir: string) =>
-    invoke<void>("move_fs_item", { sourcePath, targetDir }),
+  /** targetPath must be the FULL destination path (dir + basename). */
+  moveFsItem: (sourcePath: string, targetPath: string, workspaceId: string | null = null, rootPath: string | null = null) =>
+    invoke<void>("move_fs_item", { sourcePath, targetPath, workspaceId, rootPath }),
 
   getInternalScripts: (connectionId?: string | null) =>
     invoke<InternalScript[]>("get_internal_scripts", { connectionId: connectionId ?? null }),
@@ -57,6 +58,9 @@ export const workspaceService = {
 
   renameFsItem: (oldPath: string, newPath: string, workspaceId: string | null, rootPath: string | null) =>
     invoke<void>("rename_fs_item", { oldPath, newPath, workspaceId, rootPath }),
+
+  deleteFsItem: (path: string) =>
+    invoke<void>("delete_fs_item", { path }),
 
   getVirtualFolders: (connectionId: string) =>
     invoke<any[]>("get_virtual_folders", { connectionId }),

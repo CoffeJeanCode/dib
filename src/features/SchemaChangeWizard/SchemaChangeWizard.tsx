@@ -3,6 +3,7 @@ import { X, Plus } from "lucide-react";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
 import type { SchemaChange, ColumnInfo } from "@/types/db";
+import "@/components/dialog-shared.css";
 import "./SchemaChangeWizard.css";
 
 type ChangeKind = "add_column" | "drop_column" | "rename_column" | "alter_type";
@@ -127,14 +128,14 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
   const label = schema ? `${schema}.${tableName}` : tableName;
 
   return (
-    <div className="scw-backdrop" onClick={onClose}>
-      <div className="scw" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <div className="scw-header">
-          <span className="scw-title">Alter Table</span>
-          <button className="scw-close" onClick={onClose} aria-label="Close"><X size={16} /></button>
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className="dialog scw" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="dialog-header">
+          <span className="dialog-title">Alter Table</span>
+          <button className="dialog-close" onClick={onClose} aria-label="Close"><X /></button>
         </div>
 
-        <div className="scw-body">
+        <div className="dialog-body">
           <div className="scw-table-name">{label}</div>
 
           {columns.length > 0 && (
@@ -207,7 +208,7 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
                 </>
               )}
 
-              <button className="scw-btn scw-btn--add" onClick={addChange}>
+              <button className="scw-btn--add" onClick={addChange}>
                 <Plus size={14} /> Add
               </button>
             </div>
@@ -223,7 +224,7 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
                       {c.kind === "add_column" ? "ADD" : c.kind === "drop_column" ? "DROP" : c.kind === "rename_column" ? "RENAME" : "TYPE"}
                     </span>
                     <span className="scw-change-text">{changeLabel(c)}</span>
-                    <button className="scw-btn scw-btn--remove" onClick={() => removeChange(i)}>&times;</button>
+                    <button className="scw-btn--remove" onClick={() => removeChange(i)}>&times;</button>
                   </li>
                 ))}
               </ul>
@@ -241,11 +242,11 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
           )}
         </div>
 
-        <div className="scw-footer">
-          <button ref={cancelRef} className="scw-btn scw-btn--cancel" onClick={onClose} disabled={applying}>
+        <div className="dialog-footer">
+          <button ref={cancelRef} className="dialog-btn dialog-btn--cancel" onClick={onClose} disabled={applying}>
             Cancel
           </button>
-          <button className="scw-btn scw-btn--apply" onClick={handleApply} disabled={applying || changes.length === 0}>
+          <button className="dialog-btn dialog-btn--primary" onClick={handleApply} disabled={applying || changes.length === 0}>
             {applying ? "Applying…" : `Apply ${changes.length > 0 ? `(${changes.length})` : ""}`}
           </button>
         </div>

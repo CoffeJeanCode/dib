@@ -10,9 +10,9 @@ import { safeInvoke as invoke } from "@/utils/ipc";
 import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/db";
 import { useToastStore } from "@/store/toastStore";
 import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
-import { RenameDialog } from "@/components/RenameDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { TableContextMenu } from "@/components/TableContextMenu";
+import { dbService } from "@/services/dbService";
 
 interface DatabaseCategoriesProps {
   sessionId: string | null | undefined;
@@ -96,7 +96,8 @@ export function DatabaseCategories({
   const [colLoadingSet, setColLoadingSet] = useState<Set<string>>(new Set());
   const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => Promise<void> } | null>(null);
   const [alterTable, setAlterTable] = useState<{ name: string; schema: string | null } | null>(null);
-  const [renameTarget, setRenameTarget] = useState<{ name: string; schema: string | null; kind: CatKind } | null>(null);
+  const [editingItem, setEditingItem] = useState<{ name: string; schema: string | null; kind: CatKind } | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   // Track active table tab from workspaceStore — replaces dib:active-table
   const storeActiveTable = useWorkspaceStore((s) => s.activeTable);
@@ -265,7 +266,7 @@ export function DatabaseCategories({
                           item={{ name, schema, kind: cat.kind as CatKind }}
                           onViewStructure={canExpand ? () => useWorkspaceStore.getState().openTableStructure(it as TableInfo) : undefined}
                           onViewRelations={canExpand ? () => useWorkspaceStore.getState().openTableRelations(it as TableInfo) : undefined}
-                          onRename={() => setRenameTarget({ name, schema, kind: cat.kind as CatKind })}
+                          onRename={() => { setEditingItem({ name, schema, kind: cat.kind as CatKind }); setEditValue(name); }}
                           onAlter={canExpand ? () => setAlterTable(it as TableInfo) : undefined}
                           onGenerateSql={canExpand ? (type) => handleGenerateSql(it as TableInfo, type) : undefined}
                           onViewDdl={!canExpand && cat.kind !== "trigger" ? () => handleItemClick(cat.kind, it) : undefined}
@@ -334,9 +335,43 @@ export function DatabaseCategories({
                             <span style={{ width: 16, flexShrink: 0 }} />
                           )}
                           <CatIcon size={11} style={{ color: cat.color, flexShrink: 0, opacity: 0.75 }} />
-                          <span className="sidebar-db-item-name">
-                            {isLoading ? `${name}…` : name}
-                          </span>
+                          {editingItem?.name === name && editingItem?.schema === schema && editingItem?.kind === cat.kind ? (
+                            <input
+                              ref={(el) => { if (el && document.activeElement !== el) { el.focus(); el.select(); } }}
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onKeyDown={async (e) => {
+                                if (e.key === "Enter") {
+                                  e.stopPropagation();
+                                  const trimmed = editValue.trim();
+                                  if (!trimmed || trimmed === name) { setEditingItem(null); return; }
+                                  const label = schema ? `"${schema}"."${name}"` : `"${name}"`;
+                                  const newLabel = schema ? `"${schema}"."${trimmed}"` : `"${trimmed}"`;
+                                  try {
+                                    if (cat.kind === "table") await dbService.runQuery(sessionId!, `ALTER TABLE ${label} RENAME TO ${newLabel}`);
+                                    else if (cat.kind === "view") await dbService.runQuery(sessionId!, `ALTER VIEW ${label} RENAME TO ${newLabel}`);
+                                    else if (cat.kind === "function" || cat.kind === "procedure") await dbService.runQuery(sessionId!, `ALTER FUNCTION ${label} RENAME TO ${trimmed}`);
+                                    else if (cat.kind === "trigger") await dbService.runQuery(sessionId!, `ALTER TRIGGER ${label} RENAME TO ${trimmed}`);
+                                    useConnectionStore.getState().triggerReload();
+                                    setEditingItem(null);
+                                  } catch (err: unknown) {
+                                    const msg = err && typeof err === "object" ? String((err as Record<string, unknown>).message ?? err) : String(err);
+                                    toastRef.current.error(msg);
+                                    setEditingItem(null);
+                                  }
+                                }
+                                if (e.key === "Escape") { e.stopPropagation(); setEditingItem(null); }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              onDoubleClick={(e) => e.stopPropagation()}
+                              className="inline-edit-input inline-edit-input--xs"
+                              style={{ flex: 1, minWidth: 0, margin: "0 4px" }}
+                            />
+                          ) : (
+                            <span className="sidebar-db-item-name">
+                              {isLoading ? `${name}…` : name}
+                            </span>
+                          )}
                           </div>
                         </TableContextMenu>
                         {canExpand && isExpanded && (
@@ -371,15 +406,6 @@ export function DatabaseCategories({
           message={dangerDialog.message}
           onConfirm={dangerDialog.onConfirm}
           onCancel={() => setDangerDialog(null)}
-        />
-      )}
-      {renameTarget && sessionId && (
-        <RenameDialog
-          connectionId={sessionId}
-          entityType={renameTarget.kind}
-          entityName={renameTarget.name}
-          schema={renameTarget.schema}
-          onClose={() => setRenameTarget(null)}
         />
       )}
       {alterTable && sessionId && (

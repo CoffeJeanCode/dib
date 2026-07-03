@@ -4,13 +4,14 @@ import type { TableStructure, TableInfo } from "@/types/db";
 import {
   Key, Hash, Type, Calendar, Link2, ArrowRight,
   Zap, Shield, Search, RefreshCw, AlertCircle,
-  CheckCircle2, XCircle, Fingerprint, List,
+  CheckCircle2, XCircle, Fingerprint, List, Database,
 } from "lucide-react";
 import "./TableStructureView.css";
 
-interface Props {
+export interface TableStructureViewProps {
   connectionId: string;
   table: TableInfo;
+  onViewData?: () => void;
 }
 
 type SubTab = "columns" | "indexes" | "foreign_keys" | "triggers";
@@ -56,7 +57,7 @@ function SkeletonRows({ n = 5, cols = 4 }: { n?: number; cols?: number }) {
   );
 }
 
-export function TableStructureView({ connectionId, table }: Props) {
+export function TableStructureView({ connectionId, table, onViewData }: TableStructureViewProps) {
   const [structure, setStructure] = useState<TableStructure | null>(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -426,6 +427,12 @@ export function TableStructureView({ connectionId, table }: Props) {
           <span className="sv2-footer-engine" title={`invoke('get_table_structure', { connectionId, tableName: '${structure.table_name}', schema: '${structure.schema ?? ""}' })`}>
             via Tauri IPC
           </span>
+          {onViewData && (
+            <button className="sv2-footer-btn" onClick={onViewData} title="View table data">
+              <Database size={12} />
+              Data
+            </button>
+          )}
         </div>
       )}
     </div>

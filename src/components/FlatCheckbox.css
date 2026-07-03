@@ -1,4 +1,4 @@
-.glass-checkbox {
+.flat-checkbox {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -6,7 +6,7 @@
   user-select: none;
 }
 
-.glass-checkbox-box {
+.flat-checkbox-box {
   position: relative;
   display: flex;
   align-items: center;
@@ -17,25 +17,22 @@
   border-radius: 4px;
   background: var(--color-bg);
   flex-shrink: 0;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.glass-checkbox:hover .glass-checkbox-box {
-  background: var(--color-bg-hover);
+.flat-checkbox:hover .flat-checkbox-box {
   border-color: var(--color-border-dark);
 }
 
-.glass-checkbox-box--checked {
-  background: var(--color-teal);
-  border-color: var(--color-teal);
+.flat-checkbox-box--checked {
+  background: var(--color-focus);
+  border-color: var(--color-focus);
 }
 
-.glass-checkbox:hover .glass-checkbox-box--checked {
-  background: color-mix(in srgb, var(--color-teal) 85%, white);
-  border-color: color-mix(in srgb, var(--color-teal) 85%, white);
+.flat-checkbox:hover .flat-checkbox-box--checked {
+  opacity: 0.85;
 }
 
-.glass-checkbox-input {
+.flat-checkbox-input {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -43,13 +40,13 @@
   pointer-events: none;
 }
 
-.glass-checkbox-tick {
+.flat-checkbox-tick {
   color: #fff;
   pointer-events: none;
   z-index: 1;
 }
 
-.glass-checkbox-label {
+.flat-checkbox-label {
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   line-height: 1.4;

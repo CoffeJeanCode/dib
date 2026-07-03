@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import "./dialog-shared.css";
 import "./DangerConfirmDialog.css";
 
 interface Props {
@@ -37,15 +38,15 @@ export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfir
   };
 
   return (
-    <div className="dcd-backdrop" onClick={loading ? undefined : onCancel}>
-      <div className="dcd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
-        <p className="dcd-message">{message}</p>
-        {error && <p className="dcd-error">{error}</p>}
-        <div className="dcd-actions">
-          <button ref={cancelRef} className="dcd-btn dcd-btn--cancel" onClick={onCancel} disabled={loading}>
+    <div className="dialog-backdrop" onClick={loading ? undefined : onCancel}>
+      <div className="dialog dialog--danger dcd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+        <p className="dialog-message">{message}</p>
+        {error && <p className="dialog-error">{error}</p>}
+        <div className="dialog-actions">
+          <button ref={cancelRef} className="dialog-btn dialog-btn--cancel" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
-          <button className="dcd-btn dcd-btn--confirm" onClick={handleConfirm} disabled={loading}>
+          <button className="dialog-btn dialog-btn--danger" onClick={handleConfirm} disabled={loading}>
             {loading ? "Deleting…" : confirmLabel}
           </button>
         </div>

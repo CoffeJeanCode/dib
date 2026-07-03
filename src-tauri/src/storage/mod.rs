@@ -438,8 +438,8 @@ impl AppDb {
     pub fn save_virtual_folder(&self, folder: &VirtualFolder) -> Result<(), String> {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         db.execute(
-            "INSERT INTO virtual_folders (id, name, parent_id, connection_id, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, datetime('now'), datetime('now'))
+            "INSERT INTO virtual_folders (id, name, parent_id, connection_id, color, is_pinned, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, datetime('now'), datetime('now'))
              ON CONFLICT(id) DO UPDATE SET
                  name       = excluded.name,
                  parent_id  = excluded.parent_id,
@@ -483,8 +483,8 @@ impl AppDb {
     pub fn save_virtual_script(&self, script: &VirtualScript) -> Result<(), String> {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         db.execute(
-            "INSERT INTO virtual_scripts (id, name, content, folder_id, connection_id, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), datetime('now'))
+            "INSERT INTO virtual_scripts (id, name, content, folder_id, connection_id, color, is_pinned, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), datetime('now'))
              ON CONFLICT(id) DO UPDATE SET
                  name       = excluded.name,
                  content    = excluded.content,

@@ -1,14 +1,8 @@
 /* ── Command Palette — Neon Dark-Dash ────────────────────── */
 
 .palette-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
   padding-top: 15vh;
-  z-index: 1000;
+  align-items: flex-start;
 }
 
 .palette {

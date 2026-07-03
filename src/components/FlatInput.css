@@ -1,18 +1,17 @@
-.glass-field {
+.flat-field {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
   min-width: 0;
 }
 
-.glass-label {
+.flat-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  letter-spacing: 0.01em;
 }
 
-.glass-input {
+.flat-input {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
@@ -24,35 +23,29 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   outline: none;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.glass-input::placeholder {
+.flat-input::placeholder {
   color: var(--color-text-tertiary);
 }
 
-.glass-input:hover {
-  background: var(--color-bg-hover);
+.flat-input:hover {
   border-color: var(--color-border-dark);
 }
 
-.glass-input:focus {
-  background: var(--color-bg);
-  border-color: var(--color-teal);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-teal) 20%, transparent);
+.flat-input:focus {
+  border-color: var(--color-focus);
 }
 
-.glass-input--error {
+.flat-input--error {
   border-color: var(--color-red);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-red) 15%, transparent);
 }
 
-.glass-input--error:focus {
+.flat-input--error:focus {
   border-color: var(--color-red);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-red) 20%, transparent);
 }
 
-.glass-error {
+.flat-error {
   font-size: var(--font-size-xs);
   color: var(--color-red);
   padding-left: var(--space-1);

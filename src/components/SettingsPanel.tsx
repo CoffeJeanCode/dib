@@ -2,9 +2,10 @@ import { LayoutList, Columns3 } from "lucide-react";
 import { useUiState } from "@/hooks/useUiState";
 import { useTheme, setTheme } from "@/hooks/useTheme";
 import { useSettingsStore } from "@/store/settingsStore";
-import { GlassCheckbox } from "@/components/GlassCheckbox";
-import { GlassInput } from "@/components/GlassInput";
+import { FlatCheckbox } from "@/components/FlatCheckbox";
+import { FlatInput } from "@/components/FlatInput";
 import type { WorkspaceLayout } from "@/types/workspace";
+import "./dialog-shared.css";
 import "./SettingsPanel.css";
 
 interface SettingsPanelProps {
@@ -22,16 +23,18 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { theme } = useTheme();
   const layout = useSettingsStore((s) => s.workspaceLayout);
   const setLayout = useSettingsStore((s) => s.setWorkspaceLayout);
+  const autoConnect = useSettingsStore((s) => s.autoConnectOnStartup);
+  const setAutoConnect = useSettingsStore((s) => s.setAutoConnectOnStartup);
 
   if (!open) return null;
 
   return (
-    <div className="sp-overlay" onClick={onClose}>
-      <div className="sp-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="sp-header">
-          <span className="sp-label">Settings</span>
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className="dialog sp-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="dialog-header">
+          <span className="dialog-label">Settings</span>
         </div>
-        <div className="sp-body">
+        <div className="dialog-body sp-body">
           <div className="sp-option">
             <div className="sp-option-info">
               <span className="sp-option-title">Sidebar layout</span>
@@ -70,7 +73,23 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </label>
           </div>
           <div className="sp-option">
-            <GlassCheckbox
+            <div className="sp-option-info">
+              <span className="sp-option-title">Auto-connect on startup</span>
+              <span className="sp-option-desc">
+                Reopen the last workspace and connection when the app starts.
+              </span>
+            </div>
+            <label className="sp-toggle">
+              <input
+                type="checkbox"
+                checked={autoConnect}
+                onChange={(e) => setAutoConnect(e.target.checked)}
+              />
+              <span className="sp-toggle-track" />
+            </label>
+          </div>
+          <div className="sp-option">
+            <FlatCheckbox
               label="Save passwords in keyring"
               checked={state.save_password}
               onChange={(e) => updateState({ save_password: e.target.checked })}
@@ -84,7 +103,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               </span>
             </div>
             <div className="sp-number-wrapper">
-              <GlassInput
+              <FlatInput
                 type="number"
                 min={0}
                 max={10000}
@@ -95,8 +114,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </div>
           </div>
         </div>
-        <div className="sp-footer">
-          <button className="sp-button sp-button--primary" onClick={onClose}>
+        <div className="dialog-footer">
+          <button className="dialog-btn dialog-btn--primary" onClick={onClose}>
             Done
           </button>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { AlertTriangle } from "lucide-react";
+import "./dialog-shared.css";
 import "./UnsavedChangesDialog.css";
 
 interface Props {
@@ -26,21 +27,21 @@ export function UnsavedChangesDialog({ entityName, entityType, onSave, onDiscard
     : `You have modified rows in the table "${entityName}". Do you want to save the changes before closing?`;
 
   return (
-    <div className="ucd-backdrop" onClick={onCancel}>
-      <div className="ucd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+    <div className="dialog-backdrop" onClick={onCancel}>
+      <div className="dialog ucd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
         <div className="ucd-header">
           <AlertTriangle size={20} />
-          <span className="ucd-title">{title}</span>
+          <span className="dialog-title">{title}</span>
         </div>
-        <p className="ucd-message">{message}</p>
-        <div className="ucd-actions">
-          <button className="ucd-btn ucd-btn--cancel" onClick={onCancel}>
+        <p className="dialog-message">{message}</p>
+        <div className="dialog-actions">
+          <button className="dialog-btn dialog-btn--cancel" onClick={onCancel}>
             Cancel
           </button>
-          <button className="ucd-btn ucd-btn--discard" onClick={onDiscard}>
+          <button className="dialog-btn dialog-btn--danger" onClick={onDiscard}>
             Discard Changes
           </button>
-          <button ref={saveRef} className="ucd-btn ucd-btn--save" onClick={onSave}>
+          <button ref={saveRef} className="dialog-btn dialog-btn--primary" onClick={onSave}>
             Save
           </button>
         </div>

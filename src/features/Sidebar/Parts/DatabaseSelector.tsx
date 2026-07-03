@@ -241,7 +241,7 @@ export function DatabaseSelector({
                   role="option"
                   tabIndex={-1}
                 >
-                  <LogOut size={12} className="sidebar-db-option-icon sidebar-db-option-icon--danger" />
+                  <LogOut className="sidebar-db-option-icon sidebar-db-option-icon--danger" />
                   <div className="sidebar-db-option-info">
                     <span className="sidebar-db-option-name sidebar-db-option-name--danger">Disconnect</span>
                   </div>

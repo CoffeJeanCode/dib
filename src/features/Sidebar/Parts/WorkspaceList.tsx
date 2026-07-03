@@ -1,16 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FolderOpen, FolderPlus, Pencil, Trash2, Folder } from "lucide-react";
+import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Workspace } from "@/types/workspace";
 import { open } from "@tauri-apps/plugin-dialog";
+import { openWorkspaceAndConnect } from "@/utils/quickConnect";
+import { SkeletonRow } from "@/components/Skeleton";
 
-export function WorkspaceList() {
+interface WorkspaceListProps {
+  onConnectionSelect?: (savedId: string) => void;
+}
+
+export function WorkspaceList({ onConnectionSelect }: WorkspaceListProps) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Workspace | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const setActiveWorkspacePath = useWorkspaceStore((s) => s.setActiveWorkspacePath);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -55,8 +63,12 @@ export function WorkspaceList() {
 
   const handleOpenWorkspace = useCallback((ws: Workspace) => {
     if (editingId || ws.id.startsWith("temp-")) return;
-    setActiveWorkspacePath(ws.root_path, ws.id);
-  }, [editingId, setActiveWorkspacePath]);
+    if (onConnectionSelect) {
+      void openWorkspaceAndConnect(ws, onConnectionSelect);
+    } else {
+      setActiveWorkspacePath(ws.root_path, ws.id);
+    }
+  }, [editingId, setActiveWorkspacePath, onConnectionSelect]);
 
   const startEdit = useCallback((ws: Workspace) => {
     setEditingId(ws.id);
@@ -80,11 +92,26 @@ export function WorkspaceList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editName, cancelEdit, setActiveWorkspacePath, loadWorkspaces]);
 
+  const handleChangeFolder = useCallback(async (ws: Workspace) => {
+    try {
+      const selectedPath = await open({ directory: true, multiple: false, defaultPath: ws.root_path });
+      if (!selectedPath || typeof selectedPath !== "string") return;
+      await workspaceService.updateWorkspace(ws.id, ws.name, selectedPath, ws.connection_ids);
+      loadWorkspaces();
+      if (ws.id === activeWorkspaceId) {
+        setActiveWorkspacePath(selectedPath, ws.id);
+      }
+    } catch (e) {
+      useToastStore.getState().error(`Failed to change workspace folder: ${String(e)}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadWorkspaces, activeWorkspaceId, setActiveWorkspacePath]);
+
   const handleDeleteWorkspace = useCallback(async (ws: Workspace) => {
-    if (!confirm(`Remove workspace "${ws.name}" from DIB?\nThis will NOT delete your files on disk.`)) return;
     try {
       await workspaceService.deleteWorkspace(ws.id);
       loadWorkspaces();
+      setDeleteTarget(null);
     } catch (e) {
       toast.error(`Failed to delete workspace: ${String(e)}`);
     }
@@ -101,17 +128,19 @@ export function WorkspaceList() {
           onClick={handleCreateWorkspace}
           title="Add workspace"
         >
-          <FolderPlus size={13} />
+          <FolderPlus />
         </button>
       </div>
 
       {loading ? (
-        <div className="sidebar-item sidebar-item--empty">
-          <span className="sidebar-item-text sidebar-item-text--muted">Loading…</span>
-        </div>
+        <>
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </>
       ) : workspaces.length === 0 ? (
         <div className="sidebar-item sidebar-item--empty">
-          <span className="sidebar-item-text sidebar-item-text--muted">No workspaces — add one with the folder icon above</span>
+          <span className="sidebar-item-text sidebar-item-text--muted">No workspaces — add one con el icono de arriba</span>
         </div>
       ) : (
         workspaces.map((ws) => {
@@ -130,7 +159,7 @@ export function WorkspaceList() {
               {isEditing ? (
                 <input
                   ref={editInputRef}
-                  className="sidebar-rename-input"
+                  className="inline-edit-input"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={(e) => {
@@ -149,23 +178,41 @@ export function WorkspaceList() {
                 <div className="sidebar-item-actions">
                   <button
                     className="sidebar-item-action-btn"
+                    title="Change folder"
+                    onClick={(e) => { e.stopPropagation(); handleChangeFolder(ws); }}
+                  >
+                    <FolderOpen />
+                  </button>
+                  <button
+                    className="sidebar-item-action-btn"
                     title="Rename"
                     onClick={(e) => { e.stopPropagation(); startEdit(ws); }}
                   >
-                    <Pencil size={12} />
+                    <Pencil />
                   </button>
-                  <button
-                    className="sidebar-item-action-btn sidebar-item-action-btn--danger"
-                    title="Remove from DIB"
-                    onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(ws); }}
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  {!isActive && (
+                    <button
+                      className="sidebar-item-action-btn sidebar-item-action-btn--danger"
+                      title="Remove from DIB"
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(ws); }}
+                    >
+                      <Trash2 />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           );
         })
+      )}
+
+      {deleteTarget && (
+        <DangerConfirmDialog
+          message={`Remove workspace "${deleteTarget.name}" from DIB? This will NOT delete your files on disk.`}
+          confirmLabel="Remove"
+          onConfirm={async () => handleDeleteWorkspace(deleteTarget)}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
     </div>
   );

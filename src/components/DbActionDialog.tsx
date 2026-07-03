@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { safeInvoke as invoke } from "@/utils/ipc";
 import { useConnectionStore } from "@/store/connectionStore";
+import "./dialog-shared.css";
 import "./DbActionDialog.css";
 
 type Action = "create" | "drop" | "rename";
@@ -86,14 +87,14 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
   const isDrop = action === "drop";
 
   return (
-    <div className="dba-backdrop" onClick={onClose}>
-      <div className={`dba ${isDrop ? "dba--danger" : ""}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <span className="dba-title">{ACTION_TITLE[action]}</span>
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className={`dialog ${isDrop ? "dialog--danger" : ""} dba`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <span className="dialog-title">{ACTION_TITLE[action]}</span>
 
         {action === "create" && (
           <input
             ref={inputRef}
-            className="dba-input"
+            className="dialog-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
@@ -103,12 +104,12 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
 
         {action === "drop" && (
           <>
-            <p className="dba-desc">Select the database to drop. This action cannot be undone.</p>
+            <p className="dialog-message">Select the database to drop. This action cannot be undone.</p>
             {dbsLoading ? (
-              <p className="dba-desc">Loading databases…</p>
+              <p className="dialog-message">Loading databases…</p>
             ) : (
               <select
-                className="dba-select"
+                className="dialog-select"
                 value={selectedDb}
                 onChange={(e) => setSelectedDb(e.target.value)}
               >
@@ -120,13 +121,13 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
 
         {action === "rename" && (
           <>
-            <p className="dba-desc">Rename database "{selectedDb || '?'}"</p>
+            <p className="dialog-message">Rename database "{selectedDb || '?'}"</p>
             {dbsLoading ? (
-              <p className="dba-desc">Loading databases…</p>
+              <p className="dialog-message">Loading databases…</p>
             ) : (
               <>
                 <select
-                  className="dba-select"
+                  className="dialog-select"
                   value={selectedDb}
                   onChange={(e) => setSelectedDb(e.target.value)}
                 >
@@ -134,7 +135,7 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
                 </select>
                 <input
                   ref={inputRef}
-                  className="dba-input"
+                  className="dialog-input"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
@@ -145,12 +146,12 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
           </>
         )}
 
-        {error && <span className="dba-error">{error}</span>}
+        {error && <span className="dialog-error">{error}</span>}
 
-        <div className="dba-actions">
-          <button className="dba-btn dba-btn--cancel" onClick={onClose} disabled={processing}>Cancel</button>
+        <div className="dialog-actions">
+          <button className="dialog-btn dialog-btn--cancel" onClick={onClose} disabled={processing}>Cancel</button>
           <button
-            className={`dba-btn ${isDrop ? "dba-btn--danger" : "dba-btn--confirm"}`}
+            className={`dialog-btn ${isDrop ? "dialog-btn--danger" : "dialog-btn--primary"}`}
             onClick={handleSubmit}
             disabled={processing || dbsLoading}
           >

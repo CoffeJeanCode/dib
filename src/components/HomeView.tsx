@@ -1,8 +1,12 @@
-import { Database, Plus, FolderOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Database, Plus, FolderOpen, Folder } from "lucide-react";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { openWorkspaceAndConnect } from "@/utils/quickConnect";
+import { SkeletonCard } from "@/components/Skeleton";
 import type { SavedConnection } from "@/types/db";
+import type { Workspace } from "@/types/workspace";
 import { open } from "@tauri-apps/plugin-dialog";
 import "./HomeView.css";
 
@@ -18,8 +22,18 @@ const ENGINE_COLORS: Record<string, string> = {
 };
 
 export function HomeView({ onConnectionSelect, onNewConnection }: HomeViewProps) {
-  const { connections } = useSavedConnections();
+  const { connections, loaded } = useSavedConnections();
+  const activeWorkspaceId = useWorkspaceStore(s => s.activeWorkspaceId);
   const setActiveWorkspacePath = useWorkspaceStore(s => s.setActiveWorkspacePath);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [wsLoading, setWsLoading] = useState(true);
+
+  useEffect(() => {
+    workspaceService.getWorkspaces()
+      .then(setWorkspaces)
+      .catch(() => setWorkspaces([]))
+      .finally(() => setWsLoading(false));
+  }, []);
 
   const getLabel = (conn: SavedConnection) => {
     if (conn.db_name) return conn.db_name;
@@ -63,11 +77,35 @@ export function HomeView({ onConnectionSelect, onNewConnection }: HomeViewProps)
       </div>
 
       <div style={{ display: "flex", gap: "32px", justifyContent: "center", flexWrap: "wrap", width: "100%", maxWidth: "800px" }}>
-        {connections.length > 0 && (
+        {(wsLoading || workspaces.length > 0) && (
           <div className="home-recent" style={{ flex: 1, minWidth: "250px" }}>
-            <span className="home-section-label">Global Connections</span>
+            <span className="home-section-label">Workspaces</span>
             <div className="home-conn-list">
-              {connections.map((conn) => (
+              {wsLoading && <><SkeletonCard /><SkeletonCard /></>}
+              {!wsLoading && workspaces.map((ws) => (
+                <div
+                  key={ws.id}
+                  className="home-conn-card"
+                  onClick={() => void openWorkspaceAndConnect(ws, onConnectionSelect)}
+                  title={ws.root_path}
+                >
+                  <Folder size={18} className="home-conn-icon home-conn-icon--yellow" />
+                  <div className="home-conn-info">
+                    <span className="home-conn-name">{ws.name}</span>
+                    <span className="home-conn-detail">{ws.root_path}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(!loaded || connections.length > 0) && (
+          <div className="home-recent" style={{ flex: 1, minWidth: "250px" }}>
+            <span className="home-section-label">{activeWorkspaceId ? "Workspace Connections" : "Global Connections"}</span>
+            <div className="home-conn-list">
+              {!loaded && <><SkeletonCard /><SkeletonCard /><SkeletonCard /></>}
+              {loaded && connections.map((conn) => (
                 <div
                   key={conn.id}
                   className="home-conn-card"

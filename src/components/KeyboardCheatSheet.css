@@ -1,55 +1,9 @@
-.kcs-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 9000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .kcs {
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-dark);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   max-width: 680px;
   width: 95vw;
   max-height: 85vh;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
-
-.kcs-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.kcs-title {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.kcs-close {
-  background: none;
-  border: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-fastest);
-}
-
-.kcs-close:hover { color: var(--color-text-primary); }
 
 .kcs-body {
   overflow-y: auto;

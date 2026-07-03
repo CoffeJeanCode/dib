@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import {
   Pin,
   ChevronRight,
@@ -23,7 +23,6 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core";
-import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useWorkspaceStore } from "@/store/workspaceStore";
@@ -31,7 +30,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { useTreeStateStore } from "@/store/treeStateStore";
 import type { FsNode } from "@/types/workspace";
 import { ScriptsContextMenu } from "@/components/ScriptsContextMenu";
-import { GlassInput } from "@/components/GlassInput";
+import { FlatInput } from "@/components/FlatInput";
 import "./WorkspaceTree.css";
 
 function getFileIcon(name: string, isDirectory?: boolean, isExpanded?: boolean) {
@@ -70,24 +69,14 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
   const rootPath = useWorkspaceStore((s) => s.activeWorkspacePath);
   const workspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } = useSortable({
     id: node.path,
     data: { node }
   });
 
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: node.path,
-    data: { node, isFolder: node.isDir || node.is_dir }
-  });
-
   const setRefs = useCallback(
-    (el: HTMLElement | null) => {
-      setNodeRef(el);
-      if (node.isDir || node.is_dir) {
-        setDroppableRef(el);
-      }
-    },
-    [setNodeRef, setDroppableRef, node.isDir, node.is_dir]
+    (el: HTMLElement | null) => setNodeRef(el),
+    [setNodeRef]
   );
 
   const FileIcon = getFileIcon(node.name, node.isDir || node.is_dir, isExpanded);
@@ -168,7 +157,7 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
       >
         <span className="tree-item__spacer" />
         {node.isDir || node.is_dir ? (
-          isExpanded ? <ChevronDown size={14} className="tree-item__chevron" /> : <ChevronRight size={14} className="tree-item__chevron" />
+          isExpanded ? <ChevronDown className="tree-item__chevron" /> : <ChevronRight className="tree-item__chevron" />
         ) : (
           <span style={{ width: 14, flexShrink: 0 }} />
         )}
@@ -225,7 +214,12 @@ interface WorkspaceTreeProps {
   onRefresh?: () => void;
 }
 
-export function WorkspaceTree({ tree, onNodeClick, connectionId, onRefresh: propsOnRefresh }: WorkspaceTreeProps) {
+export interface WorkspaceTreeRef {
+  createFile: () => void;
+  createFolder: () => void;
+}
+
+export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(function WorkspaceTree({ tree, onNodeClick, connectionId, onRefresh: propsOnRefresh }: WorkspaceTreeProps, ref) {
   const rootPath = useWorkspaceStore((s) => s.activeWorkspacePath);
   const workspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const loadWorkspaceTree = useWorkspaceStore((s) => s.loadWorkspaceTree);
@@ -321,6 +315,11 @@ export function WorkspaceTree({ tree, onNodeClick, connectionId, onRefresh: prop
     }
   }, [promptInfo, promptValue, tree, workspaceId, connectionId, refresh]);
 
+  useImperativeHandle(ref, () => ({
+    createFile: () => handleCreateRequest("file", "root"),
+    createFolder: () => handleCreateRequest("folder", "root"),
+  }), [handleCreateRequest]);
+
   return (
     <div className="workspace-tree">
       <DndContext
@@ -370,7 +369,7 @@ export function WorkspaceTree({ tree, onNodeClick, connectionId, onRefresh: prop
             <h3 className="mb-4 text-sm font-medium text-gray-200">
               Create New {promptInfo.type === "file" ? "Script" : "Folder"}
             </h3>
-            <GlassInput
+            <FlatInput
               autoFocus
               value={promptValue}
               onChange={(e) => setPromptValue(e.target.value)}
@@ -399,4 +398,4 @@ export function WorkspaceTree({ tree, onNodeClick, connectionId, onRefresh: prop
       )}
     </div>
   );
-}
+});
