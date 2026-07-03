@@ -14,6 +14,7 @@ interface ScriptsContextMenuProps {
   onColorChange?: (color: string | null) => void;
   onDelete?: () => void;
   isFolder?: boolean;
+  selectedCount?: number;
 }
 
 export function ScriptsContextMenu({
@@ -27,6 +28,7 @@ export function ScriptsContextMenu({
   onColorChange,
   onDelete,
   isFolder,
+  selectedCount = 1,
 }: ScriptsContextMenuProps) {
   const PASTEL_COLORS = [
     { value: null, label: "None" },
@@ -47,7 +49,7 @@ export function ScriptsContextMenu({
       
       <ContextMenu.Portal>
         <ContextMenu.Content className="scripts-ctx-menu z-50 min-w-[160px] overflow-hidden rounded-md border border-gray-700 bg-gray-800/90 backdrop-blur-md p-1 shadow-lg">
-          {onNewFolder && (
+          {selectedCount <= 1 && onNewFolder && (
             <ContextMenu.Item
               onSelect={onNewFolder}
               className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200"
@@ -56,7 +58,7 @@ export function ScriptsContextMenu({
               New Folder
             </ContextMenu.Item>
           )}
-          {onNewScript && (
+          {selectedCount <= 1 && onNewScript && (
             <ContextMenu.Item
               onSelect={onNewScript}
               className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200"
@@ -65,7 +67,7 @@ export function ScriptsContextMenu({
               New Script
             </ContextMenu.Item>
           )}
-          {onRename && (
+          {selectedCount <= 1 && onRename && (
             <ContextMenu.Item
               onSelect={onRename}
               className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200"
@@ -75,7 +77,7 @@ export function ScriptsContextMenu({
             </ContextMenu.Item>
           )}
 
-          {onNewScript && (onTogglePin || onColorChange) && (
+          {selectedCount <= 1 && onNewScript && (onTogglePin || onColorChange) && (
             <ContextMenu.Separator className="scripts-ctx-separator -mx-1 my-1 h-px bg-gray-700" />
           )}
 
@@ -134,7 +136,7 @@ export function ScriptsContextMenu({
                 className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-red-900/50 focus:bg-red-900/50 text-red-400"
               >
                 <Trash2 className="mr-2 h-3.5 w-3.5" size={14} />
-                {isFolder ? "Delete Folder" : "Delete Script"}
+                {selectedCount > 1 ? `Delete ${selectedCount} items` : (isFolder ? "Delete Folder" : "Delete Script")}
               </ContextMenu.Item>
             </>
           )}

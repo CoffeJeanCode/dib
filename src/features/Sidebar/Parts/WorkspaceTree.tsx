@@ -61,9 +61,18 @@ interface TreeItemProps {
   connectionId?: string | null;
   onRefresh?: () => void;
   onCreateRequest?: (type: "file" | "folder", targetPath: string) => void;
+  onDeleteRequest?: (node: FsNode) => void;
+  onRenameRequest?: (node: FsNode) => void;
+  renameTargetId?: string | null;
+  renameValue?: string;
+  onRenameChange?: (val: string) => void;
+  onRenameSubmit?: () => void;
+  onRenameCancel?: () => void;
+  selectedPaths?: Set<string>;
+  onSelectRequest?: (e: React.MouseEvent, node: FsNode) => void;
 }
 
-function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh, onCreateRequest }: TreeItemProps) {
+function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh, onCreateRequest, onDeleteRequest, onRenameRequest, renameTargetId, renameValue, onRenameChange, onRenameSubmit, onRenameCancel, selectedPaths, onSelectRequest }: TreeItemProps) {
   const isExpanded = useTreeStateStore((s) => s.expandedNodes[node.path]);
   const toggleNode = useTreeStateStore((s) => s.toggleNode);
 
@@ -84,12 +93,17 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    if (node.isDir || node.is_dir) {
-      toggleNode(node.path);
+    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      onSelectRequest?.(e, node);
     } else {
-      onNodeClick?.(node);
+      if (node.isDir || node.is_dir) {
+        toggleNode(node.path);
+      } else {
+        onNodeClick?.(node);
+      }
+      onSelectRequest?.(e, node);
     }
-  }, [node, onNodeClick, toggleNode]);
+  }, [node, onNodeClick, toggleNode, onSelectRequest]);
 
   const togglePin = useCallback(async () => {
     if (workspaceId && rootPath) {
@@ -131,12 +145,14 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
     onCreateRequest?.("folder", node.path);
   }, [node.path, onCreateRequest]);
 
+  const isSelected = selectedPaths?.has(node.path);
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     paddingLeft: `${depth * 16}px`,
     opacity: isDragging ? 0.3 : 1,
-    background: isOver ? "var(--color-bg-hover)" : undefined,
+    background: isOver ? "var(--color-bg-hover)" : (isSelected ? "rgba(255, 255, 255, 0.1)" : undefined),
+    outline: isSelected ? "1px solid var(--color-border-focus)" : undefined,
   };
 
   const row = (
@@ -147,6 +163,10 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
       onNewFolder={requestCreateFolder}
       onTogglePin={togglePin}
       onColorChange={changeColor}
+      onDelete={() => onDeleteRequest?.(node)}
+      onRename={() => onRenameRequest?.(node)}
+      isFolder={node.isDir || node.is_dir}
+      selectedCount={selectedPaths?.has(node.path) ? Math.max(1, selectedPaths.size) : 1}
     >
       <div
         ref={setRefs}
@@ -163,9 +183,26 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
           <span style={{ width: 14, flexShrink: 0 }} />
         )}
         <FileIcon size={13} className="tree-item__icon" color={node.color || undefined} />
-        <span className="tree-item__name" style={node.color ? { color: node.color } : undefined}>
-          {node.name}
-        </span>
+        {renameTargetId === node.path ? (
+          <input
+            autoFocus
+            onFocus={(e) => e.target.select()}
+            className="inline-edit-input inline-edit-input--xs"
+            value={renameValue || ""}
+            onChange={(e) => onRenameChange?.(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.stopPropagation(); onRenameSubmit?.(); }
+              if (e.key === "Escape") { e.stopPropagation(); onRenameCancel?.(); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            style={{ flex: 1, minWidth: 0, margin: "0 4px" }}
+          />
+        ) : (
+          <span className="tree-item__name" style={node.color ? { color: node.color } : undefined}>
+            {node.name}
+          </span>
+        )}
         {node.is_pinned && <Pin size={10} style={{ opacity: 0.4, marginLeft: "auto", marginRight: 4, flexShrink: 0 }} />}
       </div>
     </ScriptsContextMenu>
@@ -189,6 +226,15 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
               connectionId={connectionId}
               onRefresh={onRefresh}
               onCreateRequest={onCreateRequest}
+              onDeleteRequest={onDeleteRequest}
+              onRenameRequest={onRenameRequest}
+              renameTargetId={renameTargetId}
+              renameValue={renameValue}
+              onRenameChange={onRenameChange}
+              onRenameSubmit={onRenameSubmit}
+              onRenameCancel={onRenameCancel}
+              selectedPaths={selectedPaths}
+              onSelectRequest={onSelectRequest}
             />
           ))}
         </SortableContext>
@@ -206,6 +252,20 @@ function findNode(node: FsNode, path: string): FsNode | null {
     }
   }
   return null;
+}
+
+function getVisibleNodes(tree: FsNode, expanded: Record<string, boolean>): FsNode[] {
+  const result: FsNode[] = [];
+  function traverse(node: FsNode) {
+    if (node.path !== tree.path) {
+      result.push(node);
+    }
+    if ((node.isDir || node.is_dir) && (node.path === tree.path || expanded[node.path]) && node.children) {
+      for (const child of node.children) traverse(child);
+    }
+  }
+  traverse(tree);
+  return result;
 }
 
 interface WorkspaceTreeProps {
@@ -229,6 +289,12 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
   
   const [promptInfo, setPromptInfo] = useState<{ type: "file" | "folder"; targetPath: string } | null>(null);
   const [promptValue, setPromptValue] = useState("");
+
+  const [renameNode, setRenameNode] = useState<FsNode | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
+  const [lastSelectedPath, setLastSelectedPath] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     if (rootPath) loadWorkspaceTree(rootPath, workspaceId);
@@ -294,6 +360,35 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
     })
   );
   
+  const handleSelectRequest = useCallback((e: React.MouseEvent, node: FsNode) => {
+    if (e.shiftKey && lastSelectedPath) {
+      const visibleNodes = getVisibleNodes(tree, useTreeStateStore.getState().expandedNodes);
+      const startIdx = visibleNodes.findIndex(n => n.path === lastSelectedPath);
+      const endIdx = visibleNodes.findIndex(n => n.path === node.path);
+      if (startIdx !== -1 && endIdx !== -1) {
+        const min = Math.min(startIdx, endIdx);
+        const max = Math.max(startIdx, endIdx);
+        const newSet = new Set(selectedPaths);
+        for (let i = min; i <= max; i++) {
+          newSet.add(visibleNodes[i].path);
+        }
+        setSelectedPaths(newSet);
+      }
+    } else if (e.ctrlKey || e.metaKey) {
+      const newSet = new Set(selectedPaths);
+      if (newSet.has(node.path)) {
+        newSet.delete(node.path);
+      } else {
+        newSet.add(node.path);
+      }
+      setSelectedPaths(newSet);
+      setLastSelectedPath(node.path);
+    } else {
+      setSelectedPaths(new Set([node.path]));
+      setLastSelectedPath(node.path);
+    }
+  }, [tree, selectedPaths, lastSelectedPath]);
+
   const handleCreateRequest = useCallback((type: "file" | "folder", targetPath: string) => {
     setPromptInfo({ type, targetPath });
     setPromptValue("");
@@ -341,6 +436,68 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
     }
   }, [promptInfo, promptValue, tree, workspaceId, connectionId, refresh]);
 
+  const handleDeleteRequest = useCallback(async (node: FsNode) => {
+    const pathsToDelete = selectedPaths.has(node.path) && selectedPaths.size > 1
+      ? Array.from(selectedPaths)
+      : [node.path];
+    
+    if (!confirm(`Are you sure you want to delete ${pathsToDelete.length > 1 ? pathsToDelete.length + ' items' : node.name}?`)) return;
+    try {
+      for (const path of pathsToDelete) {
+        if (workspaceId) {
+          await workspaceService.deleteFsItem(path);
+        } else if (connectionId) {
+          const targetNode = findNode(tree, path);
+          if (targetNode) {
+            if (targetNode.isDir || targetNode.is_dir) {
+              await workspaceService.deleteVirtualFolder(path);
+            } else {
+              await workspaceService.deleteVirtualScript(path);
+            }
+          }
+        }
+      }
+      setSelectedPaths(new Set());
+      refresh();
+    } catch (e: any) {
+      alert("Error deleting item(s): " + e);
+    }
+  }, [workspaceId, connectionId, refresh, selectedPaths, tree]);
+
+  const handleRenameRequest = useCallback((node: FsNode) => {
+    setRenameNode(node);
+    setRenameValue(node.name);
+  }, []);
+
+  const handleRenameSubmit = useCallback(async () => {
+    if (!renameNode || !renameValue.trim() || renameValue.trim() === renameNode.name) {
+      setRenameNode(null);
+      return;
+    }
+    const newName = renameValue.trim();
+    try {
+      if (workspaceId) {
+        let parentPath = renameNode.path;
+        if (parentPath.includes("/")) {
+          parentPath = parentPath.substring(0, parentPath.lastIndexOf("/"));
+        } else if (parentPath.includes("\\")) {
+          parentPath = parentPath.substring(0, parentPath.lastIndexOf("\\"));
+        } else {
+          parentPath = "";
+        }
+        const newPath = parentPath ? `${parentPath}/${newName}` : newName;
+        await workspaceService.renameFsItem(renameNode.path, newPath, workspaceId, rootPath || null);
+      } else if (connectionId) {
+        await workspaceService.renameVirtualItem(renameNode.path, newName, !!(renameNode.isDir || renameNode.is_dir));
+      }
+      refresh();
+    } catch (e: any) {
+      alert("Error renaming item: " + e);
+    } finally {
+      setRenameNode(null);
+    }
+  }, [renameNode, renameValue, workspaceId, connectionId, rootPath, refresh]);
+
   useImperativeHandle(ref, () => ({
     createFile: () => handleCreateRequest("file", "root"),
     createFolder: () => handleCreateRequest("folder", "root"),
@@ -374,6 +531,15 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
                     connectionId={connectionId}
                     onRefresh={refresh}
                     onCreateRequest={handleCreateRequest}
+                    onDeleteRequest={handleDeleteRequest}
+                    onRenameRequest={handleRenameRequest}
+                    renameTargetId={renameNode?.path}
+                    renameValue={renameValue}
+                    onRenameChange={setRenameValue}
+                    onRenameSubmit={handleRenameSubmit}
+                    onRenameCancel={() => setRenameNode(null)}
+                    selectedPaths={selectedPaths}
+                    onSelectRequest={handleSelectRequest}
                   />
                 ))}
               </SortableContext>
@@ -393,7 +559,8 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
         <div className="tree-inline-create" style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 16px", paddingLeft: 16 }}>
           {promptInfo.type === "folder" ? <Folder size={13} style={{ flexShrink: 0, opacity: 0.6 }} /> : <FileCode2 size={13} style={{ flexShrink: 0, opacity: 0.6 }} />}
           <input
-            ref={(el) => { if (el && document.activeElement !== el) { el.focus(); el.select(); } }}
+            autoFocus
+            onFocus={(e) => e.target.select()}
             className="inline-edit-input inline-edit-input--xs"
             value={promptValue}
             onChange={(e) => setPromptValue(e.target.value)}

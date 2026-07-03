@@ -15,6 +15,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { getLastConnection, getLastSessionScope, openWorkspaceAndConnect } from "@/shared/utils/quickConnect";
 import { GlobalModals } from "@/app/providers/GlobalModals";
 import type { OpenScript } from "@/types/workspace";
+import { DDL_TEMPLATES } from "@/features/Sidebar/Parts/DatabaseCategories";
 import "./App.css";
 
 function App() {
@@ -98,6 +99,11 @@ function App() {
       { id: "create-db",           label: "Create Database…", onAction: () => setDbAction({ action: "create" }) },
       { id: "rename-db",           label: "Rename Database…", onAction: () => setDbAction({ action: "rename" }) },
       { id: "drop-db",             label: "Delete Database…", onAction: () => setDbAction({ action: "drop" }) },
+      { id: "create-table",        label: "Create Table",     onAction: () => { closePalette(); setOpenScript({ sql: DDL_TEMPLATES.table, name: "New Table.sql", id: `ext-${Date.now()}`, v: Date.now() } as OpenScript); } },
+      { id: "create-view",         label: "Create View",      onAction: () => { closePalette(); setOpenScript({ sql: DDL_TEMPLATES.view, name: "New View.sql", id: `ext-${Date.now()}`, v: Date.now() } as OpenScript); } },
+      { id: "create-function",     label: "Create Function",  onAction: () => { closePalette(); setOpenScript({ sql: DDL_TEMPLATES.function, name: "New Function.sql", id: `ext-${Date.now()}`, v: Date.now() } as OpenScript); } },
+      { id: "create-procedure",    label: "Create Procedure", onAction: () => { closePalette(); setOpenScript({ sql: DDL_TEMPLATES.procedure, name: "New Procedure.sql", id: `ext-${Date.now()}`, v: Date.now() } as OpenScript); } },
+      { id: "create-trigger",      label: "Create Trigger",   onAction: () => { closePalette(); setOpenScript({ sql: DDL_TEMPLATES.trigger, name: "New Trigger.sql", id: `ext-${Date.now()}`, v: Date.now() } as OpenScript); } },
     ] : []),
     { id: "new-connection", label: "New Connection",              onAction: () => { closePalette(); setShowNewConnection(true); } },
     { id: "create-workspace", label: "Open Folder / Workspace...", onAction: () => { closePalette(); handleCreateWorkspace(); } },

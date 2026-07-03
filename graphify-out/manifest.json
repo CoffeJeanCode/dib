@@ -125,8 +125,8 @@
     "semantic_hash": ""
   },
   "src/App.tsx": {
-    "mtime": 1783083448.457137,
-    "ast_hash": "6eb0b01e759beb6c388defe79a8843a0",
+    "mtime": 1783088195.4799316,
+    "ast_hash": "1167d370cc5339c883ccb99c7b113c13",
     "semantic_hash": ""
   },
   "src/main.tsx": {
@@ -270,8 +270,8 @@
     "semantic_hash": ""
   },
   "src/features/DataGrid/DataGrid.hooks.ts": {
-    "mtime": 1783081166.7045195,
-    "ast_hash": "5fbdbcdc1ef1b2e37e6fa2900198a382",
+    "mtime": 1783087626.072886,
+    "ast_hash": "21558a45a6e955fdcc3ef9a4573a3240",
     "semantic_hash": ""
   },
   "src/features/DataGrid/DataGrid.tsx": {
@@ -330,8 +330,8 @@
     "semantic_hash": ""
   },
   "src/features/QueryPanel/QueryPanel.tsx": {
-    "mtime": 1783084742.4796064,
-    "ast_hash": "71dbbd5b8a47fd1de029e4a1791be9a7",
+    "mtime": 1783088449.7339644,
+    "ast_hash": "5641af49b1dd376f4e688208ea038371",
     "semantic_hash": ""
   },
   "src/features/QueryPanel/index.ts": {
@@ -420,8 +420,8 @@
     "semantic_hash": ""
   },
   "src/features/SqlEditor/SqlEditor.tsx": {
-    "mtime": 1783083448.9830644,
-    "ast_hash": "9fdeb827af75dea40f49d2f36ceb345a",
+    "mtime": 1783087626.0789487,
+    "ast_hash": "81cb07fb9c04b9dd13de10529d84b8b5",
     "semantic_hash": ""
   },
   "src/features/SqlEditor/index.ts": {
@@ -455,8 +455,8 @@
     "semantic_hash": ""
   },
   "src/types/workspace.ts": {
-    "mtime": 1782998289.6551182,
-    "ast_hash": "387595badfe20a2a5013a2ef2d24a21c",
+    "mtime": 1783087626.083183,
+    "ast_hash": "7fcd401da6498315d56cd962f64306d0",
     "semantic_hash": ""
   },
   "README.md": {
@@ -490,8 +490,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/WorkspaceTree.tsx": {
-    "mtime": 1783083398.43574,
-    "ast_hash": "3364def3cac233eafa421f2aa1b6e273",
+    "mtime": 1783088967.3531473,
+    "ast_hash": "ecc325e0559877cab6ea5977ee1b7442",
     "semantic_hash": ""
   },
   "src/store/settingsStore.ts": {
@@ -575,8 +575,8 @@
     "semantic_hash": ""
   },
   "src/features/CommandPalette/CommandPalette.tsx": {
-    "mtime": 1783084336.9434488,
-    "ast_hash": "d359113dafc6738fec29831268222edc",
+    "mtime": 1783088285.4725387,
+    "ast_hash": "71f828aa00915908bd836f3a031ef132",
     "semantic_hash": ""
   },
   "src/features/Connections/ConnectionManager.tsx": {
@@ -605,8 +605,8 @@
     "semantic_hash": ""
   },
   "src/features/QueryPanel/Tab.tsx": {
-    "mtime": 1783083448.7034113,
-    "ast_hash": "d5ab809fee5c82465833c9686c235d63",
+    "mtime": 1783087626.0769348,
+    "ast_hash": "d5fc2c924763debe87d440455151cead",
     "semantic_hash": ""
   },
   "src/features/QueryPanel/TabBar.tsx": {
@@ -690,8 +690,8 @@
     "semantic_hash": ""
   },
   "src/shared/hooks/useSqlEditor.ts": {
-    "mtime": 1783083449.1174657,
-    "ast_hash": "5c0e07c1c0614da4e759de38eee5016e",
+    "mtime": 1783088486.7966561,
+    "ast_hash": "4b9f9f2001e1d4ce8a7ea44064daea3d",
     "semantic_hash": ""
   },
   "src/shared/hooks/useTheme.ts": {
@@ -787,6 +787,11 @@
   "src/shared/utils/scriptMigration.ts": {
     "mtime": 1783084769.8527365,
     "ast_hash": "6847e02a1d4ff78ff814514e172f5fb3",
+    "semantic_hash": ""
+  },
+  "docs/auditoria-competitiva.md": {
+    "mtime": 1783089539.6705287,
+    "ast_hash": "2eb75ced611f49194c495df24bc04bb4",
     "semantic_hash": ""
   }
 }

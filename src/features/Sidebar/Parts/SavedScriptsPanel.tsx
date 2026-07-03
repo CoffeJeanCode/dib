@@ -195,12 +195,8 @@ export function SavedScriptsPanel({ onScriptOpen }: SavedScriptsPanelProps) {
                   <FileCode2 size={11} style={{ flexShrink: 0, opacity: 0.6, color: "var(--color-text-tertiary)" }} />
                   {renameTarget === s.name ? (
                     <input
-                      ref={(el) => {
-                        if (el && document.activeElement !== el) {
-                          el.focus();
-                          el.select();
-                        }
-                      }}
+                      autoFocus
+                      onFocus={(e) => e.target.select()}
                       value={renameValue}
                       onChange={(e) => setRenameValue(e.target.value)}
                       onKeyDown={async (e) => {

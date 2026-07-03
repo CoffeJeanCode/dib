@@ -10,6 +10,7 @@ import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/db";
 import { useToastStore } from "@/store/toastStore";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
+import * as ContextMenu from "@radix-ui/react-context-menu";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { TableContextMenu } from "@/features/Sidebar/Parts/TableContextMenu";
 import { dbService } from "@/services/dbService";
@@ -55,6 +56,14 @@ function fmtErr(e: unknown): string {
   }
   return "Error desconocido";
 }
+
+export const DDL_TEMPLATES: Record<CatKind, string> = {
+  table: `CREATE TABLE new_table (\n  id SERIAL PRIMARY KEY,\n  created_at TIMESTAMP DEFAULT NOW()\n);`,
+  view: `CREATE OR REPLACE VIEW new_view AS\nSELECT * FROM tablename;`,
+  function: `CREATE OR REPLACE FUNCTION new_function()\nRETURNS void AS $$\nBEGIN\nEND;\n$$ LANGUAGE plpgsql;`,
+  procedure: `CREATE OR REPLACE PROCEDURE new_procedure()\nLANGUAGE plpgsql\nAS $$\nBEGIN\nEND;\n$$;`,
+  trigger: `CREATE TRIGGER new_trigger\nAFTER INSERT ON tablename\nFOR EACH ROW\nEXECUTE FUNCTION function_name();`,
+};
 
 export function DatabaseCategories({
   sessionId,
@@ -208,6 +217,12 @@ export function DatabaseCategories({
       .catch((e) => toastRef.current.error(fmtErr(e)));
   }, [sessionId, onScriptOpen]);
 
+  const handleCreateObject = useCallback((kind: CatKind) => {
+    const ddl = DDL_TEMPLATES[kind];
+    const kindCap = kind.charAt(0).toUpperCase() + kind.slice(1);
+    onScriptOpen?.(ddl, `New ${kindCap}`, `new-${kind}-${Date.now()}`);
+  }, [onScriptOpen]);
+
   if (!sessionId) {
     return (
       <div className="sidebar-db-categories">
@@ -236,15 +251,27 @@ export function DatabaseCategories({
         const canExpand = cat.kind === "table" || cat.kind === "view";
         return (
           <div key={cat.key} className="sidebar-db-category">
-            <button className="sidebar-section-toggle" onClick={() => toggle(cat.key)}>
-              <ChevronRight
-                size={12}
-                className={`sidebar-chevron${open[cat.key] ? " sidebar-chevron--open" : ""}`}
-              />
-              <CatIcon size={13} style={{ color: cat.color, flexShrink: 0 }} />
-              <span className="sidebar-section-title" style={{ margin: 0 }}>{cat.label}</span>
-              {objects && <span className="sidebar-section-count">{items.length}</span>}
-            </button>
+            <ContextMenu.Root>
+              <ContextMenu.Trigger asChild>
+                <button className="sidebar-section-toggle" onClick={() => toggle(cat.key)}>
+                  <ChevronRight
+                    size={12}
+                    className={`sidebar-chevron${open[cat.key] ? " sidebar-chevron--open" : ""}`}
+                  />
+                  <CatIcon size={13} style={{ color: cat.color, flexShrink: 0 }} />
+                  <span className="sidebar-section-title" style={{ margin: 0 }}>{cat.label}</span>
+                  {objects && <span className="sidebar-section-count">{items.length}</span>}
+                </button>
+              </ContextMenu.Trigger>
+              <ContextMenu.Portal>
+                <ContextMenu.Content className="ContextMenuContent" sideOffset={5} align="start">
+                  <ContextMenu.Item className="ContextMenuItem" onSelect={() => handleCreateObject(cat.kind as CatKind)}>
+                    <div className="ctx-item-icon"><CatIcon size={14} style={{ color: cat.color }} /></div>
+                    <span className="ctx-item-label">Create New {cat.label.slice(0, -1)}</span>
+                  </ContextMenu.Item>
+                </ContextMenu.Content>
+              </ContextMenu.Portal>
+            </ContextMenu.Root>
             {open[cat.key] && (
               <div className="sidebar-db-category-items">
                 {loading ? (
