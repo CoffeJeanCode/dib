@@ -1,6 +1,6 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { FileCode2, Plus, Pencil, Trash2 } from "lucide-react";
-import "@/components/ContextMenu.css";
+import "@/shared/ui/ContextMenu.css";
 
 interface InstanceContextMenuProps {
   children: React.ReactNode;

@@ -5,10 +5,10 @@ import type { ConnectionInfo, DbConfig, SavedConnection } from "@/types/db";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useToastStore } from "@/store/toastStore";
-import { PasswordInput } from "@/components/PasswordInput";
-import { FlatInput } from "@/components/FlatInput";
-import { FlatSelect } from "@/components/FlatSelect";
-import { FlatCheckbox } from "@/components/FlatCheckbox";
+import { PasswordInput } from "@/shared/ui/PasswordInput";
+import { FlatInput } from "@/shared/ui/FlatInput";
+import { FlatSelect } from "@/shared/ui/FlatSelect";
+import { FlatCheckbox } from "@/shared/ui/FlatCheckbox";
 import "./ConnectionManager.css";
 
 interface ConnectionManagerProps {

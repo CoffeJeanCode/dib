@@ -4,7 +4,7 @@ import { Search, Moon, Sun, Settings, Minus, Square, X } from "lucide-react";
 import { mod } from "@/utils/platform";
 import { useUiStore } from "@/store/uiStore";
 import { useTheme, setTheme } from "@/hooks/useTheme";
-import { Dropzone, type ImportResult } from "@/components/Dropzone";
+import { Dropzone, type ImportResult } from "@/shared/ui/Dropzone";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { OpenScript } from "@/types/workspace";
 import "./Titlebar.css";

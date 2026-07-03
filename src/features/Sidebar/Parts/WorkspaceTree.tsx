@@ -30,7 +30,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { useTreeStateStore } from "@/store/treeStateStore";
 import type { FsNode } from "@/types/workspace";
 import { ScriptsContextMenu } from "@/components/ScriptsContextMenu";
-import { FlatInput } from "@/components/FlatInput";
+import { FlatInput } from "@/shared/ui/FlatInput";
 import "./WorkspaceTree.css";
 
 function getFileIcon(name: string, isDirectory?: boolean, isExpanded?: boolean) {

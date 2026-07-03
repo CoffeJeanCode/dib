@@ -1,7 +1,7 @@
 import React from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { Layers, Network, Pencil, Workflow, Table2, Trash2, ChevronRight, Eye } from "lucide-react";
-import "./ContextMenu.css";
+import "@/shared/ui/ContextMenu.css";
 
 export interface TableInfo {
   name: string;
