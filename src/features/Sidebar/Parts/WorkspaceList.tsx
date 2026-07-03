@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FolderOpen, FolderPlus, Pencil, Trash2, Folder } from "lucide-react";
-import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
+import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useToastStore } from "@/store/toastStore";
 import type { Workspace } from "@/types/workspace";
 import { open } from "@tauri-apps/plugin-dialog";
 import { openWorkspaceAndConnect } from "@/utils/quickConnect";
-import { SkeletonRow } from "@/components/Skeleton";
+import { SkeletonRow } from "@/shared/ui/Skeleton";
 
 interface WorkspaceListProps {
   onConnectionSelect?: (savedId: string) => void;

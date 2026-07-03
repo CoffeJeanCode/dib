@@ -2,7 +2,7 @@ import { memo, useMemo } from "react";
 import type { PendingChange, ColumnInfo, GridFilter, TableRelation } from "@/types/db";
 import { useDataGridState } from "./DataGrid.hooks";
 import { DataGridContext } from "./Parts/DataGridContext";
-import { Skeleton } from "@/components/Skeleton";
+import { Skeleton } from "@/shared/ui/Skeleton";
 import { GridHeader } from "./Parts/GridHeader";
 import { GridBody } from "./Parts/GridBody";
 import { GridFooter } from "./Parts/GridFooter";

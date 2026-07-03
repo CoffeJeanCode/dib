@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Database, Folder, RefreshCw, FilePlus, FolderPlus } from "lucide-react";
-import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
+import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { SystemStatusBar } from "@/components/SystemStatusBar";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useSidebarScripts } from "@/hooks/useSidebarScripts";

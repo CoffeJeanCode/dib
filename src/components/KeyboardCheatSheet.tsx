@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { mod } from "@/utils/platform";
-import "./dialog-shared.css";
+import "@/shared/ui/dialog-shared.css";
 import "./KeyboardCheatSheet.css";
 
 interface KeyboardCheatSheetProps {

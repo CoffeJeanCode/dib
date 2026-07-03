@@ -1,9 +1,9 @@
 import { useUiStore } from "@/store/uiStore";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { ToastContainer } from "@/components/Toast";
+import { ToastContainer } from "@/shared/ui/Toast";
 import { KeyboardCheatSheet } from "@/components/KeyboardCheatSheet";
-import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
-import { RenameDialog } from "@/components/RenameDialog";
+import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
+import { RenameDialog } from "@/shared/ui/RenameDialog";
 import { DbActionDialog } from "@/components/DbActionDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 

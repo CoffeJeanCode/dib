@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react";
-import { Skeleton } from "./Skeleton";
+import { Skeleton } from "@/shared/ui/Skeleton";
 import { ConnectionManager } from "./ConnectionManager";
 import { QueryPanel } from "@/features/QueryPanel";
 import { HomeView } from "./HomeView";

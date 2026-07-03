@@ -4,7 +4,7 @@ import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { openWorkspaceAndConnect } from "@/utils/quickConnect";
-import { SkeletonCard } from "@/components/Skeleton";
+import { SkeletonCard } from "@/shared/ui/Skeleton";
 import type { SavedConnection } from "@/types/db";
 import type { Workspace } from "@/types/workspace";
 import { open } from "@tauri-apps/plugin-dialog";

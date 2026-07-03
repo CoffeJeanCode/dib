@@ -6,7 +6,7 @@ import {
   Languages, GitBranch, Shield, ArrowLeftRight, Plug, Code2, Radio, Rss,
 } from "lucide-react";
 import { safeInvoke as invoke } from "@/utils/ipc";
-import { SkeletonRow } from "@/components/Skeleton";
+import { SkeletonRow } from "@/shared/ui/Skeleton";
 import { useTreeStateStore, useNodeExpanded } from "@/store/treeStateStore";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { ENGINE_COLORS } from "./utils";

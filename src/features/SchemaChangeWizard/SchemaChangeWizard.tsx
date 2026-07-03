@@ -3,7 +3,7 @@ import { X, Plus } from "lucide-react";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
 import type { SchemaChange, ColumnInfo } from "@/types/db";
-import "@/components/dialog-shared.css";
+import "@/shared/ui/dialog-shared.css";
 import "./SchemaChangeWizard.css";
 
 type ChangeKind = "add_column" | "drop_column" | "rename_column" | "alter_type";

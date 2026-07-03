@@ -5,7 +5,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { FlatCheckbox } from "@/components/FlatCheckbox";
 import { FlatInput } from "@/components/FlatInput";
 import type { WorkspaceLayout } from "@/types/workspace";
-import "./dialog-shared.css";
+import "@/shared/ui/dialog-shared.css";
 import "./SettingsPanel.css";
 
 interface SettingsPanelProps {

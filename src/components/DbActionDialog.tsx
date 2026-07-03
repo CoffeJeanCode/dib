@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { safeInvoke as invoke } from "@/utils/ipc";
 import { useConnectionStore } from "@/store/connectionStore";
-import "./dialog-shared.css";
+import "@/shared/ui/dialog-shared.css";
 import "./DbActionDialog.css";
 
 type Action = "create" | "drop" | "rename";

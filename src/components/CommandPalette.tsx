@@ -9,7 +9,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { useDangerDialog } from "@/hooks/useDangerDialog";
 import { useToastStore } from "@/store/toastStore";
 import { useUiStore } from "@/store/uiStore";
-import "./dialog-shared.css";
+import "@/shared/ui/dialog-shared.css";
 import "./CommandPalette.css";
 
 export function generateOrmAlias(tableName: string): string {

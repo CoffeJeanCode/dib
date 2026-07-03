@@ -15,7 +15,7 @@ import { TabBar } from "@/components/TabBar";
 import { SqlEditor } from "@/features/SqlEditor";
 import { SchemaVisualizer } from "@/features/SchemaVisualizer";
 import { MockGenerator } from "@/features/MockGenerator/MockGenerator";
-import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { UnsavedChangesDialog } from "@/shared/ui/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/components/EmptyWorkspaceState";
 import { useToastStore } from "@/store/toastStore";
 import "./QueryPanel.css";

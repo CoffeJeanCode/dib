@@ -9,7 +9,7 @@ import {
 import { safeInvoke as invoke } from "@/utils/ipc";
 import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/db";
 import { useToastStore } from "@/store/toastStore";
-import { DangerConfirmDialog } from "@/components/DangerConfirmDialog";
+import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { TableContextMenu } from "@/components/TableContextMenu";
 import { dbService } from "@/services/dbService";

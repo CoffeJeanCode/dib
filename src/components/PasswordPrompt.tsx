@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
-import "./dialog-shared.css";
+import "@/shared/ui/dialog-shared.css";
 import "./PasswordPrompt.css";
 
 interface PasswordPromptProps {
