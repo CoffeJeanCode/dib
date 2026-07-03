@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Layout } from "@/components/Layout";
-import { MainContent } from "@/components/MainContent";
+import { Layout } from "@/app/Layout";
+import { MainContent } from "@/app/MainContent";
 import { CommandPalette } from "@/features/CommandPalette/CommandPalette";
 import { PasswordPrompt } from "@/components/PasswordPrompt";
 import { mod } from "@/utils/platform";

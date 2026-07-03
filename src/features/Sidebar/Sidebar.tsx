@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Database, Folder, RefreshCw, FilePlus, FolderPlus } from "lucide-react";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
-import { SystemStatusBar } from "@/components/SystemStatusBar";
+import { SystemStatusBar } from "@/features/Sidebar/Parts/SystemStatusBar";
 import { useSavedConnections } from "@/hooks/useSavedConnections";
 import { useSidebarScripts } from "@/hooks/useSidebarScripts";
 import { useConnectionStore } from "@/store/connectionStore";

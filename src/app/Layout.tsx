@@ -3,7 +3,7 @@ import { Database, FileCode2, Clock, LayoutGrid, Settings, Compass, FolderOpen }
 import { useUiState } from "@/hooks/useUiState";
 import { useKeybindings } from "@/hooks/useKeybindings";
 import { Sidebar } from "@/features/Sidebar";
-import { Titlebar } from "@/components/Titlebar";
+import { Titlebar } from "@/app/Titlebar";
 import { JsonPanel } from "@/features/JsonViewer/JsonPanel";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useSettingsStore } from "@/store/settingsStore";

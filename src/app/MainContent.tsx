@@ -1,6 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/shared/ui/Skeleton";
-import { ConnectionManager } from "./ConnectionManager";
+import { ConnectionManager } from "@/components/ConnectionManager";
 import { QueryPanel } from "@/features/QueryPanel";
 import { HomeView } from "@/features/Home/HomeView";
 import { useWorkspaceStore } from "@/store/workspaceStore";
