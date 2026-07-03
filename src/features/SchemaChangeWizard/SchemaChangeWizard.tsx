@@ -1,18 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Plus } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { X, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
+import { useUiStore } from "@/store/uiStore";
 import type { SchemaChange, ColumnInfo } from "@/types/db";
 import "@/shared/ui/dialog-shared.css";
 import "./SchemaChangeWizard.css";
 
 type ChangeKind = "add_column" | "drop_column" | "rename_column" | "alter_type";
 
-const KIND_OPTIONS: { value: ChangeKind; label: string }[] = [
-  { value: "add_column", label: "Add Column" },
-  { value: "drop_column", label: "Drop Column" },
-  { value: "rename_column", label: "Rename Column" },
-  { value: "alter_type", label: "Change Data Type" },
+const KIND_OPTIONS: { value: ChangeKind; label: string; icon: string }[] = [
+  { value: "add_column", label: "Add Column", icon: "+" },
+  { value: "drop_column", label: "Drop Column", icon: "−" },
+  { value: "rename_column", label: "Rename Column", icon: "→" },
+  { value: "alter_type", label: "Change Data Type", icon: "::" },
 ];
 
 const COMMON_TYPES = [
@@ -25,6 +26,29 @@ interface SchemaChangeWizardProps {
   tableName: string;
   schema: string | null;
   onClose: () => void;
+}
+
+function generateAlterSql(
+  tableName: string,
+  schema: string | null,
+  changes: SchemaChange[],
+): string {
+  if (changes.length === 0) return "";
+  const label = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
+  return changes
+    .map((c) => {
+      switch (c.kind) {
+        case "add_column":
+          return `ALTER TABLE ${label}\n  ADD COLUMN ${c.column} ${c.data_type ?? "TEXT"};`;
+        case "drop_column":
+          return `ALTER TABLE ${label}\n  DROP COLUMN ${c.column};`;
+        case "rename_column":
+          return `ALTER TABLE ${label}\n  RENAME COLUMN ${c.column} TO ${c.new_column};`;
+        case "alter_type":
+          return `ALTER TABLE ${label}\n  ALTER COLUMN ${c.column} TYPE ${c.data_type};`;
+      }
+    })
+    .join("\n");
 }
 
 export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }: SchemaChangeWizardProps) {
@@ -44,7 +68,11 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
   useEffect(() => {
     cancelRef.current?.focus();
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
+      if (e.key === "Escape") {
+        e.stopImmediatePropagation();
+        useUiStore.setState({ dismissedFromPalette: true });
+        onClose();
+      }
     };
     window.addEventListener("keydown", handler, { capture: true });
     return () => window.removeEventListener("keydown", handler, { capture: true });
@@ -89,13 +117,14 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
         column: renameTarget,
       }]);
       setRenameTarget("");
-      return;
     }
   }, [kind, colName, colType, renameTarget, newName]);
 
   const removeChange = useCallback((idx: number) => {
     setChanges((p) => p.filter((_, i) => i !== idx));
   }, []);
+
+  const hasDrops = useMemo(() => changes.some((c) => c.kind === "drop_column"), [changes]);
 
   const handleApply = useCallback(async () => {
     if (changes.length === 0) return;
@@ -125,6 +154,11 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
     }
   };
 
+  const previewSql = useMemo(
+    () => generateAlterSql(tableName, schema, changes),
+    [tableName, schema, changes],
+  );
+
   const label = schema ? `${schema}.${tableName}` : tableName;
 
   return (
@@ -140,11 +174,16 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
 
           {columns.length > 0 && (
             <div className="scw-row">
-              <span className="scw-row-label">Current Columns</span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <span className="scw-row-label">
+                Current Columns ({columns.length})
+              </span>
+              <div className="scw-columns-grid">
                 {columns.map((c) => (
-                  <span key={c.name} className="tag tag-teal" style={{ fontSize: 10 }}>
-                    {c.name}: {c.data_type}
+                  <span
+                    key={c.name}
+                    className={`scw-column-chip${c.is_primary_key ? " scw-column-chip--pk" : ""}`}
+                  >
+                    {c.name}<span className="scw-col-type">{c.data_type}</span>
                   </span>
                 ))}
               </div>
@@ -153,78 +192,91 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
 
           <div className="scw-row">
             <span className="scw-row-label">Operation</span>
-            <div className="scw-add-bar">
-              <select value={kind} onChange={(e) => setKind(e.target.value as ChangeKind)}>
-                {KIND_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+            <div className="scw-add-card">
+              <div className="scw-add-card-header">
+                <span>{KIND_OPTIONS.find((o) => o.value === kind)?.icon} {KIND_OPTIONS.find((o) => o.value === kind)?.label}</span>
+              </div>
+              <div className="scw-add-fields">
+                <select value={kind} onChange={(e) => setKind(e.target.value as ChangeKind)}>
+                  {KIND_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
 
-              {kind === "add_column" && (
-                <>
-                  <input
-                    placeholder="Column name"
-                    value={colName}
-                    onChange={(e) => setColName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") addChange(); }}
-                  />
-                  <select value={colType} onChange={(e) => setColType(e.target.value)}>
-                    {COMMON_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </>
-              )}
+                {kind === "add_column" && (
+                  <>
+                    <input
+                      className="scw-field-col"
+                      placeholder="Column name"
+                      value={colName}
+                      onChange={(e) => setColName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") addChange(); }}
+                    />
+                    <select className="scw-field-type" value={colType} onChange={(e) => setColType(e.target.value)}>
+                      {COMMON_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </>
+                )}
 
-              {kind === "drop_column" && (
-                <>
-                  <select value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
-                    <option value="">— select —</option>
+                {kind === "drop_column" && (
+                  <select className="scw-field-col" value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
+                    <option value="">— select column —</option>
                     {columns.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
-                </>
-              )}
+                )}
 
-              {kind === "rename_column" && (
-                <>
-                  <select value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
-                    <option value="">— select —</option>
-                    {columns.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
-                  </select>
-                  <input
-                    placeholder="New name"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") addChange(); }}
-                  />
-                </>
-              )}
+                {kind === "rename_column" && (
+                  <>
+                    <select className="scw-field-col" value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
+                      <option value="">— select column —</option>
+                      {columns.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    </select>
+                    <input
+                      className="scw-field-new"
+                      placeholder="New name"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") addChange(); }}
+                    />
+                  </>
+                )}
 
-              {kind === "alter_type" && (
-                <>
-                  <select value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
-                    <option value="">— select —</option>
-                    {columns.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
-                  </select>
-                  <select value={colType} onChange={(e) => setColType(e.target.value)}>
-                    {COMMON_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </>
-              )}
+                {kind === "alter_type" && (
+                  <>
+                    <select className="scw-field-col" value={renameTarget} onChange={(e) => setRenameTarget(e.target.value)}>
+                      <option value="">— select column —</option>
+                      {columns.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    </select>
+                    <select className="scw-field-type" value={colType} onChange={(e) => setColType(e.target.value)}>
+                      {COMMON_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </>
+                )}
 
-              <button className="scw-btn--add" onClick={addChange}>
-                <Plus size={14} /> Add
-              </button>
+                <button className="scw-btn--add" onClick={addChange}>
+                  <Plus size={14} /> Add
+                </button>
+              </div>
             </div>
           </div>
 
           {changes.length > 0 && (
             <div className="scw-row">
-              <span className="scw-row-label">Pending Changes ({changes.length})</span>
+              <span className="scw-row-label">
+                Pending Changes ({changes.length})
+              </span>
               <ul className="scw-changes">
                 {changes.map((c, i) => (
-                  <li key={i} className="scw-change-item">
+                  <li
+                    key={i}
+                    className={`scw-change-item${c.kind === "drop_column" ? " scw-change-item--drop" : ""}`}
+                  >
                     <span className={`scw-change-kind scw-change-kind--${c.kind}`}>
-                      {c.kind === "add_column" ? "ADD" : c.kind === "drop_column" ? "DROP" : c.kind === "rename_column" ? "RENAME" : "TYPE"}
+                      {c.kind === "drop_column" ? <><Trash2 size={10} /> DROP</>
+                        : c.kind === "add_column" ? "ADD"
+                        : c.kind === "rename_column" ? "RENAME"
+                        : "TYPE"}
                     </span>
                     <span className="scw-change-text">{changeLabel(c)}</span>
-                    <button className="scw-btn--remove" onClick={() => removeChange(i)}>&times;</button>
+                    <button className="scw-btn--remove" onClick={() => removeChange(i)} title="Remove">&times;</button>
                   </li>
                 ))}
               </ul>
@@ -232,23 +284,49 @@ export function SchemaChangeWizard({ connectionId, tableName, schema, onClose }:
           )}
 
           {changes.length === 0 && (
-            <div className="scw-empty">No pending changes — use the form above to add operations</div>
+            <div className="scw-empty">
+              No pending changes — use the form above to add operations
+            </div>
+          )}
+
+          {previewSql && (
+            <div className="scw-row">
+              <span className="scw-row-label">SQL Preview</span>
+              <div className="scw-preview">
+                <span className="scw-preview-label">Preview</span>
+                {previewSql.split("\n").map((line, i) => (
+                  <span key={i} className="scw-preview-line">{line}</span>
+                ))}
+              </div>
+            </div>
           )}
 
           {error && (
-            <div className="scw-row">
-              <span style={{ color: "var(--color-red)", fontSize: "var(--font-size-sm)" }}>{error}</span>
+            <div className="scw-error">
+              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>{error}</span>
             </div>
           )}
         </div>
 
         <div className="dialog-footer">
-          <button ref={cancelRef} className="dialog-btn dialog-btn--cancel" onClick={onClose} disabled={applying}>
-            Cancel
-          </button>
-          <button className="dialog-btn dialog-btn--primary" onClick={handleApply} disabled={applying || changes.length === 0}>
-            {applying ? "Applying…" : `Apply ${changes.length > 0 ? `(${changes.length})` : ""}`}
-          </button>
+          <span className="scw-footer-info">
+            {changes.length > 0
+              ? `${changes.length} change${changes.length > 1 ? "s" : ""} pending`
+              : "Add at least one change"}
+          </span>
+          <div style={{ display: "flex", gap: "var(--space-3)" }}>
+            <button ref={cancelRef} className="dialog-btn dialog-btn--cancel" onClick={onClose} disabled={applying}>
+              Cancel
+            </button>
+            <button
+              className={`dialog-btn scw-btn--apply${hasDrops ? " scw-btn--apply-warn" : ""}`}
+              onClick={handleApply}
+              disabled={applying || changes.length === 0}
+            >
+              {applying ? "Applying…" : hasDrops ? "Apply (includes DROP)" : `Apply Changes`}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -28,10 +28,14 @@ export const useUiStore = create<UiState>(() => ({
   theme: getInitialTheme(),
   backendError: null,
   recentCommands: getInitialRecents(),
+  dismissedFromPalette: false,
+  paletteInitialQuery: null,
+  paletteInitialDdlMode: null,
 
-  openPalette: () => useUiStore.setState({ paletteOpen: true }),
-  closePalette: () => useUiStore.setState({ paletteOpen: false }),
-  togglePalette: () => useUiStore.setState((s) => ({ paletteOpen: !s.paletteOpen })),
+  openPalette: () => useUiStore.setState({ paletteOpen: true, paletteInitialQuery: null, paletteInitialDdlMode: null }),
+  closePalette: () => useUiStore.setState({ paletteOpen: false, paletteInitialQuery: null, paletteInitialDdlMode: null }),
+  togglePalette: () => useUiStore.setState((s) => ({ paletteOpen: !s.paletteOpen, paletteInitialQuery: null, paletteInitialDdlMode: null })),
+  openPaletteWithQuery: (query) => useUiStore.setState({ paletteOpen: true, paletteInitialQuery: query, paletteInitialDdlMode: null }),
   setSettingsOpen: (v) => useUiStore.setState({ settingsOpen: v }),
   setCheatSheetOpen: (v) => useUiStore.setState({ cheatSheetOpen: v }),
   setShowNewConnection: (v) => useUiStore.setState({ showNewConnection: v }),
@@ -48,7 +52,6 @@ export const useUiStore = create<UiState>(() => ({
   setDbAction: (action) => useUiStore.setState({ dbAction: action }),
   setDangerDialog: (d) => useUiStore.setState({ dangerDialog: d }),
   pushToRecents: (cmd) => useUiStore.setState((s) => {
-    // Remove if already exists (by ID) to push to top
     const filtered = s.recentCommands.filter((c) => c.id !== cmd.id);
     const next = [cmd, ...filtered].slice(0, 5);
     try {

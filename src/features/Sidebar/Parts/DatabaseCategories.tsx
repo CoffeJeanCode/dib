@@ -1,227 +1,20 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useConnectionStore } from "@/store/connectionStore";
-import { useWorkspaceStore } from "@/store/workspaceStore";
-import { useTreeStateStore, treeKey, treeKeyPrefix } from "@/store/treeStateStore";
-import {
-  ChevronRight, Table2, Eye, Zap, Cog, Activity,
-  Key, Hash, Type, Calendar,
-} from "lucide-react";
-import { safeInvoke as invoke } from "@/shared/utils/ipc";
-import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/db";
-import { useToastStore } from "@/store/toastStore";
+import React from "react";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
-import * as ContextMenu from "@radix-ui/react-context-menu";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
-import { TableContextMenu } from "@/features/Sidebar/Parts/TableContextMenu";
-import { dbService } from "@/services/dbService";
+import { DatabaseCategorySection } from "@/features/Sidebar/Parts/DatabaseCategorySection";
+import { useDatabaseCategoriesLogic, CATEGORIES } from "@/features/Sidebar/hooks/useDatabaseCategoriesLogic";
+import type { TableInfo } from "@/types/db";
 
 interface DatabaseCategoriesProps {
   sessionId: string | null | undefined;
-  /**
-   * STABLE saved-connection id used to key expansion state. Session ids are
-   * ephemeral (new uuid per connect) — keying by them loses all expansion on
-   * reconnect. When omitted, falls back to the active connection's savedId.
-   */
   connectionId?: string | null;
   onTableSelect?: (table: TableInfo) => void;
   onScriptOpen?: (sql: string, title: string, id: string) => void;
 }
 
-const CATEGORIES = [
-  { key: "tables",     label: "Tables",        Icon: Table2,   color: "#60a5fa", kind: "table"     },
-  { key: "views",      label: "Views",          Icon: Eye,      color: "#a78bfa", kind: "view"      },
-  { key: "functions",  label: "Functions",      Icon: Zap,      color: "#fbbf24", kind: "function"  },
-  { key: "procedures", label: "Procedures",     Icon: Cog,      color: "#34d399", kind: "procedure" },
-  { key: "triggers",   label: "Triggers",       Icon: Activity, color: "#f87171", kind: "trigger"   },
-] as const;
-
-type CatKey = typeof CATEGORIES[number]["key"];
-type CatKind = typeof CATEGORIES[number]["kind"];
-
-function colIcon(col: ColumnInfo) {
-  if (col.is_primary_key) return <Key size={10} className="dbcat-col-icon dbcat-col-icon--pk" />;
-  const t = col.data_type.toUpperCase();
-  if (/INT|FLOAT|NUMERIC|DECIMAL|REAL|DOUBLE|SERIAL|NUMBER/.test(t))
-    return <Hash size={10} className="dbcat-col-icon dbcat-col-icon--num" />;
-  if (/DATE|TIME|TIMESTAMP/.test(t))
-    return <Calendar size={10} className="dbcat-col-icon dbcat-col-icon--date" />;
-  return <Type size={10} className="dbcat-col-icon dbcat-col-icon--text" />;
-}
-
-function fmtErr(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e && typeof e === "object") {
-    const o = e as Record<string, unknown>;
-    return String(o.message ?? o.error ?? o.msg ?? JSON.stringify(e));
-  }
-  return "Error desconocido";
-}
-
-export const DDL_TEMPLATES: Record<CatKind, string> = {
-  table: `CREATE TABLE new_table (\n  id SERIAL PRIMARY KEY,\n  created_at TIMESTAMP DEFAULT NOW()\n);`,
-  view: `CREATE OR REPLACE VIEW new_view AS\nSELECT * FROM tablename;`,
-  function: `CREATE OR REPLACE FUNCTION new_function()\nRETURNS void AS $$\nBEGIN\nEND;\n$$ LANGUAGE plpgsql;`,
-  procedure: `CREATE OR REPLACE PROCEDURE new_procedure()\nLANGUAGE plpgsql\nAS $$\nBEGIN\nEND;\n$$;`,
-  trigger: `CREATE TRIGGER new_trigger\nAFTER INSERT ON tablename\nFOR EACH ROW\nEXECUTE FUNCTION function_name();`,
-};
-
-export function DatabaseCategories({
-  sessionId,
-  connectionId,
-  onTableSelect,
-  onScriptOpen,
-}: DatabaseCategoriesProps) {
-  const toast = useToastStore.getState();
-  const toastRef = useRef(toast);
-  useEffect(() => { toastRef.current = toast; }, [toast]);
-
-  // Category + item expansion live in useTreeStateStore, keyed by the
-  // STABLE connection id (compound keys) — five databases can stay expanded
-  // concurrently, and reconnects/refreshes never reset the branches.
-  const activeSavedId = useConnectionStore((s) =>
-    s.active && s.active.activeId === sessionId ? s.active.savedId : null,
-  );
-  const stableId = connectionId ?? activeSavedId ?? sessionId;
-
-  const expandedMap = useTreeStateStore((s) => s.expandedNodes);
-  const open = useMemo<Record<string, boolean>>(() => {
-    const cats = ["tables", "views", "functions", "procedures", "triggers"];
-    const out: Record<string, boolean> = {};
-    for (const c of cats) out[c] = expandedMap[treeKey("dbcat", String(stableId), c)] ?? (c === "tables");
-    return out;
-  }, [expandedMap, stableId]);
-  const [objects, setObjects] = useState<SchemaObjects | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [ddlLoading, setDdlLoading] = useState<string | null>(null);
-  const [columnMap, setColumnMap] = useState<Record<string, ColumnInfo[]>>({});
-  const expandedItems = useMemo(() => {
-    const prefix = treeKeyPrefix("dbitem", String(stableId));
-    const s = new Set<string>();
-    for (const [k, v] of Object.entries(expandedMap)) {
-      if (v && k.startsWith(prefix)) s.add(k.slice(prefix.length));
-    }
-    return s;
-  }, [expandedMap, stableId]);
-  const [colLoadingSet, setColLoadingSet] = useState<Set<string>>(new Set());
-  const [dangerDialog, setDangerDialog] = useState<{ message: string; onConfirm: () => Promise<void> } | null>(null);
-  const [alterTable, setAlterTable] = useState<{ name: string; schema: string | null } | null>(null);
-  const [editingItem, setEditingItem] = useState<{ name: string; schema: string | null; kind: CatKind } | null>(null);
-  const [editValue, setEditValue] = useState("");
-
-  // Track active table tab from workspaceStore — replaces dib:active-table
-  const storeActiveTable = useWorkspaceStore((s) => s.activeTable);
-
-  const toggle = useCallback((cat: string) => {
-    useTreeStateStore.getState().toggleNode(treeKey("dbcat", String(stableId), cat), cat === "tables");
-  }, [stableId]);
-
-  // Reload schema when sessionId changes or reloadVersion increments — replaces dib:reload
-  const reloadVersion = useConnectionStore((s) => s.reloadVersion);
-  const reloadKey = useMemo(() => `${sessionId}:${reloadVersion}`, [sessionId, reloadVersion]);
-  useEffect(() => {
-    if (!sessionId) { setObjects(null); return; }
-    let cancelled = false;
-    setObjects(null);
-    setLoading(true);
-    invoke<SchemaObjects>("fetch_schema_objects", { connectionId: sessionId })
-      .then((o) => { if (!cancelled) setObjects(o); })
-      .catch((e) => { if (!cancelled) toastRef.current.error(fmtErr(e)); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reloadKey]);
-
-  // Data caches are per-session (stale columns from another server are
-  // useless), but expansion state is NOT touched — rehydration, not reset.
-  useEffect(() => {
-    setColumnMap({});
-    setColLoadingSet(new Set());
-  }, [sessionId]);
-
-  // Rehydration: after (re)connect delivers fresh schema objects, reload
-  // column data for every branch the user already had expanded, so open
-  // trees fill back in instead of sitting empty.
-  useEffect(() => {
-    if (!objects) return;
-    for (const t of objects.tables) {
-      if (expandedItems.has(t.name)) loadColumns(t);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [objects]);
-
-  const loadColumns = useCallback((table: TableInfo) => {
-    if (!sessionId || columnMap[table.name] !== undefined) return;
-    const key = table.name;
-    setColLoadingSet((p) => new Set(p).add(key));
-    invoke<ColumnInfo[]>("fetch_table_schema", {
-      connectionId: sessionId,
-      tableName: table.name,
-      schema: table.schema,
-    })
-      .then((cols) => setColumnMap((p) => ({ ...p, [key]: cols })))
-      .catch(() => setColumnMap((p) => ({ ...p, [key]: [] })))
-      .finally(() => setColLoadingSet((p) => { const n = new Set(p); n.delete(key); return n; }));
-  }, [sessionId, columnMap]);
-
-  const handleExpandClick = useCallback((e: React.MouseEvent, item: TableInfo) => {
-    e.stopPropagation();
-    useTreeStateStore.getState().toggleNode(treeKey("dbitem", String(stableId), item.name));
-    loadColumns(item);
-  }, [stableId, loadColumns]);
-
-  const handleItemClick = useCallback(async (kind: CatKind, item: TableInfo | TriggerInfo) => {
-    if (!sessionId) return;
-    if (kind === "table") {
-      onTableSelect?.(item as TableInfo);
-      return;
-    }
-    const name = "trigger_name" in item ? item.trigger_name : (item as TableInfo).name;
-    const schema = "schema" in item ? (item as TableInfo).schema : null;
-    const loadKey = `${kind}-${name}`;
-    setDdlLoading(loadKey);
-    try {
-      let ddl: string;
-      if (kind === "trigger") {
-        const res = await invoke<{ ddl: string }>("get_trigger_ddl", { connectionId: sessionId, triggerName: name, schema });
-        ddl = res.ddl;
-      } else if (kind === "function") {
-        const res = await invoke<{ ddl: string }>("get_function_ddl", { connectionId: sessionId, functionName: name, schema });
-        ddl = res.ddl;
-      } else if (kind === "view") {
-        const res = await invoke<{ ddl: string }>("get_view_ddl", { connectionId: sessionId, viewName: name, schema });
-        ddl = res.ddl;
-      } else {
-        return;
-      }
-      onScriptOpen?.(ddl, name, `ddl-${kind}-${name}-${Date.now()}`);
-    } catch (e) {
-      toastRef.current.error(fmtErr(e));
-    } finally {
-      setDdlLoading(null);
-    }
-  }, [sessionId, onTableSelect, onScriptOpen]);
-
-  const handleGenerateSql = useCallback((item: TableInfo, action: string) => {
-    if (!sessionId) return;
-    const label = action === "select" ? `SELECT ${item.name}`
-      : action === "ddl" ? `DDL ${item.name}`
-      : action === "insert" ? `INSERT ${item.name}`
-      : `UPDATE ${item.name}`;
-    invoke<string>("generate_crud_sql", {
-      connectionId: sessionId,
-      tableName: item.name,
-      schema: item.schema,
-      action,
-    })
-      .then((sql) => onScriptOpen?.(sql, label, `gen-${action}-${item.name}-${Date.now()}`))
-      .catch((e) => toastRef.current.error(fmtErr(e)));
-  }, [sessionId, onScriptOpen]);
-
-  const handleCreateObject = useCallback((kind: CatKind) => {
-    const ddl = DDL_TEMPLATES[kind];
-    const kindCap = kind.charAt(0).toUpperCase() + kind.slice(1);
-    onScriptOpen?.(ddl, `New ${kindCap}`, `new-${kind}-${Date.now()}`);
-  }, [onScriptOpen]);
+export function DatabaseCategories(props: DatabaseCategoriesProps) {
+  const { sessionId } = props;
+  const logic = useDatabaseCategoriesLogic(props);
 
   if (!sessionId) {
     return (
@@ -233,214 +26,50 @@ export function DatabaseCategories({
     );
   }
 
-  const itemsFor = (key: CatKey): (TableInfo | TriggerInfo)[] => {
-    if (!objects) return [];
-    return (objects[key as keyof SchemaObjects] as (TableInfo | TriggerInfo)[]) ?? [];
-  };
-
-  const displayName = (it: TableInfo | TriggerInfo): string =>
-    "trigger_name" in it ? it.trigger_name : it.name;
-
   return (
     <div className="sidebar-db-categories">
-      {/* Category tree */}
-      {CATEGORIES.map((cat) => {
-        const items = itemsFor(cat.key);
-        if (objects && items.length === 0) return null;
-        const CatIcon = cat.Icon;
-        const canExpand = cat.kind === "table" || cat.kind === "view";
-        return (
-          <div key={cat.key} className="sidebar-db-category">
-            <ContextMenu.Root>
-              <ContextMenu.Trigger asChild>
-                <button className="sidebar-section-toggle" onClick={() => toggle(cat.key)}>
-                  <ChevronRight
-                    size={12}
-                    className={`sidebar-chevron${open[cat.key] ? " sidebar-chevron--open" : ""}`}
-                  />
-                  <CatIcon size={13} style={{ color: cat.color, flexShrink: 0 }} />
-                  <span className="sidebar-section-title" style={{ margin: 0 }}>{cat.label}</span>
-                  {objects && <span className="sidebar-section-count">{items.length}</span>}
-                </button>
-              </ContextMenu.Trigger>
-              <ContextMenu.Portal>
-                <ContextMenu.Content className="ContextMenuContent" sideOffset={5} align="start">
-                  <ContextMenu.Item className="ContextMenuItem" onSelect={() => handleCreateObject(cat.kind as CatKind)}>
-                    <div className="ctx-item-icon"><CatIcon size={14} style={{ color: cat.color }} /></div>
-                    <span className="ctx-item-label">Create New {cat.label.slice(0, -1)}</span>
-                  </ContextMenu.Item>
-                </ContextMenu.Content>
-              </ContextMenu.Portal>
-            </ContextMenu.Root>
-            {open[cat.key] && (
-              <div className="sidebar-db-category-items">
-                {loading ? (
-                  <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 24 }}>
-                    Loading…
-                  </span>
-                ) : (
-                  items.map((it, idx) => {
-                    const name = displayName(it);
-                    const schema = "schema" in it ? (it as TableInfo).schema : null;
-                    const isLoading = ddlLoading === `${cat.kind}-${name}`;
-                    const isActive = canExpand && storeActiveTable?.name === name && storeActiveTable?.schema === schema;
-                    const isExpanded = expandedItems.has(name);
-                    const cols = columnMap[name];
-                    const colsLoading = colLoadingSet.has(name);
-                    return (
-                      <div key={`${schema ?? ""}.${name}.${idx}`}>
-                        <TableContextMenu
-                          item={{ name, schema, kind: cat.kind as CatKind }}
-                          onViewStructure={canExpand ? () => useWorkspaceStore.getState().openTableStructure(it as TableInfo) : undefined}
-                          onViewRelations={canExpand ? () => useWorkspaceStore.getState().openTableRelations(it as TableInfo) : undefined}
-                          onRename={() => { setEditingItem({ name, schema, kind: cat.kind as CatKind }); setEditValue(name); }}
-                          onAlter={canExpand ? () => setAlterTable(it as TableInfo) : undefined}
-                          onGenerateSql={canExpand ? (type) => handleGenerateSql(it as TableInfo, type) : undefined}
-                          onViewDdl={!canExpand && cat.kind !== "trigger" ? () => handleItemClick(cat.kind, it) : undefined}
-                          onTruncate={canExpand ? () => {
-                            if (!sessionId) return;
-                            const label = schema ? `"${schema}"."${name}"` : `"${name}"`;
-                            setDangerDialog({
-                              message: `Truncate table "${label}"? This will delete ALL rows.`,
-                              onConfirm: async () => {
-                                setDangerDialog(null);
-                                try {
-                                  await invoke("run_query", {
-                                    connectionId: sessionId,
-                                    sql: `TRUNCATE TABLE ${label}`,
-                                  });
-                                  toastRef.current.info(`Table "${label}" truncated`);
-                                  useConnectionStore.getState().triggerReload();
-                                } catch (e) { toastRef.current.error(fmtErr(e)); }
-                              },
-                            });
-                          } : undefined}
-                          onDrop={() => {
-                            if (!sessionId) return;
-                            const label = schema ? `"${schema}"."${name}"` : `"${name}"`;
-                            const dropVerb = cat.kind === "table" ? "TABLE" : cat.kind === "view" ? "VIEW" : cat.kind === "function" ? "FUNCTION" : "PROCEDURE";
-                            setDangerDialog({
-                              message: `Drop ${cat.kind} "${label}"? This action cannot be undone.`,
-                              onConfirm: async () => {
-                                setDangerDialog(null);
-                                try {
-                                  if (cat.kind === "table") {
-                                    await invoke("drop_table", { connectionId: sessionId, tableName: name, schema });
-                                  } else {
-                                    await invoke("run_query", { connectionId: sessionId, sql: `DROP ${dropVerb} IF EXISTS ${label}` });
-                                  }
-                                  toastRef.current.info(`${dropVerb} "${label}" dropped`);
-                                  useConnectionStore.getState().triggerReload();
-                                } catch (e) { toastRef.current.error(fmtErr(e)); }
-                              },
-                            });
-                          }}
-                        >
-                          <div
-                            className={`sidebar-db-item${isActive ? " sidebar-db-item--active" : ""}`}
-                            title={schema ? `${schema}.${name}` : name}
-                            onClick={() => !isLoading && handleItemClick(cat.kind, it)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                if (!isLoading) handleItemClick(cat.kind, it);
-                              }
-                            }}
-                          >
-                          {canExpand ? (
-                            <button
-                              className={`sidebar-db-item-chevron${isExpanded ? " sidebar-db-item-chevron--open" : ""}`}
-                              onClick={(e) => handleExpandClick(e, it as TableInfo)}
-                              aria-label={isExpanded ? "Colapsar" : "Expandir"}
-                              tabIndex={-1}
-                            >
-                              <ChevronRight size={11} />
-                            </button>
-                          ) : (
-                            <span style={{ width: 16, flexShrink: 0 }} />
-                          )}
-                          <CatIcon size={11} style={{ color: cat.color, flexShrink: 0, opacity: 0.75 }} />
-                          {editingItem?.name === name && editingItem?.schema === schema && editingItem?.kind === cat.kind ? (
-                            <input
-                              ref={(el) => { if (el && document.activeElement !== el) { el.focus(); el.select(); } }}
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={async (e) => {
-                                if (e.key === "Enter") {
-                                  e.stopPropagation();
-                                  const trimmed = editValue.trim();
-                                  if (!trimmed || trimmed === name) { setEditingItem(null); return; }
-                                  const label = schema ? `"${schema}"."${name}"` : `"${name}"`;
-                                  const newLabel = schema ? `"${schema}"."${trimmed}"` : `"${trimmed}"`;
-                                  try {
-                                    if (cat.kind === "table") await dbService.runQuery(sessionId!, `ALTER TABLE ${label} RENAME TO ${newLabel}`);
-                                    else if (cat.kind === "view") await dbService.runQuery(sessionId!, `ALTER VIEW ${label} RENAME TO ${newLabel}`);
-                                    else if (cat.kind === "function" || cat.kind === "procedure") await dbService.runQuery(sessionId!, `ALTER FUNCTION ${label} RENAME TO ${trimmed}`);
-                                    else if (cat.kind === "trigger") await dbService.runQuery(sessionId!, `ALTER TRIGGER ${label} RENAME TO ${trimmed}`);
-                                    useConnectionStore.getState().triggerReload();
-                                    setEditingItem(null);
-                                  } catch (err: unknown) {
-                                    const msg = err && typeof err === "object" ? String((err as Record<string, unknown>).message ?? err) : String(err);
-                                    toastRef.current.error(msg);
-                                    setEditingItem(null);
-                                  }
-                                }
-                                if (e.key === "Escape") { e.stopPropagation(); setEditingItem(null); }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              onDoubleClick={(e) => e.stopPropagation()}
-                              className="inline-edit-input inline-edit-input--xs"
-                              style={{ flex: 1, minWidth: 0, margin: "0 4px" }}
-                            />
-                          ) : (
-                            <span className="sidebar-db-item-name">
-                              {isLoading ? `${name}…` : name}
-                            </span>
-                          )}
-                          </div>
-                        </TableContextMenu>
-                        {canExpand && isExpanded && (
-                          <div className="sidebar-db-col-list">
-                            {colsLoading ? (
-                              <div className="sidebar-db-col-item sidebar-db-col-item--muted">…</div>
-                            ) : !cols || cols.length === 0 ? (
-                              <div className="sidebar-db-col-item sidebar-db-col-item--muted">Sin columnas</div>
-                            ) : (
-                              cols.map((col) => (
-                                <div key={col.name} className="sidebar-db-col-item">
-                                  {colIcon(col)}
-                                  <span className="sidebar-db-col-name">{col.name}</span>
-                                  <span className="sidebar-db-col-type">{col.data_type}</span>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {CATEGORIES.map((cat) => (
+        <DatabaseCategorySection
+          key={cat.key}
+          icon={cat}
+          objects={logic.objects}
+          loading={logic.loading}
+          sessionId={sessionId}
+          stableId={logic.stableId}
+          items={logic.itemsFor(cat.key)}
+          ddlLoading={logic.ddlLoading}
+          editingItem={logic.editingItem}
+          editValue={logic.editValue}
+          columnMap={logic.columnMap}
+          colLoadingSet={logic.colLoadingSet}
+          storeActiveTable={logic.storeActiveTable}
+          onCreateObject={logic.handleCreateObject}
+          onItemClick={logic.handleItemClick}
+          onExpandClick={logic.handleExpandClick}
+          onGenerateSql={logic.handleGenerateSql}
+          onStartEditing={logic.startEditing}
+          onCommitRename={logic.commitRename}
+          onCancelEditing={logic.cancelEditing}
+          onSetEditValue={logic.setEditValue}
+          onSetDangerDialog={logic.setDangerDialog}
+          onSetAlterTable={logic.setAlterTable}
+        />
+      ))}
 
-      {dangerDialog && (
+      {logic.dangerDialog && (
         <DangerConfirmDialog
-          message={dangerDialog.message}
-          onConfirm={dangerDialog.onConfirm}
-          onCancel={() => setDangerDialog(null)}
+          message={logic.dangerDialog.message}
+          onConfirm={logic.dangerDialog.onConfirm}
+          onCancel={() => logic.setDangerDialog(null)}
         />
       )}
-      {alterTable && sessionId && (
+
+      {logic.alterTable && sessionId && (
         <SchemaChangeWizard
           connectionId={sessionId}
-          tableName={alterTable.name}
-          schema={alterTable.schema}
-          onClose={() => setAlterTable(null)}
+          tableName={logic.alterTable.name}
+          schema={logic.alterTable.schema}
+          onClose={() => logic.setAlterTable(null)}
         />
       )}
     </div>

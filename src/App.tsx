@@ -15,7 +15,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { getLastConnection, getLastSessionScope, openWorkspaceAndConnect } from "@/shared/utils/quickConnect";
 import { GlobalModals } from "@/app/providers/GlobalModals";
 import type { OpenScript } from "@/types/workspace";
-import { DDL_TEMPLATES } from "@/features/Sidebar/Parts/DatabaseCategories";
+import { DDL_TEMPLATES } from "@/features/Sidebar/hooks/useDatabaseCategoriesLogic";
 import "./App.css";
 
 function App() {

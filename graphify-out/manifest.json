@@ -125,8 +125,8 @@
     "semantic_hash": ""
   },
   "src/App.tsx": {
-    "mtime": 1783088195.4799316,
-    "ast_hash": "1167d370cc5339c883ccb99c7b113c13",
+    "mtime": 1783090366.446886,
+    "ast_hash": "41fda53df74f0b2fb252450b0f0af1c2",
     "semantic_hash": ""
   },
   "src/main.tsx": {
@@ -365,8 +365,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/DatabaseCategories.tsx": {
-    "mtime": 1783083448.8002472,
-    "ast_hash": "1177d003877211361e4a38c12362a331",
+    "mtime": 1783091370.926596,
+    "ast_hash": "78cce28e6bd28e35088e613d18bc8a69",
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/DatabaseSelector.tsx": {
@@ -390,8 +390,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/SavedScriptsPanel.tsx": {
-    "mtime": 1783083448.8734398,
-    "ast_hash": "3ba2db623419ca5d7b08e3cdd61714e4",
+    "mtime": 1783090041.781462,
+    "ast_hash": "a93e2dbe95c390e0ec93df89f779901b",
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/SidebarHeader.tsx": {
@@ -490,8 +490,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/WorkspaceTree.tsx": {
-    "mtime": 1783088967.3531473,
-    "ast_hash": "ecc325e0559877cab6ea5977ee1b7442",
+    "mtime": 1783090849.847372,
+    "ast_hash": "49d34fe1ff146190c6261ba13ce3d625",
     "semantic_hash": ""
   },
   "src/store/settingsStore.ts": {
@@ -620,8 +620,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/ScriptsContextMenu.tsx": {
-    "mtime": 1783022253.0265272,
-    "ast_hash": "4600df58a121c08c993df1522c72efa1",
+    "mtime": 1783090799.1909213,
+    "ast_hash": "d2a88a141fe0aad607b67684b51a75a4",
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/SystemStatusBar.tsx": {
@@ -792,6 +792,26 @@
   "docs/auditoria-competitiva.md": {
     "mtime": 1783089539.6705287,
     "ast_hash": "2eb75ced611f49194c495df24bc04bb4",
+    "semantic_hash": ""
+  },
+  "src/features/Sidebar/Parts/ColumnList.tsx": {
+    "mtime": 1783091292.866217,
+    "ast_hash": "b114d08accd37ea64be9d64d65a7ceaf",
+    "semantic_hash": ""
+  },
+  "src/features/Sidebar/Parts/DatabaseCategoryItem.tsx": {
+    "mtime": 1783091453.6414871,
+    "ast_hash": "e0fa1d1d9fbc0962625927b27ab8410d",
+    "semantic_hash": ""
+  },
+  "src/features/Sidebar/Parts/DatabaseCategorySection.tsx": {
+    "mtime": 1783091360.6859226,
+    "ast_hash": "b3a953ef821f649f8627c5b3a24d788b",
+    "semantic_hash": ""
+  },
+  "src/features/Sidebar/hooks/useDatabaseCategoriesLogic.ts": {
+    "mtime": 1783091290.411802,
+    "ast_hash": "5f9f08acfbd9e90c9fabfe762fb971d3",
     "semantic_hash": ""
   }
 }

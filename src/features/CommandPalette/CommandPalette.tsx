@@ -117,8 +117,6 @@ export function CommandPalette({
   const recentCommands = useUiStore((s) => s.recentCommands);
   const pushToRecents = useUiStore((s) => s.pushToRecents);
 
-
-
   useEffect(() => {
     if (!resultsRef.current) return;
     const el = resultsRef.current.querySelector(`[data-palette-index="${selectedIndex}"]`);
@@ -131,7 +129,12 @@ export function CommandPalette({
       setBaseItems([]);
       return;
     }
-    setQuery("");
+    const store = useUiStore.getState();
+    const initQuery = store.paletteInitialQuery ?? "";
+    const initDdlMode = store.paletteInitialDdlMode as DdlMode | null;
+    useUiStore.setState({ paletteInitialQuery: null, paletteInitialDdlMode: null });
+    setQuery(initQuery);
+    if (initDdlMode) setDdlMode(initDdlMode);
     setSelectedIndex(0);
     setLoading(true);
     setBaseItems([]);

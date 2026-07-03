@@ -27,8 +27,17 @@ export interface UiState {
   dbAction: { action: "create" | "rename" | "drop"; dbName?: string } | null;
   dangerDialog: { message: string; onConfirm: () => Promise<void> } | null;
   recentCommands: RecentCommand[];
+  /** Set by a popup when dismissed via Escape (not completed), so the caller
+   *  can re-open the Command Palette with the previous action context. */
+  dismissedFromPalette: boolean;
+  /** Non-null instructs CommandPalette to pre-fill the search input on next open */
+  paletteInitialQuery: string | null;
+  /** Non-null instructs CommandPalette to enter a DDL sub-mode on next open */
+  paletteInitialDdlMode: string | null;
 
   openPalette: () => void;
+  /** Opens the palette with a pre-filled search query (e.g. ">" for actions). */
+  openPaletteWithQuery: (query: string) => void;
   closePalette: () => void;
   togglePalette: () => void;
   setSettingsOpen: (v: boolean) => void;
