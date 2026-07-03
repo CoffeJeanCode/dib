@@ -3,7 +3,7 @@ import { workspaceService } from "@/services/workspaceService";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { safeInvoke as invoke } from "@/utils/ipc";
-import type { TabData } from "@/components/Tab";
+import type { TabData } from "@/features/QueryPanel/Tab";
 
 /**
  * Virtual scripts must be keyed by the STABLE saved-connection id — the

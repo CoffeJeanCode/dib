@@ -7,7 +7,7 @@ import { Pin, PinOff, FileCode2 } from "lucide-react";
  * without touching the main tree below it.
  */
 
-import { ScriptsContextMenu } from "@/components/ScriptsContextMenu";
+import { ScriptsContextMenu } from "@/features/Sidebar/Parts/ScriptsContextMenu";
 
 export interface PinnedItem {
   id: string;

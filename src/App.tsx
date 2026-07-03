@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { Layout } from "@/app/Layout";
 import { MainContent } from "@/app/MainContent";
 import { CommandPalette } from "@/features/CommandPalette/CommandPalette";
-import { PasswordPrompt } from "@/components/PasswordPrompt";
+import { PasswordPrompt } from "@/features/Connections/PasswordPrompt";
 import { mod } from "@/utils/platform";
 import { useToastStore } from "@/store/toastStore";
 import { useAppKeybindings } from "@/hooks/useAppKeybindings";

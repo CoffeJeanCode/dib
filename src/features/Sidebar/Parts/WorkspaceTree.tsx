@@ -29,7 +29,7 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 import { workspaceService } from "@/services/workspaceService";
 import { useTreeStateStore } from "@/store/treeStateStore";
 import type { FsNode } from "@/types/workspace";
-import { ScriptsContextMenu } from "@/components/ScriptsContextMenu";
+import { ScriptsContextMenu } from "@/features/Sidebar/Parts/ScriptsContextMenu";
 import { FlatInput } from "@/shared/ui/FlatInput";
 import "./WorkspaceTree.css";
 

@@ -11,7 +11,7 @@ import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/
 import { useToastStore } from "@/store/toastStore";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
-import { TableContextMenu } from "@/components/TableContextMenu";
+import { TableContextMenu } from "@/features/Sidebar/Parts/TableContextMenu";
 import { dbService } from "@/services/dbService";
 
 interface DatabaseCategoriesProps {

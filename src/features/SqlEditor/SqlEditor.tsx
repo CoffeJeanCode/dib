@@ -6,7 +6,7 @@ import { useSqlEditor } from "@/hooks/useSqlEditor";
 import { MonacoEditor } from "@/features/MonacoEditor/MonacoEditor";
 import { MOD } from "@/utils/platform";
 import { DataGrid } from "@/features/DataGrid";
-import { VisualExplain } from "@/components/VisualExplain";
+import { VisualExplain } from "@/features/SqlEditor/VisualExplain";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import "./SqlEditor.css";
 

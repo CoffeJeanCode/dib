@@ -1,10 +1,10 @@
 import { useUiStore } from "@/store/uiStore";
 import { SettingsPanel } from "@/features/Settings/SettingsPanel";
 import { ToastContainer } from "@/shared/ui/Toast";
-import { KeyboardCheatSheet } from "@/components/KeyboardCheatSheet";
+import { KeyboardCheatSheet } from "@/app/providers/KeyboardCheatSheet";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { RenameDialog } from "@/shared/ui/RenameDialog";
-import { DbActionDialog } from "@/components/DbActionDialog";
+import { DbActionDialog } from "@/app/providers/DbActionDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 
 interface GlobalModalsProps {

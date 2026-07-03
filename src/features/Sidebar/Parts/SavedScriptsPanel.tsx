@@ -4,7 +4,7 @@ import { safeInvoke as invoke } from "@/utils/ipc";
 import type { ScriptMeta } from "@/types/db";
 import { useFileSystemStore } from "@/store/fileSystemStore";
 import { PinnedSection } from "./PinnedSection";
-import { ScriptsContextMenu } from "@/components/ScriptsContextMenu";
+import { ScriptsContextMenu } from "@/features/Sidebar/Parts/ScriptsContextMenu";
 
 interface SavedScriptsPanelProps {
   onScriptOpen?: (sql: string, title: string, id: string) => void;
