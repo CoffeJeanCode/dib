@@ -7,7 +7,7 @@ edition = "2021"
 
 [lib]
 name = "dib_lib"
-crate-type = ["lib", "cdylib", "staticlib"]
+crate-type = ["lib", "staticlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

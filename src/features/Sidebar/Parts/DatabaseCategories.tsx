@@ -1,4 +1,4 @@
-import React from "react";
+
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { DatabaseCategorySection } from "@/features/Sidebar/Parts/DatabaseCategorySection";

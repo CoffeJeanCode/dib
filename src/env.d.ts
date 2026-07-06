@@ -1,3 +1,14 @@
+declare module "@tauri-apps/plugin-dialog" {
+  export interface OpenDialogOptions {
+    directory?: boolean;
+    multiple?: boolean;
+    filters?: { name: string; extensions: string[] }[];
+    title?: string;
+    defaultPath?: string;
+  }
+  export function open(options?: OpenDialogOptions): Promise<string | string[] | null>;
+}
+
 declare module "@radix-ui/react-context-menu" {
   import * as React from "react";
 

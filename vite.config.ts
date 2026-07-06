@@ -20,6 +20,7 @@ export default defineConfig(async () => ({
   },
   build: {
     rollupOptions: {
+      external: ["@tauri-apps/plugin-dialog"],
       output: {
         manualChunks: {
           "vendor-react": ["react", "react-dom"],
