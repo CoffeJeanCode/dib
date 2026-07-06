@@ -53,7 +53,9 @@ export const DataGrid = memo(function DataGrid({
   footerRight,
 }: DataGridProps) {
   // For empty tables the query result has no column names; fall back to schema info.
-  const effectiveCols = columns.length > 0 ? columns : (columnInfos?.map(c => c.name) ?? []);
+  const effectiveCols = useMemo(() => {
+    return columns.length > 0 ? columns : (columnInfos?.map(c => c.name) ?? []);
+  }, [columns, columnInfos]);
 
   const state = useDataGridState({
     columns: effectiveCols,

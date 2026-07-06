@@ -187,6 +187,7 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
           <input
             autoFocus
             onFocus={(e) => e.target.select()}
+            className="inline-edit-input inline-edit-input--xs tree-inline-input-wrapper"
             value={renameValue || ""}
             onChange={(e) => onRenameChange?.(e.target.value)}
             onKeyDown={(e) => {
@@ -195,9 +196,8 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
             }}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
-            className="inline-edit-input inline-edit-input--xs tree-inline-input-wrapper"
             style={{ margin: "0 4px" }}
-            />
+          />
         ) : (
           <span className="tree-item__name" style={node.color ? { color: node.color } : undefined}>
             {node.name}
@@ -561,6 +561,7 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
           <input
             autoFocus
             onFocus={(e) => e.target.select()}
+            className="inline-edit-input inline-edit-input--xs tree-inline-input-wrapper"
             value={promptValue}
             onChange={(e) => setPromptValue(e.target.value)}
             onKeyDown={(e) => {
@@ -570,7 +571,6 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             placeholder={promptInfo.type === "file" ? "filename.sql" : "folder name"}
-            className="inline-edit-input inline-edit-input--xs tree-inline-input-wrapper"
           />
         </div>
       )}

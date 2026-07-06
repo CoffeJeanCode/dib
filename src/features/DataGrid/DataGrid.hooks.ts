@@ -88,6 +88,17 @@ export function useDataGridState({
     if (headerRef.current) headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
   }, []);
 
+  // Column ordering
+  const [orderedColumns, setOrderedColumns] = useState<import("./DataGrid.types").GridColumn[]>([]);
+  const prevColsStr = useRef("");
+  useEffect(() => {
+    const currentStr = columns.join(',');
+    if (currentStr !== prevColsStr.current || orderedColumns.length === 0) {
+      setOrderedColumns(columns.map((name, origIdx) => ({ id: `${name}-${origIdx}`, name, origIdx })));
+      prevColsStr.current = currentStr;
+    }
+  }, [columns]);
+
   // Edit state (undo/redo history)
   const [editState, setEditState] = useState<EditState>(() => makeEditState(rows));
   displayedRowsRef.current = editState.rows; // keep in sync every render for post-save reordering
@@ -189,10 +200,10 @@ export function useDataGridState({
 
   const handleCellContextMenu = useCallback(
     (colIdx: number, e: React.MouseEvent) => {
-      const col = columns[colIdx];
-      if (!fkMap[col]) return;
+      const col = orderedColumns[colIdx];
+      if (!fkMap[col.name]) return;
       e.preventDefault();
-      setFkMenu({ x: e.clientX, y: e.clientY, col });
+      setFkMenu({ x: e.clientX, y: e.clientY, col: col.name });
     },
     [columns, fkMap],
   );
@@ -261,11 +272,11 @@ export function useDataGridState({
   useLayoutEffect(() => {
     const el = gridRef.current;
     if (!el) return;
-    for (let i = 0; i < columns.length; i++) {
-      el.style.setProperty(`--dg-cw-${i}`, `${columnWidths[columns[i]] ?? DEFAULT_COL_W}px`);
+    for (let i = 0; i < orderedColumns.length; i++) {
+      el.style.setProperty(`--dg-cw-${i}`, `${columnWidths[orderedColumns[i].name] ?? DEFAULT_COL_W}px`);
     }
     if (containerRef.current) containerRef.current.scrollLeft = scrollLeftRef.current;
-  }, [columns, columnWidths]);
+  }, [orderedColumns, columnWidths]);
 
   useEffect(() => {
     if (preserveOrderRef.current) {
@@ -327,7 +338,7 @@ export function useDataGridState({
   }, [isEditing]);
 
   useEffect(() => {
-    if (!activeCell || !containerRef.current) return;
+    if (!activeCell || !containerRef.current || !orderedColumns[activeCell.col]) return;
     const el = containerRef.current;
     const cw = columnWidthsRef.current;
     // Rows begin below the sticky header inside the same scroll container, so
@@ -341,18 +352,18 @@ export function useDataGridState({
     } else if (bottom > el.scrollTop + rowViewH) {
       el.scrollTop = bottom - rowViewH;
     }
-    const colLeft = columns.slice(0, activeCell.col).reduce<number>(
-      (sum, col) => sum + (cw[col] ?? DEFAULT_COL_W), 0,
+    const colLeft = orderedColumns.slice(0, activeCell.col).reduce<number>(
+      (sum, col) => sum + (cw[col.name] ?? DEFAULT_COL_W), 0,
     );
-    const colRight = colLeft + (cw[columns[activeCell.col]] ?? DEFAULT_COL_W);
+    const colRight = colLeft + (cw[orderedColumns[activeCell.col].name] ?? DEFAULT_COL_W);
     if (colLeft < el.scrollLeft) el.scrollLeft = colLeft;
     else if (colRight > el.scrollLeft + el.clientWidth) el.scrollLeft = colRight - el.clientWidth;
     scrollLeftRef.current = el.scrollLeft;
-  }, [activeCell, viewH, columns]);
+  }, [activeCell, viewH, orderedColumns, columnWidths]);
 
   useEffect(() => {
     if (!resizing) return;
-    const colIdx = columns.indexOf(resizing.col);
+    const colIdx = orderedColumns.findIndex(c => c.name === resizing.col);
     const onMove = (e: MouseEvent) => {
       const w = Math.max(MIN_COL_W, resizing.startW + e.clientX - resizing.startX);
       liveDragWidthRef.current = { col: resizing.col, colIdx, w };
@@ -428,19 +439,23 @@ export function useDataGridState({
         const oldCh = editState.changes.get(changeId);
         if (oldCh) {
           const rowData = [...(editState.rows[row] as unknown[])];
-          rowData[col] = newValue;
+          const colName = orderedColumns[col].name;
+          const origIdx = orderedColumns[col].origIdx;
+          rowData[origIdx] = newValue;
           const newRows = editState.rows.map((r, i) => i === row ? rowData : r);
           const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
             ? { ...(oldCh.new_value as Record<string, unknown>) }
             : {} as Record<string, unknown>;
-          prevObj[columns[col]] = newValue;
+          prevObj[colName] = newValue;
           const newChanges = new Map(editState.changes).set(changeId, { ...oldCh, new_value: prevObj });
           mutate({ rows: newRows, changes: newChanges });
         }
       } else {
-        const originalValue = rows[row]?.[col];
+        const colName = orderedColumns[col].name;
+        const origIdx = orderedColumns[col].origIdx;
+        const originalValue = rows[row]?.[origIdx];
         const pkStr = getPkStr(row, editState.rows);
-        const key = makeKey(pkStr, columns[col]);
+        const key = makeKey(pkStr, colName);
 
         if (cellStr(originalValue) !== cellStr(newValue)) {
           const change: PendingChange = {
@@ -448,8 +463,8 @@ export function useDataGridState({
             type: "update",
             table: tableName,
             row_index: row,
-            column: columns[col],
-            column_type: colInfoMap[columns[col]]?.data_type,
+            column: colName,
+            column_type: colInfoMap[colName]?.data_type,
             old_value: originalValue,
             new_value: newValue,
             row_pk_value: pkColIdx >= 0 ? editState.rows[row]?.[pkColIdx] : row,
@@ -457,7 +472,7 @@ export function useDataGridState({
           const newRows = editState.rows.map((r, i) => {
             if (i !== row) return r;
             const nr = [...(r as unknown[])];
-            nr[col] = newValue;
+            nr[origIdx] = newValue;
             return nr;
           });
           mutate({ rows: newRows, changes: new Map(editState.changes).set(key, change) });
@@ -474,9 +489,9 @@ export function useDataGridState({
 
       const totalR = editState.rows.length;
       if (moveDirection === "down" && row + 1 < totalR) setActiveCell({ row: row + 1, col });
-      else if (moveDirection === "right" && col + 1 < columns.length) setActiveCell({ row, col: col + 1 });
+      else if (moveDirection === "right" && col + 1 < orderedColumns.length) setActiveCell({ row, col: col + 1 });
     },
-    [activeCell, editValue, rows, columns, tableName, pkColIdx, editState, mutate, getPkStr, colInfoMap, setActiveCell],
+    [activeCell, editValue, rows, columns, orderedColumns, tableName, pkColIdx, editState, mutate, getPkStr, colInfoMap, setActiveCell],
   );
 
   const cancelEdit = useCallback(() => {
@@ -489,7 +504,8 @@ export function useDataGridState({
     (rowIdx: number, colIdx: number) => {
       if (!tableName) return;
       setActiveCell({ row: rowIdx, col: colIdx });
-      setEditValue(cellStr(editState.rows[rowIdx]?.[colIdx]));
+      const origIdx = orderedColumns[colIdx].origIdx;
+      setEditValue(cellStr(editState.rows[rowIdx]?.[origIdx]));
       setIsEditing(true);
     },
     [editState.rows, tableName, setActiveCell],
@@ -575,7 +591,7 @@ export function useDataGridState({
           column_types: Object.keys(colTypesMap).length > 0 ? colTypesMap : undefined,
         } as PendingChange);
         nextGhostRowIds.set(insertAt + i, ghostId);
-        for (let c = 0; c < columns.length; c++) newSelectedCells.add(cellId(insertAt + i, c));
+        for (let c = 0; c < orderedColumns.length; c++) newSelectedCells.add(cellId(insertAt + i, c));
       }
 
       mutate({ rows: nextRows, changes: nextChanges, ghostRowIds: nextGhostRowIds });
@@ -664,8 +680,10 @@ export function useDataGridState({
     const lines: string[] = [];
     for (let r = minR; r <= maxR; r++) {
       const cells: string[] = [];
-      for (let c = minC; c <= maxC; c++)
-        cells.push(selectedCells.has(cellId(r, c)) ? cellStr(editState.rows[r]?.[c]) : "");
+      for (let c = minC; c <= maxC; c++) {
+        const origIdx = orderedColumns[c].origIdx;
+        cells.push(selectedCells.has(cellId(r, c)) ? cellStr(editState.rows[r]?.[origIdx]) : "");
+      }
       lines.push(cells.join("\t"));
     }
     navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
@@ -680,7 +698,8 @@ export function useDataGridState({
       const parts = id.split(":");
       const r = parseInt(parts[0], 10);
       const c = parseInt(parts[1], 10);
-      const col = columns[c];
+      const col = orderedColumns[c].name;
+      const origIdx = orderedColumns[c].origIdx;
       if (editState.ghostRowIds.has(r)) {
         // Ghost row: clear the cell in the pending insert's new_value
         const changeId = editState.ghostRowIds.get(r)!;
@@ -692,12 +711,12 @@ export function useDataGridState({
           prevObj[col] = null;
           nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
         }
-        nextRows[r][c] = null;
+        nextRows[r][origIdx] = null;
         continue;
       }
       const pkStr = getPkStr(r, editState.rows);
       const key = makeKey(pkStr, col);
-      const original = rows[r]?.[c];
+      const original = rows[r]?.[origIdx];
       if (cellStr(original) !== cellStr(null)) {
         nextChanges.set(key, {
           id: key, type: "update", table: tableName,
@@ -709,10 +728,10 @@ export function useDataGridState({
       } else if (nextChanges.has(key)) {
         nextChanges.delete(key);
       }
-      nextRows[r][c] = null;
+      nextRows[r][origIdx] = null;
     }
     mutate({ rows: nextRows, changes: nextChanges });
-  }, [selectedCells, tableName, copySelection, editState, rows, columns, colInfoMap, pkColIdx, getPkStr, mutate]);
+  }, [selectedCells, tableName, copySelection, editState, rows, columns, orderedColumns, colInfoMap, pkColIdx, getPkStr, mutate]);
 
   const pasteFromClipboard = useCallback(async () => {
     if (!activeCell || !tableName) return;
@@ -726,8 +745,9 @@ export function useDataGridState({
       if (r >= editState.rows.length) break;
       for (let dc = 0; dc < pasteRows[dr].length; dc++) {
         const c: number = activeCell.col + dc;
-        if (c >= columns.length) break;
-        const col = columns[c];
+        if (c >= orderedColumns.length) break;
+        const col = orderedColumns[c].name;
+        const origIdx = orderedColumns[c].origIdx;
         const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
         if (editState.ghostRowIds.has(r)) {
           // Ghost (insert) row — update the pending insert's new_value
@@ -740,11 +760,11 @@ export function useDataGridState({
             prevObj[col] = newValue;
             nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
           }
-          nextRows[r][c] = newValue;
+          nextRows[r][origIdx] = newValue;
         } else {
           const pkStr = getPkStr(r, editState.rows);
           const key = makeKey(pkStr, col);
-          const original = rows[r]?.[c];
+          const original = rows[r]?.[origIdx];
           if (cellStr(original) !== cellStr(newValue)) {
             nextChanges.set(key, {
               id: key, type: "update", table: tableName,
@@ -754,12 +774,12 @@ export function useDataGridState({
               row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
             } as import("@/types/db").PendingChange);
           }
-          nextRows[r][c] = newValue;
+          nextRows[r][origIdx] = newValue;
         }
       }
     }
     mutate({ rows: nextRows, changes: nextChanges });
-  }, [activeCell, tableName, editState, rows, columns, colInfoMap, pkColIdx, getPkStr, mutate]);
+  }, [activeCell, tableName, editState, rows, columns, orderedColumns, colInfoMap, pkColIdx, getPkStr, mutate]);
 
   // Keyboard
   const handleGridKeyDown = useCallback(
@@ -797,7 +817,7 @@ export function useDataGridState({
           if (editState.rows.length > 0) {
             const all = new Set<string>();
             for (let r = 0; r < editState.rows.length; r++)
-              for (let c = 0; c < columns.length; c++)
+              for (let c = 0; c < orderedColumns.length; c++)
                 all.add(cellId(r, c));
             setSelectedCells(all);
             setAnchorCell({ row: 0, col: 0 });
@@ -835,12 +855,12 @@ export function useDataGridState({
       }
 
       const maxRow = Math.max(0, totalR - 1);
-      const maxCol = Math.max(0, columns.length - 1);
+      const maxCol = Math.max(0, orderedColumns.length - 1);
 
       if (!activeCell) {
         if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
           e.preventDefault();
-          if (totalR > 0 && columns.length > 0) {
+          if (totalR > 0 && orderedColumns.length > 0) {
             setActiveCell({ row: 0, col: 0 });
             setAnchorCell({ row: 0, col: 0 });
             setSelectedCells(new Set([cellId(0, 0)]));
@@ -864,7 +884,7 @@ export function useDataGridState({
       }
 
       const move = (nr: number, nc: number) => {
-        if (totalR === 0 || columns.length === 0) return;
+        if (totalR === 0 || orderedColumns.length === 0) return;
         nr = Math.max(0, Math.min(nr, maxRow));
         nc = Math.max(0, Math.min(nc, maxCol));
         const next = { row: nr, col: nc };
@@ -885,16 +905,15 @@ export function useDataGridState({
       }
     },
     [
-      activeCell, anchorCell, isEditing, editState.rows, columns, selectedCells,
+      activeCell, anchorCell, isEditing, editState.rows, columns, orderedColumns, selectedCells,
       triggerSave, undo, redo, copySelection, cutSelection, pasteFromClipboard,
       insertGhostRow, duplicateRows, markRowsForDeletion, commitEdit, cancelEdit, startEdit, setActiveCell,
     ],
   );
 
-  // Click handlers
   const handleCellClick = useCallback(
     (rowIdx: number, colIdx: number, e: React.MouseEvent) => {
-      const col = columns[colIdx];
+      const col = orderedColumns[colIdx].name;
       // FK Alt+Click → generate JOIN query in a new script tab
       if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && fkMap[col]) {
         e.preventDefault();
@@ -904,7 +923,8 @@ export function useDataGridState({
       // FK Ctrl+Click → navigate to parent table
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && fkMap[col] && onFkNavigateRef.current) {
         e.preventDefault();
-        const value = (editState.rows[rowIdx] as unknown[])?.[colIdx];
+        const origIdx = orderedColumns[colIdx].origIdx;
+        const value = (editState.rows[rowIdx] as unknown[])?.[origIdx];
         if (value != null) {
           const { targetTable, targetColumn } = fkMap[col];
           onFkNavigateRef.current(targetTable, targetColumn, value);
@@ -931,7 +951,7 @@ export function useDataGridState({
         setActiveCell({ row: rowIdx, col: colIdx });
       }
     },
-    [isEditing, commitEdit, anchorCell, columns, fkMap, editState.rows, setActiveCell, generateJoinQuery],
+    [isEditing, commitEdit, anchorCell, columns, orderedColumns, fkMap, editState.rows, setActiveCell, generateJoinQuery],
   );
 
   // Resize
@@ -969,7 +989,7 @@ export function useDataGridState({
       const ideal = Math.max(MIN_COL_W, Math.max(headerW, maxContentW + 20));
       setColumnWidths((prev) => ({ ...prev, [col]: Math.ceil(ideal) }));
     },
-    [editState.rows],
+    [editState.rows, columns],
   );
 
   // Filter popover
@@ -1008,6 +1028,8 @@ export function useDataGridState({
   );
 
   return {
+    orderedColumns,
+    setOrderedColumns,
     // refs
     containerRef,
     setContainerEl,

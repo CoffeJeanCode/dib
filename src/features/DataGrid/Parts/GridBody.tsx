@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { mod } from "@/shared/utils/platform";
 import { useDataGridContext } from "./DataGridContext";
 import { cellStr, cellId, makeKey } from "../DataGrid.utils";
 
@@ -11,7 +10,7 @@ interface GridRowProps {
 
 const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
   const {
-    columns,
+    orderedColumns,
     editState,
     pkColIdx,
     fkMap,
@@ -44,18 +43,20 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
       ].join("")}
       role="row"
     >
-      {columns.map((col, j) => {
+      {orderedColumns.map((col, j) => {
+        const origIdx = col.origIdx;
+        const colName = col.name;
         const isActive = activeCell?.row === absIdx && activeCell?.col === j;
         const isEditingThis = isActive && isEditing;
         const isSelected = selectedCells.has(cellId(absIdx, j));
-        const value = (row as unknown[])?.[j];
-        const isChanged = editState.changes.has(makeKey(pkStr, col));
-        const isFk = !!fkMap[col] && value != null;
+        const value = (row as unknown[])?.[origIdx];
+        const isChanged = editState.changes.has(makeKey(pkStr, colName));
+        const isFk = !!fkMap[colName] && value != null;
         const cssW = `var(--dg-cw-${j}, 150px)`;
 
         return (
           <div
-            key={j}
+            key={col.id}
             className={[
               "dg-cell",
               isActive ? " dg-cell--active" : "",
@@ -69,23 +70,24 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
               minWidth: cssW,
               maxWidth: cssW,
             }}
-            title={isFk
-              ? `${mod("Ctrl+Click")} → ${fkMap[col].targetTable} (${cellStr(value)})\nAlt+Click: Generate JOIN query`
-              : cellStr(value)}
             onClick={(e) => handleCellClick(absIdx, j, e)}
-            onContextMenu={isFk ? (e) => handleCellContextMenu(j, e) : undefined}
+            onContextMenu={(e) => handleCellContextMenu(j, e)}
             onDoubleClick={() => startEdit(absIdx, j)}
+            title={cellStr(value)}
           >
             {isEditingThis ? (
               <input
                 ref={inputRef}
                 className="dg-cell-input"
+                autoFocus
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={() => commitEdit(null)}
               />
             ) : isFk ? (
-              <span className="dg-fk-link">{cellStr(value)}</span>
+              <span className="dg-fk-link" title="Ir a tabla referenciada (Ctrl+Click) o generar JOIN (Alt+Click)">
+                {cellStr(value)}
+              </span>
             ) : (
               cellStr(value)
             )}

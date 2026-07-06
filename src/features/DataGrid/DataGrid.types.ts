@@ -1,5 +1,11 @@
 import type { PendingChange, ColumnInfo, GridFilter, TableRelation } from "@/types/db";
 
+export interface GridColumn {
+  id: string;
+  name: string;
+  origIdx: number;
+}
+
 export interface DataGridProps {
   columns: string[];
   rows: unknown[][];
