@@ -3,6 +3,14 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { PendingChange, ColumnInfo, GridFilter, FilterOperator } from "@/types/db";
 import { ROW_H, OVERSCAN, DEFAULT_COL_W, MIN_COL_W, MAX_HISTORY } from "./DataGrid.constants";
 import { operatorsForType, cellStr, makeKey, cellId, buildRangeSet } from "./DataGrid.utils";
+import {
+  type GridKeyDownDeps,
+  handleGridCtrlKey,
+  handleGridDeleteKey,
+  handleGridEditKey,
+  handleGridNavKey,
+  isFormElementFocused,
+} from "./DataGrid.keyboard";
 import type { UseDataGridStateOptions } from "./DataGrid.types";
 
 export type { UseDataGridStateOptions } from "./DataGrid.types";
@@ -897,198 +905,46 @@ export function useDataGridState({
       const ctrl = e.ctrlKey || e.metaKey;
       const { row, col } = activeCell ?? { row: 0, col: 0 };
       const totalR = editState.rows.length;
-
-      {
-        const el = document.activeElement as HTMLElement | null;
-        if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) {
-          if (ctrl) return;
-        }
-      }
-
-      if (ctrl) {
-        if (e.key === "s") {
-          e.preventDefault();
-          triggerSave();
-          return;
-        }
-        if (e.key === "z" && !e.shiftKey) {
-          e.preventDefault();
-          undo();
-          return;
-        }
-        if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
-          e.preventDefault();
-          redo();
-          return;
-        }
-        if (e.key === "c" && !isEditing) {
-          e.preventDefault();
-          copySelection();
-          return;
-        }
-        if (e.key === "x" && !isEditing) {
-          e.preventDefault();
-          cutSelection();
-          return;
-        }
-        if (e.key === "v" && !isEditing) {
-          e.preventDefault();
-          void pasteFromClipboard();
-          return;
-        }
-        if (e.key === "n") {
-          e.preventDefault();
-          insertGhostRow();
-          return;
-        }
-        if (e.key === "d" && !isEditing) {
-          e.preventDefault();
-          const rowSet = new Set<number>(
-            Array.from(selectedCells).map((id) => parseInt(id.split(":")[0])),
-          );
-          if (rowSet.size === 0 && activeCell) rowSet.add(activeCell.row);
-          duplicateRows(Array.from(rowSet));
-          return;
-        }
-        if (e.key === "W" && e.shiftKey) {
-          e.preventDefault();
-          onForceCloseRef.current?.();
-          return;
-        }
-        if (e.key === "l") {
-          e.preventDefault();
-          onFocusEditorRef.current?.();
-          return;
-        }
-        if (e.key === "a") {
-          e.preventDefault();
-          if (editState.rows.length > 0) {
-            const all = new Set<string>();
-            for (let r = 0; r < editState.rows.length; r++)
-              for (let c = 0; c < orderedColumns.length; c++) all.add(cellId(r, c));
-            setSelectedCells(all);
-            setAnchorCell({ row: 0, col: 0 });
-            setActiveCell({ row: 0, col: 0 });
-          }
-          return;
-        }
-      }
-
-      if (isEditing) {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          cancelEdit();
-          return;
-        }
-        if (e.key === "Enter") {
-          e.preventDefault();
-          commitEdit("down");
-          return;
-        }
-        if (e.key === "Tab") {
-          e.preventDefault();
-          commitEdit(e.shiftKey ? null : "right");
-          return;
-        }
-        return;
-      }
-
-      {
-        const ae = document.activeElement as HTMLElement | null;
-        if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable))
-          return;
-      }
-
-      // Always block native scroll for arrow keys before any cell-focus logic runs.
-      if (
-        e.key === "ArrowUp" ||
-        e.key === "ArrowDown" ||
-        e.key === "ArrowLeft" ||
-        e.key === "ArrowRight"
-      ) {
-        e.preventDefault();
-      }
-
-      if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        const rowSet = new Set<number>(
-          Array.from(selectedCells).map((id) => parseInt(id.split(":")[0])),
-        );
-        if (rowSet.size === 0 && activeCell) rowSet.add(activeCell.row);
-        markRowsForDeletion(Array.from(rowSet));
-        return;
-      }
-
-      const maxRow = Math.max(0, totalR - 1);
-      const maxCol = Math.max(0, orderedColumns.length - 1);
-
-      if (!activeCell) {
-        if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
-          e.preventDefault();
-          if (totalR > 0 && orderedColumns.length > 0) {
-            setActiveCell({ row: 0, col: 0 });
-            setAnchorCell({ row: 0, col: 0 });
-            setSelectedCells(new Set([cellId(0, 0)]));
-          }
-          return;
-        }
-      }
-
-      if (e.shiftKey && ["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
-        e.preventDefault();
-        const anchor = anchorCell ?? { row, col };
-        if (!anchorCell) setAnchorCell(anchor);
-        let nr = row,
-          nc = col;
-        if (e.key === "ArrowDown") nr = Math.min(maxRow, row + 1);
-        if (e.key === "ArrowUp") nr = Math.max(0, row - 1);
-        if (e.key === "ArrowRight") nc = Math.min(maxCol, col + 1);
-        if (e.key === "ArrowLeft") nc = Math.max(0, col - 1);
-        setActiveCell({ row: nr, col: nc });
-        setSelectedCells(buildRangeSet(anchor.row, anchor.col, nr, nc));
-        return;
-      }
-
-      const move = (nr: number, nc: number) => {
-        if (totalR === 0 || orderedColumns.length === 0) return;
-        nr = Math.max(0, Math.min(nr, maxRow));
-        nc = Math.max(0, Math.min(nc, maxCol));
-        const next = { row: nr, col: nc };
-        setActiveCell(next);
-        setAnchorCell(next);
-        setSelectedCells(new Set([cellId(nr, nc)]));
+      const deps: GridKeyDownDeps = {
+        e,
+        ctrl,
+        row,
+        col,
+        totalR,
+        maxRow: Math.max(0, totalR - 1),
+        maxCol: Math.max(0, orderedColumns.length - 1),
+        activeCell,
+        anchorCell,
+        isEditing,
+        editStateRowsLength: totalR,
+        orderedColumnsLength: orderedColumns.length,
+        selectedCells,
+        triggerSave,
+        undo,
+        redo,
+        copySelection,
+        cutSelection,
+        pasteFromClipboard,
+        insertGhostRow,
+        duplicateRows,
+        markRowsForDeletion,
+        onForceClose: () => onForceCloseRef.current?.(),
+        onFocusEditor: () => onFocusEditorRef.current?.(),
+        setSelectedCells,
+        setAnchorCell,
+        setActiveCell,
+        cancelEdit,
+        commitEdit,
+        startEdit,
+        setEditValue,
       };
 
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        move(row + 1, col);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        move(row - 1, col);
-        return;
-      }
-      if (e.key === "ArrowRight" || (e.key === "Tab" && !e.shiftKey)) {
-        e.preventDefault();
-        move(row, col + 1);
-        return;
-      }
-      if (e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) {
-        e.preventDefault();
-        move(row, col - 1);
-        return;
-      }
-      if (e.key === "Enter" || e.key === "F2") {
-        e.preventDefault();
-        startEdit(row, col);
-        return;
-      }
-
-      if (e.key.length === 1 && !ctrl && !e.altKey) {
-        startEdit(row, col);
-        setEditValue(e.key);
-      }
+      if (isFormElementFocused() && ctrl) return;
+      if (handleGridCtrlKey(deps)) return;
+      if (handleGridEditKey(deps)) return;
+      if (isFormElementFocused()) return;
+      if (handleGridDeleteKey(deps)) return;
+      handleGridNavKey(deps);
     },
     [
       activeCell,
