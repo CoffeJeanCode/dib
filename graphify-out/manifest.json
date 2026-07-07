@@ -30,8 +30,8 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1782908564.3431437,
-    "ast_hash": "384b1bde8e4913fbe5dc99756b42d7f4",
+    "mtime": 1783098121.212319,
+    "ast_hash": "c26ee4abb5d310fd8d221bbb90f134db",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -125,8 +125,8 @@
     "semantic_hash": ""
   },
   "src/App.tsx": {
-    "mtime": 1783090366.446886,
-    "ast_hash": "41fda53df74f0b2fb252450b0f0af1c2",
+    "mtime": 1783091643.7557101,
+    "ast_hash": "805e32ea480af458f0dfebda334a86a0",
     "semantic_hash": ""
   },
   "src/main.tsx": {
@@ -175,8 +175,8 @@
     "semantic_hash": ""
   },
   "vite.config.ts": {
-    "mtime": 1782848326.1879284,
-    "ast_hash": "9f2ddd5b71c75e0ee447ada355ab62ec",
+    "mtime": 1783359224.97163,
+    "ast_hash": "29e41fbd11f90cb4d6bb2e030e7da208",
     "semantic_hash": ""
   },
   "AGENTS.md": {
@@ -260,8 +260,8 @@
     "semantic_hash": ""
   },
   "src/env.d.ts": {
-    "mtime": 1782904266.8633418,
-    "ast_hash": "99c64ce5416a555f37d65277c63f8e71",
+    "mtime": 1783359224.9478903,
+    "ast_hash": "8328765238df2495d99e61b74f7ae285",
     "semantic_hash": ""
   },
   "src/features/DataGrid/DataGrid.constants.ts": {
@@ -270,18 +270,18 @@
     "semantic_hash": ""
   },
   "src/features/DataGrid/DataGrid.hooks.ts": {
-    "mtime": 1783087626.072886,
-    "ast_hash": "21558a45a6e955fdcc3ef9a4573a3240",
+    "mtime": 1783423885.8059986,
+    "ast_hash": "dd37e52fafb6e12fbe688a5b57181815",
     "semantic_hash": ""
   },
   "src/features/DataGrid/DataGrid.tsx": {
-    "mtime": 1783082995.119268,
-    "ast_hash": "f3a2b154df0303c62d7a18810e00f7f0",
+    "mtime": 1783423590.2821202,
+    "ast_hash": "3914ade49313fdd7d9ac5ea93352c027",
     "semantic_hash": ""
   },
   "src/features/DataGrid/DataGrid.types.ts": {
-    "mtime": 1782503384.194813,
-    "ast_hash": "4eb7621433c2ed6d85530bd7a6a022b3",
+    "mtime": 1783423590.2821202,
+    "ast_hash": "8c3ce6c4c56ebc544407e3aa0f6aa202",
     "semantic_hash": ""
   },
   "src/features/DataGrid/DataGrid.utils.ts": {
@@ -300,8 +300,8 @@
     "semantic_hash": ""
   },
   "src/features/DataGrid/Parts/GridBody.tsx": {
-    "mtime": 1783083448.5453317,
-    "ast_hash": "a939ab27335972f93386b12bedf9209a",
+    "mtime": 1783359232.394745,
+    "ast_hash": "200b103c20ce2671c9abeecee5553922",
     "semantic_hash": ""
   },
   "src/features/DataGrid/Parts/GridFooter.tsx": {
@@ -310,8 +310,8 @@
     "semantic_hash": ""
   },
   "src/features/DataGrid/Parts/GridHeader.tsx": {
-    "mtime": 1782755491.4104323,
-    "ast_hash": "4bcdc96888259141617b30851cae91a4",
+    "mtime": 1783359232.4014888,
+    "ast_hash": "9bce557db6c4e01ffc457551fec59d33",
     "semantic_hash": ""
   },
   "src/features/DataGrid/index.ts": {
@@ -330,8 +330,8 @@
     "semantic_hash": ""
   },
   "src/features/QueryPanel/QueryPanel.tsx": {
-    "mtime": 1783088449.7339644,
-    "ast_hash": "5641af49b1dd376f4e688208ea038371",
+    "mtime": 1783423590.2841258,
+    "ast_hash": "bedb1368a4e39b20ca1bd81c3e55382f",
     "semantic_hash": ""
   },
   "src/features/QueryPanel/index.ts": {
@@ -340,8 +340,8 @@
     "semantic_hash": ""
   },
   "src/features/SchemaChangeWizard/SchemaChangeWizard.tsx": {
-    "mtime": 1783083078.069672,
-    "ast_hash": "ad04f3effa21b252cec5b281b0e87050",
+    "mtime": 1783092889.8997147,
+    "ast_hash": "8f8dc05de17d9daa943df0bcfbebdcbe",
     "semantic_hash": ""
   },
   "src/features/SchemaVisualizer/SchemaVisualizer.tsx": {
@@ -365,8 +365,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/DatabaseCategories.tsx": {
-    "mtime": 1783091370.926596,
-    "ast_hash": "78cce28e6bd28e35088e613d18bc8a69",
+    "mtime": 1783359224.9574509,
+    "ast_hash": "ede74621c1167d887503de07dc03a42d",
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/DatabaseSelector.tsx": {
@@ -440,8 +440,8 @@
     "semantic_hash": ""
   },
   "src/store/uiStore.ts": {
-    "mtime": 1783081104.4446893,
-    "ast_hash": "46d68b565d9fbf080106e704748973e7",
+    "mtime": 1783093579.5474052,
+    "ast_hash": "7ae65ca641163047ac78fdc1d88b6955",
     "semantic_hash": ""
   },
   "src/store/workspaceStore.ts": {
@@ -450,8 +450,8 @@
     "semantic_hash": ""
   },
   "src/types/store.ts": {
-    "mtime": 1783084298.0818946,
-    "ast_hash": "8fcfd976d47c50f102cec2d8292acfaa",
+    "mtime": 1783093567.9749773,
+    "ast_hash": "1bba2bfd6a1df711995e196e82a425a0",
     "semantic_hash": ""
   },
   "src/types/workspace.ts": {
@@ -490,8 +490,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/WorkspaceTree.tsx": {
-    "mtime": 1783090849.847372,
-    "ast_hash": "49d34fe1ff146190c6261ba13ce3d625",
+    "mtime": 1783359294.9183395,
+    "ast_hash": "649285a5c364e9ff277f007e70f1925d",
     "semantic_hash": ""
   },
   "src/store/settingsStore.ts": {
@@ -510,8 +510,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/DatabaseTree.tsx": {
-    "mtime": 1783083448.8451266,
-    "ast_hash": "af23bb65dd2680464710fff38528804a",
+    "mtime": 1783097859.0442455,
+    "ast_hash": "f63873270ad575f3d109abfd39ffe923",
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/PinnedSection.tsx": {
@@ -545,8 +545,8 @@
     "semantic_hash": ""
   },
   "src/app/providers/GlobalModals.tsx": {
-    "mtime": 1783083398.2935832,
-    "ast_hash": "467c5ca398b832ad32923a0d28c7cab8",
+    "mtime": 1783092939.2153692,
+    "ast_hash": "4d2e38e3a2975d9c98c0a382eb3d4eb4",
     "semantic_hash": ""
   },
   "src/app/Layout.tsx": {
@@ -575,8 +575,8 @@
     "semantic_hash": ""
   },
   "src/features/CommandPalette/CommandPalette.tsx": {
-    "mtime": 1783088285.4725387,
-    "ast_hash": "71f828aa00915908bd836f3a031ef132",
+    "mtime": 1783423590.276821,
+    "ast_hash": "89b09213ebcd127b322f265e27a070b5",
     "semantic_hash": ""
   },
   "src/features/Connections/ConnectionManager.tsx": {
@@ -590,8 +590,8 @@
     "semantic_hash": ""
   },
   "src/features/Home/HomeView.tsx": {
-    "mtime": 1783083448.5904467,
-    "ast_hash": "8a22ec7937e596782d296050a9e80b53",
+    "mtime": 1783097936.2425778,
+    "ast_hash": "4edf40d9ed80ce80a8aecf0c64c9c2bf",
     "semantic_hash": ""
   },
   "src/features/QueryPanel/CommitFooter.tsx": {
@@ -645,8 +645,8 @@
     "semantic_hash": ""
   },
   "src/shared/hooks/useAppKeybindings.ts": {
-    "mtime": 1782755491.4197128,
-    "ast_hash": "c1418e952583970523e1964fd3da65f1",
+    "mtime": 1783093604.331925,
+    "ast_hash": "3e47b4f2811de94307f48cca800b6d58",
     "semantic_hash": ""
   },
   "src/shared/hooks/useContextMenu.ts": {
@@ -800,8 +800,8 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/DatabaseCategoryItem.tsx": {
-    "mtime": 1783091453.6414871,
-    "ast_hash": "e0fa1d1d9fbc0962625927b27ab8410d",
+    "mtime": 1783097847.4799583,
+    "ast_hash": "001e11680dbbba17672ef44fc33fa86f",
     "semantic_hash": ""
   },
   "src/features/Sidebar/Parts/DatabaseCategorySection.tsx": {
@@ -810,8 +810,23 @@
     "semantic_hash": ""
   },
   "src/features/Sidebar/hooks/useDatabaseCategoriesLogic.ts": {
-    "mtime": 1783091290.411802,
-    "ast_hash": "5f9f08acfbd9e90c9fabfe762fb971d3",
+    "mtime": 1783091742.243793,
+    "ast_hash": "e01998920b86d3d7c63479f6e30328d3",
+    "semantic_hash": ""
+  },
+  "scripts/purge-test.js": {
+    "mtime": 1783098350.2434056,
+    "ast_hash": "4e44514a90654f5ed4ee1dd3f4e1d10f",
+    "semantic_hash": ""
+  },
+  "scripts/purge.js": {
+    "mtime": 1783098164.836058,
+    "ast_hash": "edb2bc01b7b0da058bc520d6a939e379",
+    "semantic_hash": ""
+  },
+  "src/features/DataGrid/DataGrid.keyboard.ts": {
+    "mtime": 1783423866.657525,
+    "ast_hash": "89aa1c8da69b5e6176bd1af75e0d9acb",
     "semantic_hash": ""
   }
 }
