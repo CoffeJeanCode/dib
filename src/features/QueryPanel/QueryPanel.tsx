@@ -642,6 +642,7 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
                   rows={gridRows}
                   loading={activeTableState?.loading ?? false}
                   tableName={activeTab.payload.table?.name}
+                  tableSchema={activeTab.payload.table?.schema ?? null}
                   primaryKeyColumn={activeTableState?.primaryKeyColumn}
                   columnInfos={activeTab.payload.table ? columnMap[activeTab.payload.table.name] : undefined}
                   filters={activeTableState?.filters}

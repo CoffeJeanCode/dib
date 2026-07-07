@@ -302,3 +302,81 @@
 .palette-item--ddl.palette-item--selected .palette-item-label {
   color: var(--color-purple);
 }
+
+/* ── Table item with inline actions ──────────────────────────── */
+.palette-item--table {
+  position: relative;
+}
+
+.palette-item-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.palette-item-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-item-alias {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--neon-green-dim);
+  color: var(--color-green);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+/* ── Inline table action buttons ─────────────────────────────── */
+.palette-table-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.palette-item--selected .palette-table-actions,
+.palette-item--table:hover .palette-table-actions {
+  display: flex;
+}
+
+.palette-table-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fastest);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.palette-table-action:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-teal);
+  color: var(--color-teal);
+}
+
+.palette-table-action--danger:hover {
+  border-color: var(--color-red);
+  background: var(--color-danger-bg);
+  color: var(--color-red);
+}
+
+.palette-table-action + .palette-table-action {
+  margin-left: 0;
+}

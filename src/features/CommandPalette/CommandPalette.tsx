@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { isMac } from "@/shared/utils/platform";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
-import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, ChevronLeft, Loader2, Eye, Activity, Network, Wrench, PlusSquare, Rows } from "lucide-react";
+import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, ChevronLeft, Loader2, Eye, Activity, Network, Wrench, PlusSquare, Rows, Layers } from "lucide-react";
 import type { TableInfo, InternalScript } from "@/types/db";
 import type { FsNode } from "@/types/workspace";
 import { dbService } from "@/services/dbService";
@@ -272,12 +272,25 @@ export function CommandPalette({
     { kind: "action", id: "dml:insert",   label: "Insert Row…",     onAction: () => enterDdlMode("insert") },
   ] : [], [connectionId, enterDdlMode]);
 
+  const matchTables = useCallback((items: PaletteItem[], q: string): PaletteItem[] => {
+    const qLower = q.toLowerCase();
+    const aliasMatches: PaletteItem[] = [];
+    const textMatches: PaletteItem[] = [];
+    for (const item of items) {
+      if (item.kind !== "table") continue;
+      const alias = generateOrmAlias(item.table.name);
+      if (alias === qLower) aliasMatches.push({ ...item, matchedAlias: alias });
+      else if (item.label.toLowerCase().includes(qLower)) textMatches.push(item);
+    }
+    return [...aliasMatches, ...textMatches];
+  }, []);
+
   const filtered = useMemo<PaletteItem[]>(() => {
-    // DDL sub-mode: show only tables
+    // DDL sub-mode: show only tables with ORM search
     if (ddlMode) {
       const pool = baseItems.filter((i) => i.kind === "table");
       const q = query.trim().toLowerCase();
-      return q ? pool.filter((i) => i.label.toLowerCase().includes(q)) : pool;
+      return q ? matchTables(pool, q) : pool;
     }
 
     const actionItems: PaletteItem[] = [
@@ -326,17 +339,8 @@ export function CommandPalette({
     }
 
     // No prefix → tables with ORM alias priority
-    const pool = baseItems.filter((i) => i.kind === "table");
-    const qLower = q.toLowerCase();
-    const aliasMatches: PaletteItem[] = [];
-    const textMatches: PaletteItem[] = [];
-    for (const item of pool) {
-      const alias = generateOrmAlias(item.table.name);
-      if (alias === qLower) aliasMatches.push({ ...item, matchedAlias: alias });
-      else if (item.label.toLowerCase().includes(qLower)) textMatches.push(item);
-    }
-    return [...aliasMatches, ...textMatches];
-  }, [query, baseItems, scriptItems, actions, ddlActionItems, ddlMode]);
+    return matchTables(baseItems, q);
+  }, [query, baseItems, scriptItems, actions, ddlActionItems, ddlMode, matchTables]);
 
   useEffect(() => { setSelectedIndex(0); }, [query, ddlMode]);
 
@@ -541,6 +545,8 @@ export function CommandPalette({
               const isDdlAction = item.kind === "action" && item.id.startsWith("ddl:");
               const isDangerItem = ddlMode === "drop" || ddlMode === "truncate";
 
+              const isTableItem = item.kind === "table" && !!connectionId;
+
               return (
                 <React.Fragment key={item.id}>
                   {showHeader && <div className="palette-group-header">{headerText}</div>}
@@ -551,6 +557,7 @@ export function CommandPalette({
                       i === selectedIndex ? "palette-item--selected" : "",
                       isDangerItem && item.kind === "table" ? "palette-item--danger" : "",
                       isDdlAction ? "palette-item--ddl" : "",
+                      isTableItem && !ddlMode ? "palette-item--table" : "",
                     ].filter(Boolean).join(" ")}
                     onClick={() => execute(item)}
                     onPointerMove={() => { pointerActiveRef.current = true; setSelectedIndex(i); }}
@@ -561,7 +568,40 @@ export function CommandPalette({
                         : item.kind === "ddl" ? (item.action === "create" ? <PlusSquare size={16} /> : <Wrench size={16} />)
                         : ITEM_ICON[item.kind]}
                     </span>
-                    <span className="palette-item-label">{item.label}</span>
+                    <span className="palette-item-label">
+                      <span className="palette-item-label-text">{item.label}</span>
+                      {item.kind === "table" && (item as any).matchedAlias && (
+                        <span className="palette-item-alias">{(item as any).matchedAlias}</span>
+                      )}
+                    </span>
+                    {isTableItem && !ddlMode && (
+                      <span className="palette-table-actions" onClick={(e) => e.stopPropagation()}>
+                        <button className="palette-table-action" title="View Structure"
+                          onClick={(e) => { e.stopPropagation(); useWorkspaceStore.getState().openTableStructure(item.table); onClose(); }}>
+                          <Layers size={13} />
+                        </button>
+                        <button className="palette-table-action" title="ERD Diagram"
+                          onClick={(e) => { e.stopPropagation(); useWorkspaceStore.getState().openTableRelations(item.table); pushToRecents({ type: "diagram", id: `diagram:${item.id}`, label: `Diagram: ${item.table.name}`, table: item.table }); onClose(); }}>
+                          <Network size={13} />
+                        </button>
+                        <button className="palette-table-action" title="Alter Table"
+                          onClick={(e) => { e.stopPropagation(); import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(item.table)); pushToRecents({ type: "ddl", id: `ddl:alter:${item.id}`, label: `Alter ${item.table.name}`, action: "alter", table: item.table }); onClose(); }}>
+                          <Wrench size={13} />
+                        </button>
+                        <button className="palette-table-action" title="Insert Row"
+                          onClick={(e) => { e.stopPropagation(); useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any); useWorkspaceStore.getState().triggerInsertRow(); pushToRecents({ type: "dml", id: `dml:insert:${item.id}`, label: `Insert ${item.table.name}`, action: "insert", table: item.table }); onClose(); }}>
+                          <PlusSquare size={13} />
+                        </button>
+                        <button className="palette-table-action" title="Rename Table"
+                          onClick={(e) => { e.stopPropagation(); import("@/store/uiStore").then(m => m.useUiStore.getState().setRenameTarget(item.table)); onClose(); }}>
+                          <Edit3 size={13} />
+                        </button>
+                        <button className="palette-table-action palette-table-action--danger" title="Drop Table"
+                          onClick={(e) => { e.stopPropagation(); handleDropTable(item.table); onClose(); }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </span>
+                    )}
                     <span className="palette-item-shortcut">{hintText}</span>
                   </div>
                 </React.Fragment>

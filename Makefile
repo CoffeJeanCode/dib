@@ -34,7 +34,7 @@ windows: export/windows/dib.exe  ## build Windows release binary (cross)
 
 export/windows/dib.exe: Dockerfile.build
 	$(DOCKER) build -f Dockerfile.build --target build-windows -t $(IMAGE) .
-	$(DOCKER) run --rm -v "$(CURDIR)/$(OUT):/host-out" $(IMAGE) sh -c "mkdir -p /host-out/windows && cp /out/dib.exe /host-out/windows/dib.exe"
+	$(DOCKER) run --rm -v "$(CURDIR)/$(OUT):/host-out" $(IMAGE) sh -c "mkdir -p /host-out/windows && cp -r /out/* /host-out/windows/"
 	@echo "✓ Windows binary: $(OUT)/windows/dib.exe"
 
 # ── both ─────────────────────────────────────────────────────
@@ -44,6 +44,7 @@ both: linux windows  ## build Linux + Windows
 clean:  ## remove exported binaries
 	$(RM) $(OUT)/linux/dib 2>$(NULL) || true
 	$(RM) $(OUT)/windows/dib.exe 2>$(NULL) || true
+	$(RM) $(OUT)/windows/WebView2Loader.dll 2>$(NULL) || true
 	@echo "✓ Cleaned $(OUT)/"
 
 distclean: clean  ## remove everything (image + binaries)

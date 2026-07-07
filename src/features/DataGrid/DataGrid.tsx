@@ -1,5 +1,5 @@
-import { memo, useMemo } from "react";
-import type { PendingChange, ColumnInfo, GridFilter, TableRelation } from "@/types/db";
+import { memo, useMemo, useCallback } from "react";
+import type { PendingChange, ColumnInfo, GridFilter, TableRelation, TableInfo } from "@/types/db";
 import { useDataGridState } from "./DataGrid.hooks";
 import { DataGridContext } from "./Parts/DataGridContext";
 import { Skeleton } from "@/shared/ui/Skeleton";
@@ -7,6 +7,11 @@ import { GridHeader } from "./Parts/GridHeader";
 import { GridBody } from "./Parts/GridBody";
 import { GridFooter } from "./Parts/GridFooter";
 import { FilterPopover } from "./Parts/FilterPopover";
+import { useDangerDialog } from "@/shared/hooks/useDangerDialog";
+import { useToastStore } from "@/store/toastStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useConnectionStore } from "@/store/connectionStore";
+import { Layers, Network, Wrench, PlusSquare, Edit3, Trash2 } from "lucide-react";
 import "./DataGrid.css";
 
 export interface DataGridProps {
@@ -14,6 +19,7 @@ export interface DataGridProps {
   rows: unknown[][];
   loading?: boolean;
   tableName?: string;
+  tableSchema?: string | null;
   primaryKeyColumn?: string;
   columnInfos?: ColumnInfo[];
   filters?: GridFilter[];
@@ -36,6 +42,7 @@ export const DataGrid = memo(function DataGrid({
   rows,
   loading,
   tableName,
+  tableSchema,
   primaryKeyColumn,
   columnInfos,
   filters,
@@ -76,6 +83,27 @@ export const DataGrid = memo(function DataGrid({
     onFkNavigate,
     onSaveError,
   });
+  const connectionId = useConnectionStore((s) => s.active?.activeId ?? null);
+  const info = useToastStore((s) => s.info);
+  const error = useToastStore((s) => s.error);
+  const { handleDropTable } = useDangerDialog(connectionId, info, error);
+  const tblSchema = tableSchema !== undefined ? tableSchema : null;
+  const tableActionsEnabled = !!tableName && !!connectionId;
+
+  const handleTableAction = useCallback((action: string) => {
+    if (!tableName) return;
+    const t: TableInfo = { name: tableName, schema: tblSchema };
+    if (action === "structure") useWorkspaceStore.getState().openTableStructure(t);
+    else if (action === "erd") useWorkspaceStore.getState().openTableRelations(t);
+    else if (action === "alter") import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(t));
+    else if (action === "insert") {
+      useWorkspaceStore.getState().setNavigateTo({ table: t, v: Date.now() } as any);
+      useWorkspaceStore.getState().triggerInsertRow();
+    }
+    else if (action === "rename") import("@/store/uiStore").then(m => m.useUiStore.getState().setRenameTarget(t));
+    else if (action === "drop") handleDropTable(t);
+  }, [tableName, tblSchema, handleDropTable]);
+
   const columnsState = useMemo(() => {
     return {
       ...state,
@@ -106,6 +134,33 @@ export const DataGrid = memo(function DataGrid({
         ref={state.gridRef}
         onKeyDown={state.handleGridKeyDown}
       >
+        {tableActionsEnabled && (
+          <div className="dg-toolbar">
+            <span className="dg-toolbar-title" title={tblSchema ? `${tblSchema}.${tableName}` : tableName}>
+              {tableName}
+            </span>
+            <div className="dg-toolbar-actions">
+              <button className="dg-toolbar-btn" title="View Structure" onClick={() => handleTableAction("structure")}>
+                <Layers size={14} /> Structure
+              </button>
+              <button className="dg-toolbar-btn" title="ERD Diagram" onClick={() => handleTableAction("erd")}>
+                <Network size={14} /> ERD
+              </button>
+              <button className="dg-toolbar-btn" title="Alter Table" onClick={() => handleTableAction("alter")}>
+                <Wrench size={14} /> Alter
+              </button>
+              <button className="dg-toolbar-btn" title="Insert Row" onClick={() => handleTableAction("insert")}>
+                <PlusSquare size={14} /> Insert
+              </button>
+              <button className="dg-toolbar-btn" title="Rename Table" onClick={() => handleTableAction("rename")}>
+                <Edit3 size={14} /> Rename
+              </button>
+              <button className="dg-toolbar-btn dg-toolbar-btn--danger" title="Drop Table" onClick={() => handleTableAction("drop")}>
+                <Trash2 size={14} /> Drop
+              </button>
+            </div>
+          </div>
+        )}
         <div className="dg-scroll" ref={state.setContainerEl} onScroll={state.onScroll}>
           <GridHeader />
           <GridBody />

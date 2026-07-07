@@ -11,6 +11,7 @@ export interface DataGridProps {
   rows: unknown[][];
   loading?: boolean;
   tableName?: string;
+  tableSchema?: string | null;
   primaryKeyColumn?: string;
   columnInfos?: ColumnInfo[];
   filters?: GridFilter[];

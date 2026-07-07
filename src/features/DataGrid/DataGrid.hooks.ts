@@ -92,9 +92,11 @@ export function useDataGridState({
   const [orderedColumns, setOrderedColumns] = useState<import("./DataGrid.types").GridColumn[]>([]);
   const prevColsStr = useRef("");
   useEffect(() => {
-    const currentStr = columns.join(',');
+    const currentStr = columns.join(",");
     if (currentStr !== prevColsStr.current || orderedColumns.length === 0) {
-      setOrderedColumns(columns.map((name, origIdx) => ({ id: `${name}-${origIdx}`, name, origIdx })));
+      setOrderedColumns(
+        columns.map((name, origIdx) => ({ id: `${name}-${origIdx}`, name, origIdx })),
+      );
       prevColsStr.current = currentStr;
     }
   }, [columns]);
@@ -112,37 +114,40 @@ export function useDataGridState({
   // and the auto-scroll effect chased it ("springs"). The prop is only a
   // persistence channel now: we emit changes up, and adopt the prop only
   // when it is NOT an echo of what we just emitted (e.g. tab switch restore).
-  const [internalActiveCell, setInternalActiveCell] = useState<{ row: number; col: number } | null>(activeCellProp ?? null);
+  const [internalActiveCell, setInternalActiveCell] = useState<{ row: number; col: number } | null>(
+    activeCellProp ?? null,
+  );
   const lastEmittedCellRef = useRef<{ row: number; col: number } | null | undefined>(undefined);
 
   useEffect(() => {
     if (!isControlledRef.current) return;
     const prop = activeCellProp ?? null;
     const emitted = lastEmittedCellRef.current;
-    const isEcho = emitted !== undefined && (
-      prop === emitted || (prop !== null && emitted !== null && prop.row === emitted.row && prop.col === emitted.col)
-    );
+    const isEcho =
+      emitted !== undefined &&
+      (prop === emitted ||
+        (prop !== null &&
+          emitted !== null &&
+          prop.row === emitted.row &&
+          prop.col === emitted.col));
     if (!isEcho) setInternalActiveCell(prop); // external restore (tab switch)
   }, [activeCellProp]);
 
   const activeCell = internalActiveCell;
   const emitTimeoutRef = useRef<number | null>(null);
-  
-  const setActiveCell = useCallback(
-    (next: { row: number; col: number } | null) => {
-      setInternalActiveCell(next);
-      if (isControlledRef.current) {
-        lastEmittedCellRef.current = next;
-        if (emitTimeoutRef.current !== null) {
-          window.clearTimeout(emitTimeoutRef.current);
-        }
-        emitTimeoutRef.current = window.setTimeout(() => {
-          onActiveCellChangeRef.current?.(next);
-        }, 150);
+
+  const setActiveCell = useCallback((next: { row: number; col: number } | null) => {
+    setInternalActiveCell(next);
+    if (isControlledRef.current) {
+      lastEmittedCellRef.current = next;
+      if (emitTimeoutRef.current !== null) {
+        window.clearTimeout(emitTimeoutRef.current);
       }
-    },
-    [],
-  );
+      emitTimeoutRef.current = window.setTimeout(() => {
+        onActiveCellChangeRef.current?.(next);
+      }, 150);
+    }
+  }, []);
   const [anchorCell, setAnchorCell] = useState<{ row: number; col: number } | null>(null);
   const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [isEditing, setIsEditing] = useState(false);
@@ -151,13 +156,17 @@ export function useDataGridState({
   // Column widths / resize
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   columnWidthsRef.current = columnWidths;
-  const [resizing, setResizing] = useState<{ col: string; startX: number; startW: number } | null>(null);
+  const [resizing, setResizing] = useState<{ col: string; startX: number; startW: number } | null>(
+    null,
+  );
 
   // Save indicator
   const [saveIndicator, setSaveIndicator] = useState(false);
 
   // Filter popover
-  const [filterPopover, setFilterPopover] = useState<{ col: string; x: number; y: number } | null>(null);
+  const [filterPopover, setFilterPopover] = useState<{ col: string; x: number; y: number } | null>(
+    null,
+  );
   const [localOp, setLocalOp] = useState<FilterOperator>("=");
   const [localValue, setLocalValue] = useState("");
 
@@ -170,13 +179,14 @@ export function useDataGridState({
 
   const colInfoMap = useMemo(() => {
     const map: Record<string, ColumnInfo> = {};
-    for (const ci of (columnInfos ?? [])) map[ci.name] = ci;
+    for (const ci of columnInfos ?? []) map[ci.name] = ci;
     return map;
   }, [columnInfos]);
 
   const fkMap = useMemo(() => {
     const map: Record<string, { targetTable: string; targetColumn: string }> = {};
-    for (const r of (relations ?? [])) map[r.source_column] = { targetTable: r.target_table, targetColumn: r.target_column };
+    for (const r of relations ?? [])
+      map[r.source_column] = { targetTable: r.target_table, targetColumn: r.target_column };
     return map;
   }, [relations]);
 
@@ -184,19 +194,22 @@ export function useDataGridState({
   const [fkMenu, setFkMenu] = useState<{ x: number; y: number; col: string } | null>(null);
   const fkMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const generateJoinQuery = useCallback((col: string) => {
-    const fk = fkMap[col];
-    if (!fk || !tableName) return;
-    const sql = `SELECT src.*, ref.*\nFROM ${tableName} src\nJOIN ${fk.targetTable} ref ON src.${col} = ref.${fk.targetColumn};\n`;
-    // Same channel the command palette uses — QueryPanel opens it as a new tab.
-    useWorkspaceStore.getState().setOpenScript({
-      sql,
-      name: `join_${tableName}_${fk.targetTable}.sql`,
-      id: `ext-${Date.now()}`,
-      v: Date.now(),
-      autoRun: true,
-    });
-  }, [fkMap, tableName]);
+  const generateJoinQuery = useCallback(
+    (col: string) => {
+      const fk = fkMap[col];
+      if (!fk || !tableName) return;
+      const sql = `SELECT src.*, ref.*\nFROM ${tableName} src\nJOIN ${fk.targetTable} ref ON src.${col} = ref.${fk.targetColumn};\n`;
+      // Same channel the command palette uses — QueryPanel opens it as a new tab.
+      useWorkspaceStore.getState().setOpenScript({
+        sql,
+        name: `join_${tableName}_${fk.targetTable}.sql`,
+        id: `ext-${Date.now()}`,
+        v: Date.now(),
+        autoRun: true,
+      });
+    },
+    [fkMap, tableName],
+  );
 
   const handleCellContextMenu = useCallback(
     (colIdx: number, e: React.MouseEvent) => {
@@ -214,7 +227,9 @@ export function useDataGridState({
       if (e.target instanceof Node && fkMenuRef.current?.contains(e.target)) return;
       setFkMenu(null);
     };
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setFkMenu(null); };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFkMenu(null);
+    };
     window.addEventListener("pointerdown", close);
     window.addEventListener("keydown", esc);
     return () => {
@@ -225,9 +240,7 @@ export function useDataGridState({
 
   const getPkStr = useCallback(
     (rowIdx: number, currentRows: unknown[][]): string =>
-      pkColIdx >= 0
-        ? String(currentRows[rowIdx]?.[pkColIdx] ?? rowIdx)
-        : String(rowIdx),
+      pkColIdx >= 0 ? String(currentRows[rowIdx]?.[pkColIdx] ?? rowIdx) : String(rowIdx),
     [pkColIdx],
   );
 
@@ -241,10 +254,7 @@ export function useDataGridState({
 
   // Virtual scroll window
   const totalRows = editState.rows.length;
-  const start = useMemo(
-    () => Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN),
-    [scrollTop],
-  );
+  const start = useMemo(() => Math.max(0, Math.floor(scrollTop / ROW_H) - OVERSCAN), [scrollTop]);
   const end = useMemo(
     () => Math.min(totalRows, start + Math.ceil(viewH / ROW_H) + OVERSCAN * 2),
     [totalRows, start, viewH],
@@ -273,7 +283,10 @@ export function useDataGridState({
     const el = gridRef.current;
     if (!el) return;
     for (let i = 0; i < orderedColumns.length; i++) {
-      el.style.setProperty(`--dg-cw-${i}`, `${columnWidths[orderedColumns[i].name] ?? DEFAULT_COL_W}px`);
+      el.style.setProperty(
+        `--dg-cw-${i}`,
+        `${columnWidths[orderedColumns[i].name] ?? DEFAULT_COL_W}px`,
+      );
     }
     if (containerRef.current) containerRef.current.scrollLeft = scrollLeftRef.current;
   }, [orderedColumns, columnWidths]);
@@ -352,9 +365,9 @@ export function useDataGridState({
     } else if (bottom > el.scrollTop + rowViewH) {
       el.scrollTop = bottom - rowViewH;
     }
-    const colLeft = orderedColumns.slice(0, activeCell.col).reduce<number>(
-      (sum, col) => sum + (cw[col.name] ?? DEFAULT_COL_W), 0,
-    );
+    const colLeft = orderedColumns
+      .slice(0, activeCell.col)
+      .reduce<number>((sum, col) => sum + (cw[col.name] ?? DEFAULT_COL_W), 0);
     const colRight = colLeft + (cw[orderedColumns[activeCell.col].name] ?? DEFAULT_COL_W);
     if (colLeft < el.scrollLeft) el.scrollLeft = colLeft;
     else if (colRight > el.scrollLeft + el.clientWidth) el.scrollLeft = colRight - el.clientWidth;
@@ -363,7 +376,7 @@ export function useDataGridState({
 
   useEffect(() => {
     if (!resizing) return;
-    const colIdx = orderedColumns.findIndex(c => c.name === resizing.col);
+    const colIdx = orderedColumns.findIndex((c) => c.name === resizing.col);
     const onMove = (e: MouseEvent) => {
       const w = Math.max(MIN_COL_W, resizing.startW + e.clientX - resizing.startX);
       liveDragWidthRef.current = { col: resizing.col, colIdx, w };
@@ -389,7 +402,10 @@ export function useDataGridState({
   // History mutations
   const mutate = useCallback((patch: Partial<Snapshot>) => {
     setEditState((prev) => ({
-      past: [...prev.past.slice(-MAX_HISTORY), { rows: prev.rows, changes: prev.changes, ghostRowIds: prev.ghostRowIds }],
+      past: [
+        ...prev.past.slice(-MAX_HISTORY),
+        { rows: prev.rows, changes: prev.changes, ghostRowIds: prev.ghostRowIds },
+      ],
       rows: patch.rows ?? prev.rows,
       changes: patch.changes ?? prev.changes,
       ghostRowIds: patch.ghostRowIds ?? prev.ghostRowIds,
@@ -407,7 +423,10 @@ export function useDataGridState({
         rows: snap.rows,
         changes: snap.changes,
         ghostRowIds: snap.ghostRowIds,
-        future: [{ rows: prev.rows, changes: prev.changes, ghostRowIds: prev.ghostRowIds }, ...prev.future.slice(0, MAX_HISTORY)],
+        future: [
+          { rows: prev.rows, changes: prev.changes, ghostRowIds: prev.ghostRowIds },
+          ...prev.future.slice(0, MAX_HISTORY),
+        ],
       };
     });
   }, []);
@@ -418,7 +437,10 @@ export function useDataGridState({
       const future = [...prev.future];
       const snap = future.shift()!;
       return {
-        past: [...prev.past.slice(-MAX_HISTORY), { rows: prev.rows, changes: prev.changes, ghostRowIds: prev.ghostRowIds }],
+        past: [
+          ...prev.past.slice(-MAX_HISTORY),
+          { rows: prev.rows, changes: prev.changes, ghostRowIds: prev.ghostRowIds },
+        ],
         rows: snap.rows,
         changes: snap.changes,
         ghostRowIds: snap.ghostRowIds,
@@ -442,12 +464,18 @@ export function useDataGridState({
           const colName = orderedColumns[col].name;
           const origIdx = orderedColumns[col].origIdx;
           rowData[origIdx] = newValue;
-          const newRows = editState.rows.map((r, i) => i === row ? rowData : r);
-          const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
-            ? { ...(oldCh.new_value as Record<string, unknown>) }
-            : {} as Record<string, unknown>;
+          const newRows = editState.rows.map((r, i) => (i === row ? rowData : r));
+          const prevObj =
+            oldCh.new_value &&
+            typeof oldCh.new_value === "object" &&
+            !Array.isArray(oldCh.new_value)
+              ? { ...(oldCh.new_value as Record<string, unknown>) }
+              : ({} as Record<string, unknown>);
           prevObj[colName] = newValue;
-          const newChanges = new Map(editState.changes).set(changeId, { ...oldCh, new_value: prevObj });
+          const newChanges = new Map(editState.changes).set(changeId, {
+            ...oldCh,
+            new_value: prevObj,
+          });
           mutate({ rows: newRows, changes: newChanges });
         }
       } else {
@@ -489,9 +517,23 @@ export function useDataGridState({
 
       const totalR = editState.rows.length;
       if (moveDirection === "down" && row + 1 < totalR) setActiveCell({ row: row + 1, col });
-      else if (moveDirection === "right" && col + 1 < orderedColumns.length) setActiveCell({ row, col: col + 1 });
+      else if (moveDirection === "right" && col + 1 < orderedColumns.length)
+        setActiveCell({ row, col: col + 1 });
     },
-    [activeCell, editValue, rows, columns, orderedColumns, tableName, pkColIdx, editState, mutate, getPkStr, colInfoMap, setActiveCell],
+    [
+      activeCell,
+      editValue,
+      rows,
+      columns,
+      orderedColumns,
+      tableName,
+      pkColIdx,
+      editState,
+      mutate,
+      getPkStr,
+      colInfoMap,
+      setActiveCell,
+    ],
   );
 
   const cancelEdit = useCallback(() => {
@@ -547,8 +589,9 @@ export function useDataGridState({
   const insertGhostRowRef = useRef(insertGhostRow);
   insertGhostRowRef.current = insertGhostRow;
   const pendingInsertRow = useWorkspaceStore((s) => s.pendingInsertRow);
-  useEffect(() => { if (pendingInsertRow > 0) insertGhostRowRef.current(); }, [pendingInsertRow]);
-
+  useEffect(() => {
+    if (pendingInsertRow > 0) insertGhostRowRef.current();
+  }, [pendingInsertRow]);
 
   // Batch duplicate: all selected rows in one mutate call → no stale closure issue
   const duplicateRows = useCallback(
@@ -586,12 +629,15 @@ export function useDataGridState({
         }
         if (primaryKeyColumn) rowObj[primaryKeyColumn] = null;
         nextChanges.set(ghostId, {
-          id: ghostId, type: "insert", table: tableName,
+          id: ghostId,
+          type: "insert",
+          table: tableName,
           new_value: rowObj,
           column_types: Object.keys(colTypesMap).length > 0 ? colTypesMap : undefined,
         } as PendingChange);
         nextGhostRowIds.set(insertAt + i, ghostId);
-        for (let c = 0; c < orderedColumns.length; c++) newSelectedCells.add(cellId(insertAt + i, c));
+        for (let c = 0; c < orderedColumns.length; c++)
+          newSelectedCells.add(cellId(insertAt + i, c));
       }
 
       mutate({ rows: nextRows, changes: nextChanges, ghostRowIds: nextGhostRowIds });
@@ -601,7 +647,6 @@ export function useDataGridState({
     },
     [tableName, editState, mutate, pkColIdx, columns, colInfoMap, primaryKeyColumn, setActiveCell],
   );
-
 
   // Batch delete: single mutate avoids stale-closure overwrite when deleting multiple rows
   const markRowsForDeletion = useCallback(
@@ -632,7 +677,9 @@ export function useDataGridState({
             nextChanges.delete(key); // toggle off
           } else {
             nextChanges.set(key, {
-              id: key, type: "delete", table: tableName,
+              id: key,
+              type: "delete",
+              table: tableName,
               row_index: row,
               row_pk_value: pkColIdx >= 0 ? editState.rows[row]?.[pkColIdx] : row,
               old_value: editState.rows[row],
@@ -650,14 +697,18 @@ export function useDataGridState({
   const triggerSave = useCallback(() => {
     if (!editState.changes.size || !onSaveRef.current) return;
     const changes = Array.from(editState.changes.values());
-    onSaveRef.current(changes)
+    onSaveRef
+      .current(changes)
       .then(() => {
         preserveOrderRef.current = true;
         setSaveIndicator(true);
         setTimeout(() => setSaveIndicator(false), 2000);
       })
       .catch((e: unknown) => {
-        const msg = typeof e === "string" ? e : (e as Record<string, unknown>)?.message as string ?? "Save failed";
+        const msg =
+          typeof e === "string"
+            ? e
+            : (((e as Record<string, unknown>)?.message as string) ?? "Save failed");
         setEditState(makeEditState(rowsRef.current));
         onSaveErrorRef.current?.(msg);
       })
@@ -705,9 +756,12 @@ export function useDataGridState({
         const changeId = editState.ghostRowIds.get(r)!;
         const oldCh = nextChanges.get(changeId);
         if (oldCh) {
-          const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
-            ? { ...(oldCh.new_value as Record<string, unknown>) }
-            : {} as Record<string, unknown>;
+          const prevObj =
+            oldCh.new_value &&
+            typeof oldCh.new_value === "object" &&
+            !Array.isArray(oldCh.new_value)
+              ? { ...(oldCh.new_value as Record<string, unknown>) }
+              : ({} as Record<string, unknown>);
           prevObj[col] = null;
           nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
         }
@@ -719,10 +773,14 @@ export function useDataGridState({
       const original = rows[r]?.[origIdx];
       if (cellStr(original) !== cellStr(null)) {
         nextChanges.set(key, {
-          id: key, type: "update", table: tableName,
-          row_index: r, column: col,
+          id: key,
+          type: "update",
+          table: tableName,
+          row_index: r,
+          column: col,
           column_type: colInfoMap[col]?.data_type,
-          old_value: original, new_value: null,
+          old_value: original,
+          new_value: null,
           row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
         } as import("@/types/db").PendingChange);
       } else if (nextChanges.has(key)) {
@@ -731,55 +789,107 @@ export function useDataGridState({
       nextRows[r][origIdx] = null;
     }
     mutate({ rows: nextRows, changes: nextChanges });
-  }, [selectedCells, tableName, copySelection, editState, rows, columns, orderedColumns, colInfoMap, pkColIdx, getPkStr, mutate]);
+  }, [
+    selectedCells,
+    tableName,
+    copySelection,
+    editState,
+    rows,
+    columns,
+    orderedColumns,
+    colInfoMap,
+    pkColIdx,
+    getPkStr,
+    mutate,
+  ]);
 
   const pasteFromClipboard = useCallback(async () => {
     if (!activeCell || !tableName) return;
     const text = await navigator.clipboard.readText().catch(() => "");
     if (!text) return;
     const pasteRows = text.split("\n").map((line) => line.split("\t"));
+
+    // Excel-like fill: single copied cell + multi-cell selection → fill all selected cells
+    const isFill = pasteRows.length === 1 && pasteRows[0].length === 1 && selectedCells.size > 1;
+
     const nextRows = editState.rows.map((r) => [...(r as unknown[])]) as unknown[][];
     const nextChanges = new Map(editState.changes);
-    for (let dr = 0; dr < pasteRows.length; dr++) {
-      const r = activeCell.row + dr;
-      if (r >= editState.rows.length) break;
-      for (let dc = 0; dc < pasteRows[dr].length; dc++) {
-        const c: number = activeCell.col + dc;
-        if (c >= orderedColumns.length) break;
-        const col = orderedColumns[c].name;
-        const origIdx = orderedColumns[c].origIdx;
-        const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
-        if (editState.ghostRowIds.has(r)) {
-          // Ghost (insert) row — update the pending insert's new_value
-          const changeId = editState.ghostRowIds.get(r)!;
-          const oldCh = nextChanges.get(changeId);
-          if (oldCh) {
-            const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
+    const applyValue = (r: number, c: number, newValue: unknown) => {
+      const col = columns[c];
+      if (editState.ghostRowIds.has(r)) {
+        const changeId = editState.ghostRowIds.get(r)!;
+        const oldCh = nextChanges.get(changeId);
+        if (oldCh) {
+          const prevObj =
+            oldCh.new_value &&
+            typeof oldCh.new_value === "object" &&
+            !Array.isArray(oldCh.new_value)
               ? { ...(oldCh.new_value as Record<string, unknown>) }
-              : {} as Record<string, unknown>;
-            prevObj[col] = newValue;
-            nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
-          }
-          nextRows[r][origIdx] = newValue;
-        } else {
-          const pkStr = getPkStr(r, editState.rows);
-          const key = makeKey(pkStr, col);
-          const original = rows[r]?.[origIdx];
-          if (cellStr(original) !== cellStr(newValue)) {
-            nextChanges.set(key, {
-              id: key, type: "update", table: tableName,
-              row_index: r, column: col,
-              column_type: colInfoMap[col]?.data_type,
-              old_value: original, new_value: newValue,
-              row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
-            } as import("@/types/db").PendingChange);
-          }
-          nextRows[r][origIdx] = newValue;
+              : ({} as Record<string, unknown>);
+          prevObj[col] = newValue;
+          nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
+        }
+        nextRows[r][c] = newValue;
+      } else {
+        const pkStr = getPkStr(r, editState.rows);
+        const key = makeKey(pkStr, col);
+        const original = rows[r]?.[c];
+        if (cellStr(original) !== cellStr(newValue)) {
+          nextChanges.set(key, {
+            id: key,
+            type: "update",
+            table: tableName,
+            row_index: r,
+            column: col,
+            column_type: colInfoMap[col]?.data_type,
+            old_value: original,
+            new_value: newValue,
+            row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
+          } as import("@/types/db").PendingChange);
+        }
+        nextRows[r][c] = newValue;
+      }
+    };
+
+    if (isFill) {
+      // Fill mode: paste the single value into every selected cell
+      const fillValue = pasteRows[0][0] === "" ? null : pasteRows[0][0];
+      for (const id of selectedCells) {
+        const parts = id.split(":");
+        const r = parseInt(parts[0], 10);
+        const c = parseInt(parts[1], 10);
+        if (r >= nextRows.length || c >= columns.length) continue;
+        // Skip ghost row deletion markers
+        if (nextRows[r] === undefined) continue;
+        applyValue(r, c, fillValue);
+      }
+    } else {
+      // Normal paste from active cell
+      for (let dr = 0; dr < pasteRows.length; dr++) {
+        const r = activeCell.row + dr;
+        if (r >= editState.rows.length) break;
+        for (let dc = 0; dc < pasteRows[dr].length; dc++) {
+          const c: number = activeCell.col + dc;
+          if (c >= columns.length) break;
+          const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
+          applyValue(r, c, newValue);
         }
       }
     }
     mutate({ rows: nextRows, changes: nextChanges });
-  }, [activeCell, tableName, editState, rows, columns, orderedColumns, colInfoMap, pkColIdx, getPkStr, mutate]);
+  }, [
+    activeCell,
+    tableName,
+    editState,
+    rows,
+    columns,
+    colInfoMap,
+    pkColIdx,
+    getPkStr,
+    mutate,
+    selectedCells,
+    orderedColumns,
+  ]);
 
   // Keyboard
   const handleGridKeyDown = useCallback(
@@ -796,29 +906,66 @@ export function useDataGridState({
       }
 
       if (ctrl) {
-        if (e.key === "s") { e.preventDefault(); triggerSave(); return; }
-        if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); return; }
-        if (e.key === "y" || (e.key === "z" && e.shiftKey)) { e.preventDefault(); redo(); return; }
-        if (e.key === "c" && !isEditing) { e.preventDefault(); copySelection(); return; }
-        if (e.key === "x" && !isEditing) { e.preventDefault(); cutSelection(); return; }
-        if (e.key === "v" && !isEditing) { e.preventDefault(); void pasteFromClipboard(); return; }
-        if (e.key === "n") { e.preventDefault(); insertGhostRow(); return; }
+        if (e.key === "s") {
+          e.preventDefault();
+          triggerSave();
+          return;
+        }
+        if (e.key === "z" && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+          return;
+        }
+        if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+          return;
+        }
+        if (e.key === "c" && !isEditing) {
+          e.preventDefault();
+          copySelection();
+          return;
+        }
+        if (e.key === "x" && !isEditing) {
+          e.preventDefault();
+          cutSelection();
+          return;
+        }
+        if (e.key === "v" && !isEditing) {
+          e.preventDefault();
+          void pasteFromClipboard();
+          return;
+        }
+        if (e.key === "n") {
+          e.preventDefault();
+          insertGhostRow();
+          return;
+        }
         if (e.key === "d" && !isEditing) {
           e.preventDefault();
-          const rowSet = new Set<number>(Array.from(selectedCells).map((id) => parseInt(id.split(":")[0])));
+          const rowSet = new Set<number>(
+            Array.from(selectedCells).map((id) => parseInt(id.split(":")[0])),
+          );
           if (rowSet.size === 0 && activeCell) rowSet.add(activeCell.row);
           duplicateRows(Array.from(rowSet));
           return;
         }
-        if (e.key === "W" && e.shiftKey) { e.preventDefault(); onForceCloseRef.current?.(); return; }
-        if (e.key === "l") { e.preventDefault(); onFocusEditorRef.current?.(); return; }
+        if (e.key === "W" && e.shiftKey) {
+          e.preventDefault();
+          onForceCloseRef.current?.();
+          return;
+        }
+        if (e.key === "l") {
+          e.preventDefault();
+          onFocusEditorRef.current?.();
+          return;
+        }
         if (e.key === "a") {
           e.preventDefault();
           if (editState.rows.length > 0) {
             const all = new Set<string>();
             for (let r = 0; r < editState.rows.length; r++)
-              for (let c = 0; c < orderedColumns.length; c++)
-                all.add(cellId(r, c));
+              for (let c = 0; c < orderedColumns.length; c++) all.add(cellId(r, c));
             setSelectedCells(all);
             setAnchorCell({ row: 0, col: 0 });
             setActiveCell({ row: 0, col: 0 });
@@ -828,26 +975,44 @@ export function useDataGridState({
       }
 
       if (isEditing) {
-        if (e.key === "Escape") { e.preventDefault(); cancelEdit(); return; }
-        if (e.key === "Enter") { e.preventDefault(); commitEdit("down"); return; }
-        if (e.key === "Tab") { e.preventDefault(); commitEdit(e.shiftKey ? null : "right"); return; }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cancelEdit();
+          return;
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitEdit("down");
+          return;
+        }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          commitEdit(e.shiftKey ? null : "right");
+          return;
+        }
         return;
       }
 
       {
         const ae = document.activeElement as HTMLElement | null;
-        if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return;
+        if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable))
+          return;
       }
 
       // Always block native scroll for arrow keys before any cell-focus logic runs.
-      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight"
+      ) {
         e.preventDefault();
       }
 
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         const rowSet = new Set<number>(
-          Array.from(selectedCells).map((id) => parseInt(id.split(":")[0]))
+          Array.from(selectedCells).map((id) => parseInt(id.split(":")[0])),
         );
         if (rowSet.size === 0 && activeCell) rowSet.add(activeCell.row);
         markRowsForDeletion(Array.from(rowSet));
@@ -873,7 +1038,8 @@ export function useDataGridState({
         e.preventDefault();
         const anchor = anchorCell ?? { row, col };
         if (!anchorCell) setAnchorCell(anchor);
-        let nr = row, nc = col;
+        let nr = row,
+          nc = col;
         if (e.key === "ArrowDown") nr = Math.min(maxRow, row + 1);
         if (e.key === "ArrowUp") nr = Math.max(0, row - 1);
         if (e.key === "ArrowRight") nc = Math.min(maxCol, col + 1);
@@ -893,11 +1059,31 @@ export function useDataGridState({
         setSelectedCells(new Set([cellId(nr, nc)]));
       };
 
-      if (e.key === "ArrowDown") { e.preventDefault(); move(row + 1, col); return; }
-      if (e.key === "ArrowUp") { e.preventDefault(); move(row - 1, col); return; }
-      if (e.key === "ArrowRight" || (e.key === "Tab" && !e.shiftKey)) { e.preventDefault(); move(row, col + 1); return; }
-      if (e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) { e.preventDefault(); move(row, col - 1); return; }
-      if (e.key === "Enter" || e.key === "F2") { e.preventDefault(); startEdit(row, col); return; }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        move(row + 1, col);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        move(row - 1, col);
+        return;
+      }
+      if (e.key === "ArrowRight" || (e.key === "Tab" && !e.shiftKey)) {
+        e.preventDefault();
+        move(row, col + 1);
+        return;
+      }
+      if (e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) {
+        e.preventDefault();
+        move(row, col - 1);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "F2") {
+        e.preventDefault();
+        startEdit(row, col);
+        return;
+      }
 
       if (e.key.length === 1 && !ctrl && !e.altKey) {
         startEdit(row, col);
@@ -905,9 +1091,26 @@ export function useDataGridState({
       }
     },
     [
-      activeCell, anchorCell, isEditing, editState.rows, columns, orderedColumns, selectedCells,
-      triggerSave, undo, redo, copySelection, cutSelection, pasteFromClipboard,
-      insertGhostRow, duplicateRows, markRowsForDeletion, commitEdit, cancelEdit, startEdit, setActiveCell,
+      activeCell,
+      anchorCell,
+      isEditing,
+      editState.rows,
+      columns,
+      orderedColumns,
+      selectedCells,
+      triggerSave,
+      undo,
+      redo,
+      copySelection,
+      cutSelection,
+      pasteFromClipboard,
+      insertGhostRow,
+      duplicateRows,
+      markRowsForDeletion,
+      commitEdit,
+      cancelEdit,
+      startEdit,
+      setActiveCell,
     ],
   );
 
@@ -940,7 +1143,8 @@ export function useDataGridState({
       } else if (e.ctrlKey || e.metaKey) {
         setSelectedCells((prev) => {
           const next = new Set(prev);
-          if (next.has(id)) next.delete(id); else next.add(id);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
           return next;
         });
         setAnchorCell({ row: rowIdx, col: colIdx });
@@ -951,7 +1155,17 @@ export function useDataGridState({
         setActiveCell({ row: rowIdx, col: colIdx });
       }
     },
-    [isEditing, commitEdit, anchorCell, columns, orderedColumns, fkMap, editState.rows, setActiveCell, generateJoinQuery],
+    [
+      isEditing,
+      commitEdit,
+      anchorCell,
+      columns,
+      orderedColumns,
+      fkMap,
+      editState.rows,
+      setActiveCell,
+      generateJoinQuery,
+    ],
   );
 
   // Resize
@@ -1011,7 +1225,11 @@ export function useDataGridState({
     const { col } = filterPopover;
     const isNullOp = localOp === "IS NULL" || localOp === "IS NOT NULL";
     const hasValue = isNullOp || localValue.trim().length > 0;
-    const newFilter: GridFilter = { column: col, operator: localOp, value: isNullOp ? undefined : localValue };
+    const newFilter: GridFilter = {
+      column: col,
+      operator: localOp,
+      value: isNullOp ? undefined : localValue,
+    };
     const updated = hasValue
       ? [...(filters ?? []).filter((f) => f.column !== col), newFilter]
       : (filters ?? []).filter((f) => f.column !== col);
