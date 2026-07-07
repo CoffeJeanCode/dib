@@ -24,7 +24,7 @@ FROM rust-base AS with-mingw
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update && apt-get install -y --no-install-recommends \
-    mingw-w64 gcc-mingw-w64-x86-64 \
+    mingw-w64 gcc-mingw-w64-x86-64 unzip \
     && rm -rf /var/lib/apt/lists/*
 RUN rustup target add x86_64-pc-windows-gnu
 
@@ -49,7 +49,19 @@ RUN bun install --frozen-lockfile
 RUN bun run build
 RUN cargo build --release --target x86_64-pc-windows-gnu --manifest-path src-tauri/Cargo.toml
 RUN mkdir -p /out && \
-    cp src-tauri/target/x86_64-pc-windows-gnu/release/dib.exe /out/
+    cp src-tauri/target/x86_64-pc-windows-gnu/release/dib.exe /out/ && \
+    echo "Looking for WebView2Loader.dll..." && \
+    WV2_DLL=$(find src-tauri/target/x86_64-pc-windows-gnu -name "WebView2Loader.dll" 2>/dev/null | head -1) && \
+    if [ -n "$WV2_DLL" ]; then \
+      cp "$WV2_DLL" /out/ && echo "Copied WebView2Loader.dll from build output"; \
+    else \
+      echo "WebView2Loader.dll not found in build output, downloading from NuGet..." && \
+      curl -sL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/2.0.0" -o /tmp/webview2.nupkg && \
+      unzip -q /tmp/webview2.nupkg -d /tmp/webview2 && \
+      find /tmp/webview2 -name "WebView2Loader.dll" -exec cp {} /out/ \; && \
+      rm -rf /tmp/webview2 /tmp/webview2.nupkg && \
+      echo "Downloaded and extracted WebView2Loader.dll"; \
+    fi
 
 # ── export ────────────────────────────────────────────────────
 FROM scratch AS export

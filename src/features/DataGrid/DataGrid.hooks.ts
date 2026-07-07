@@ -719,47 +719,70 @@ export function useDataGridState({
     const text = await navigator.clipboard.readText().catch(() => "");
     if (!text) return;
     const pasteRows = text.split("\n").map((line) => line.split("\t"));
+
+    // Excel-like fill: single copied cell + multi-cell selection → fill all selected cells
+    const isFill = pasteRows.length === 1 && pasteRows[0].length === 1 && selectedCells.size > 1;
+
     const nextRows = editState.rows.map((r) => [...(r as unknown[])]) as unknown[][];
     const nextChanges = new Map(editState.changes);
-    for (let dr = 0; dr < pasteRows.length; dr++) {
-      const r = activeCell.row + dr;
-      if (r >= editState.rows.length) break;
-      for (let dc = 0; dc < pasteRows[dr].length; dc++) {
-        const c: number = activeCell.col + dc;
-        if (c >= columns.length) break;
-        const col = columns[c];
-        const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
-        if (editState.ghostRowIds.has(r)) {
-          // Ghost (insert) row — update the pending insert's new_value
-          const changeId = editState.ghostRowIds.get(r)!;
-          const oldCh = nextChanges.get(changeId);
-          if (oldCh) {
-            const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
-              ? { ...(oldCh.new_value as Record<string, unknown>) }
-              : {} as Record<string, unknown>;
-            prevObj[col] = newValue;
-            nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
-          }
-          nextRows[r][c] = newValue;
-        } else {
-          const pkStr = getPkStr(r, editState.rows);
-          const key = makeKey(pkStr, col);
-          const original = rows[r]?.[c];
-          if (cellStr(original) !== cellStr(newValue)) {
-            nextChanges.set(key, {
-              id: key, type: "update", table: tableName,
-              row_index: r, column: col,
-              column_type: colInfoMap[col]?.data_type,
-              old_value: original, new_value: newValue,
-              row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
-            } as import("@/types/db").PendingChange);
-          }
-          nextRows[r][c] = newValue;
+
+    const applyValue = (r: number, c: number, newValue: unknown) => {
+      const col = columns[c];
+      if (editState.ghostRowIds.has(r)) {
+        const changeId = editState.ghostRowIds.get(r)!;
+        const oldCh = nextChanges.get(changeId);
+        if (oldCh) {
+          const prevObj = (oldCh.new_value && typeof oldCh.new_value === "object" && !Array.isArray(oldCh.new_value))
+            ? { ...(oldCh.new_value as Record<string, unknown>) }
+            : {} as Record<string, unknown>;
+          prevObj[col] = newValue;
+          nextChanges.set(changeId, { ...oldCh, new_value: prevObj });
+        }
+        nextRows[r][c] = newValue;
+      } else {
+        const pkStr = getPkStr(r, editState.rows);
+        const key = makeKey(pkStr, col);
+        const original = rows[r]?.[c];
+        if (cellStr(original) !== cellStr(newValue)) {
+          nextChanges.set(key, {
+            id: key, type: "update", table: tableName,
+            row_index: r, column: col,
+            column_type: colInfoMap[col]?.data_type,
+            old_value: original, new_value: newValue,
+            row_pk_value: pkColIdx >= 0 ? editState.rows[r]?.[pkColIdx] : r,
+          } as import("@/types/db").PendingChange);
+        }
+        nextRows[r][c] = newValue;
+      }
+    };
+
+    if (isFill) {
+      // Fill mode: paste the single value into every selected cell
+      const fillValue = pasteRows[0][0] === "" ? null : pasteRows[0][0];
+      for (const id of selectedCells) {
+        const parts = id.split(":");
+        const r = parseInt(parts[0], 10);
+        const c = parseInt(parts[1], 10);
+        if (r >= nextRows.length || c >= columns.length) continue;
+        // Skip ghost row deletion markers
+        if (nextRows[r] === undefined) continue;
+        applyValue(r, c, fillValue);
+      }
+    } else {
+      // Normal paste from active cell
+      for (let dr = 0; dr < pasteRows.length; dr++) {
+        const r = activeCell.row + dr;
+        if (r >= editState.rows.length) break;
+        for (let dc = 0; dc < pasteRows[dr].length; dc++) {
+          const c: number = activeCell.col + dc;
+          if (c >= columns.length) break;
+          const newValue = pasteRows[dr][dc] === "" ? null : pasteRows[dr][dc];
+          applyValue(r, c, newValue);
         }
       }
     }
     mutate({ rows: nextRows, changes: nextChanges });
-  }, [activeCell, tableName, editState, rows, columns, colInfoMap, pkColIdx, getPkStr, mutate]);
+  }, [activeCell, tableName, editState, rows, columns, colInfoMap, pkColIdx, getPkStr, mutate, selectedCells]);
 
   // Keyboard
   const handleGridKeyDown = useCallback(
