@@ -70,7 +70,7 @@ type PaletteItem =
       schema: string | null;
     }
   | { kind: "diagram"; id: string; label: string; table: TableInfo }
-  | { kind: "ddl"; id: string; label: string; action: "alter" | "create"; table: TableInfo }
+  | { kind: "ddl"; id: string; label: string; action: "alter" | "create" | "drop" | "truncate"; table: TableInfo }
   | { kind: "dml"; id: string; label: string; action: "insert"; table: TableInfo }
   | { kind: "wsfile"; id: string; label: string; path: string };
 
@@ -630,8 +630,14 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
 
       // DDL sub-mode table selection
       if (ddlMode && item.kind === "table") {
-        if (ddlMode === "drop") handleDropTable(item.table);
-        if (ddlMode === "truncate") handleTruncateTable(item.table);
+        if (ddlMode === "drop") {
+          handleDropTable(item.table);
+          pushToRecents({ type: "ddl", id: `ddl:drop:${item.id}`, label: `Drop ${item.table.name}`, action: "drop", table: item.table });
+        }
+        if (ddlMode === "truncate") {
+          handleTruncateTable(item.table);
+          pushToRecents({ type: "ddl", id: `ddl:truncate:${item.id}`, label: `Truncate ${item.table.name}`, action: "truncate", table: item.table });
+        }
         if (ddlMode === "rename")
           useUiStore.getState().setRenameTarget(item.table);
         if (ddlMode === "alter") {
@@ -675,6 +681,14 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
           action: item.action,
           table: item.table,
         });
+        onClose();
+        return;
+      }
+
+      if (item.kind === "ddl" && (item.action === "drop" || item.action === "truncate")) {
+        if (item.action === "drop") handleDropTable(item.table);
+        else handleTruncateTable(item.table);
+        pushToRecents({ type: "ddl", id: item.id, label: item.label, action: item.action, table: item.table });
         onClose();
         return;
       }

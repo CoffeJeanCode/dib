@@ -9,7 +9,7 @@ export type RecentCommand =
   | { type: "object"; id: string; label: string; subtype: string; name: string; schema: string | null }
   | { type: "action"; id: string; label: string }
   | { type: "diagram"; id: string; label: string; table: import("@/types/db").TableInfo }
-  | { type: "ddl"; id: string; label: string; action: "alter" | "create"; table: import("@/types/db").TableInfo }
+  | { type: "ddl"; id: string; label: string; action: "alter" | "create" | "drop" | "truncate"; table: import("@/types/db").TableInfo }
   | { type: "dml"; id: string; label: string; action: "insert"; table: import("@/types/db").TableInfo }
   | { type: "wsfile"; id: string; label: string; path: string };
 
