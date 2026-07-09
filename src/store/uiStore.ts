@@ -11,7 +11,17 @@ function getInitialTheme(): Theme {
 function getInitialRecents(): RecentCommand[] {
   try {
     const stored = localStorage.getItem("dib_recent_commands");
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const parsed: RecentCommand[] = JSON.parse(stored);
+    // Filter out stale entries missing required fields (schema drift across versions)
+    return parsed.filter((rc) => {
+      if (rc.type === "ddl" || rc.type === "dml") return !!rc.table && !!(rc as any).action;
+      if (rc.type === "table") return !!rc.table;
+      if (rc.type === "diagram") return !!rc.table;
+      if (rc.type === "script" || rc.type === "wsfile") return true;
+      if (rc.type === "object") return !!rc.name;
+      return true;
+    });
   } catch {
     return [];
   }

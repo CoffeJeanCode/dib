@@ -1,17 +1,41 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { isMac } from "@/shared/utils/platform";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
-import { Search, Table2, FileText, Zap, Database, Trash2, Scissors, Edit3, ChevronLeft, Loader2, Eye, Activity, Network, Wrench, PlusSquare, Rows, Layers } from "lucide-react";
+import {
+  Search,
+  Table2,
+  FileText,
+  Zap,
+  Database,
+  Trash2,
+  Scissors,
+  Edit3,
+  ChevronLeft,
+  Loader2,
+  Eye,
+  Activity,
+  Network,
+  Wrench,
+  PlusSquare,
+  Rows,
+  MoreHorizontal,
+} from "lucide-react";
 import type { TableInfo, InternalScript } from "@/types/db";
 import type { FsNode } from "@/types/workspace";
 import { dbService } from "@/services/dbService";
 import { workspaceService } from "@/services/workspaceService";
 import { useDangerDialog } from "@/shared/hooks/useDangerDialog";
+import { useArrowMenuNav } from "@/shared/hooks/useArrowMenuNav";
+import { TableActionsMenu, type TableAction } from "@/shared/ui/TableActionsMenu";
+import { Tooltip } from "@/shared/ui/Tooltip";
 import { useToastStore } from "@/store/toastStore";
 import { useUiStore } from "@/store/uiStore";
 import "@/shared/ui/dialog-shared.css";
+import "@/shared/ui/menu-shared.css";
 import "./CommandPalette.css";
+import { focusWithRetry } from "@/shared/utils/focusMain";
 
 export function generateOrmAlias(tableName: string): string {
   return tableName
@@ -33,62 +57,155 @@ type DdlMode = "drop" | "truncate" | "rename" | "alter" | "insert" | null;
 type DbObjectSubtype = "view" | "mat_view" | "function" | "procedure" | "trigger";
 
 type PaletteItem =
-  | { kind: "table";    id: string; label: string; table: TableInfo; matchedAlias?: string }
-  | { kind: "script";   id: string; label: string; script: InternalScript }
-  | { kind: "action";   id: string; label: string; onAction: () => void }
+  | { kind: "table"; id: string; label: string; table: TableInfo; matchedAlias?: string }
+  | { kind: "script"; id: string; label: string; script: InternalScript }
+  | { kind: "action"; id: string; label: string; onAction: () => void }
   | { kind: "database"; id: string; label: string; dbName: string }
-  | { kind: "object";   id: string; label: string; subtype: DbObjectSubtype; name: string; schema: string | null }
-  | { kind: "diagram";  id: string; label: string; table: TableInfo }
-  | { kind: "ddl";      id: string; label: string; action: "alter" | "create"; table: TableInfo }
-  | { kind: "dml";      id: string; label: string; action: "insert"; table: TableInfo }
-  | { kind: "wsfile";   id: string; label: string; path: string };
+  | {
+      kind: "object";
+      id: string;
+      label: string;
+      subtype: DbObjectSubtype;
+      name: string;
+      schema: string | null;
+    }
+  | { kind: "diagram"; id: string; label: string; table: TableInfo }
+  | { kind: "ddl"; id: string; label: string; action: "alter" | "create"; table: TableInfo }
+  | { kind: "dml"; id: string; label: string; action: "insert"; table: TableInfo }
+  | { kind: "wsfile"; id: string; label: string; path: string };
 
 const OBJECT_ICON: Record<DbObjectSubtype, React.ReactNode> = {
-  view:      <Eye      size={16} />,
-  mat_view:  <Eye      size={16} />,
-  function:  <Zap      size={16} />,
-  procedure: <Zap      size={16} />,
-  trigger:   <Activity size={16} />,
+  view: <Eye size={16} />,
+  mat_view: <Eye size={16} />,
+  function: <Zap size={16} />,
+  procedure: <Zap size={16} />,
+  trigger: <Activity size={16} />,
 };
 
 const OBJECT_TAG: Record<DbObjectSubtype, string> = {
-  view:      "view",
-  mat_view:  "mat",
-  function:  "fn",
+  view: "view",
+  mat_view: "mat",
+  function: "fn",
   procedure: "proc",
-  trigger:   "trg",
+  trigger: "trg",
 };
 
 const ITEM_ICON: Record<PaletteItem["kind"], React.ReactNode> = {
-  table:    <Table2 size={16} />,
-  script:   <FileText size={16} />,
-  action:   <Zap size={16} />,
+  table: <Table2 size={16} />,
+  script: <FileText size={16} />,
+  action: <Zap size={16} />,
   database: <Database size={16} />,
-  object:   <Eye size={16} />,
-  diagram:  <Network size={16} />,
-  ddl:      <Wrench size={16} />, // Render logic will override this based on action
-  dml:      <Rows size={16} />,
-  wsfile:   <FileText size={16} />,
+  object: <Eye size={16} />,
+  diagram: <Network size={16} />,
+  ddl: <Wrench size={16} />, // Render logic will override this based on action
+  dml: <Rows size={16} />,
+  wsfile: <FileText size={16} />,
 };
 
 const ITEM_CATEGORY: Record<PaletteItem["kind"], string> = {
-  table:    "Table",
-  script:   "Script",
-  action:   "Action",
+  table: "Table",
+  script: "Script",
+  action: "Action",
   database: "Database",
-  object:   "DB Object",
-  diagram:  "ERD Diagram",
-  ddl:      "Structure",
-  dml:      "Data",
-  wsfile:   "Script",
+  object: "DB Object",
+  diagram: "ERD Diagram",
+  ddl: "Structure",
+  dml: "Data",
+  wsfile: "Script",
 };
 
-const DDL_MODE_META: Record<NonNullable<DdlMode>, { label: string; icon: React.ReactNode; danger: boolean; hint: string }> = {
-  drop:     { label: "DROP TABLE",     icon: <Trash2   size={14} />, danger: true,  hint: "↵ Confirm delete" },
-  truncate: { label: "TRUNCATE TABLE", icon: <Scissors size={14} />, danger: true,  hint: "↵ Confirm truncate" },
-  rename:   { label: "RENAME TABLE",   icon: <Edit3    size={14} />, danger: false, hint: "↵ Rename table" },
-  alter:    { label: "ALTER TABLE",    icon: <Wrench   size={14} />, danger: false, hint: "↵ Open Schema Wizard" },
-  insert:   { label: "INSERT ROW",     icon: <PlusSquare size={14} />, danger: false, hint: "↵ Insert row" },
+function getPaletteItemIcon(
+  item: PaletteItem,
+  ddlMode: DdlMode,
+  ddlModeIcon: React.ReactNode | undefined,
+): React.ReactNode {
+  if (ddlMode && item.kind === "table") return ddlModeIcon;
+  if (item.kind === "object") return OBJECT_ICON[item.subtype];
+  if (item.kind === "ddl") {
+    return item.action === "create" ? <PlusSquare size={16} /> : <Wrench size={16} />;
+  }
+  return ITEM_ICON[item.kind];
+}
+
+type PaletteHintSegment = { keys: string[]; label: string };
+
+function paletteHint(keys: string[], label: string): PaletteHintSegment {
+  return { keys, label };
+}
+
+function PaletteKeyHint({
+  segments,
+  className,
+}: {
+  segments: PaletteHintSegment[];
+  className?: string;
+}) {
+  return (
+    <span className={className ? `palette-key-hint ${className}` : "palette-key-hint"}>
+      {segments.map((seg, i) => (
+        <React.Fragment key={`${seg.label}-${i}`}>
+          {i > 0 && (
+            <span className="palette-hint-sep" aria-hidden="true">
+              |
+            </span>
+          )}
+          <span className="palette-hint-group">
+            {seg.keys.map((key, j) => (
+              <React.Fragment key={j}>
+                {j > 0 && (
+                  <span className="palette-hint-plus" aria-hidden="true">
+                    +
+                  </span>
+                )}
+                <kbd className="palette-hint-kbd">{key}</kbd>
+              </React.Fragment>
+            ))}
+            <span className="palette-hint-label">{seg.label}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </span>
+  );
+}
+
+function getPaletteItemHint(item: PaletteItem, ddlMode: DdlMode): PaletteHintSegment[] {
+  if (item.kind === "table" && !ddlMode) {
+    return isMac
+      ? [paletteHint(["⌥", "↵"], "ERD"), paletteHint(["⌃", "↵"], "Structure")]
+      : [paletteHint(["Alt", "↵"], "ERD"), paletteHint(["Ctrl", "↵"], "Structure")];
+  }
+  return [];
+}
+
+const DDL_MODE_META: Record<
+  NonNullable<DdlMode>,
+  { label: string; icon: React.ReactNode; danger: boolean }
+> = {
+  drop: {
+    label: "DROP TABLE",
+    icon: <Trash2 size={14} />,
+    danger: true,
+  },
+  truncate: {
+    label: "TRUNCATE TABLE",
+    icon: <Scissors size={14} />,
+    danger: true,
+  },
+  rename: {
+    label: "RENAME TABLE",
+    icon: <Edit3 size={14} />,
+    danger: false,
+  },
+  alter: {
+    label: "ALTER TABLE",
+    icon: <Wrench size={14} />,
+    danger: false,
+  },
+  insert: {
+    label: "INSERT ROW",
+    icon: <PlusSquare size={14} />,
+    danger: false,
+  },
 };
 
 interface CommandPaletteProps {
@@ -97,25 +214,106 @@ interface CommandPaletteProps {
   actions?: CommandAction[];
 }
 
-export function CommandPalette({
-  open,
-  onClose,
-  actions = [],
-}: CommandPaletteProps) {
-  const [query, setQuery]               = useState("");
+export function CommandPalette({ open, onClose, actions = [] }: CommandPaletteProps) {
+  const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [baseItems, setBaseItems]       = useState<PaletteItem[]>([]);
-  const [loading, setLoading]           = useState(false);
-  const [ddlMode, setDdlMode]           = useState<DdlMode>(null);
-  const inputRef        = useRef<HTMLInputElement>(null);
-  const resultsRef      = useRef<HTMLDivElement>(null);
+  const [baseItems, setBaseItems] = useState<PaletteItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [ddlMode, setDdlMode] = useState<DdlMode>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const paletteRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = { current: null as HTMLButtonElement | null };
   const pointerActiveRef = useRef(false);
+
+  useEffect(() => {
+    if (!menuOpenId) {
+      setMenuPos(null);
+      return;
+    }
+    const btn = menuBtnRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const w = 150;
+    const left = Math.max(4, r.right - w);
+    setMenuPos({ top: r.bottom + 4, left });
+
+    const close = (e: PointerEvent) => {
+      if (!menuRef.current || menuRef.current.contains(e.target as Node)) return;
+      if (!paletteRef.current || !paletteRef.current.contains(e.target as Node)) {
+        setMenuOpenId(null);
+      }
+    };
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [menuOpenId]);
+
   const connectionId = useConnectionStore((s) => s.active?.activeId ?? null);
   const info = useToastStore((s) => s.info);
   const error = useToastStore((s) => s.error);
   const { handleDropTable, handleTruncateTable } = useDangerDialog(connectionId, info, error);
   const recentCommands = useUiStore((s) => s.recentCommands);
   const pushToRecents = useUiStore((s) => s.pushToRecents);
+
+  const closeTableMenu = useCallback(() => {
+    setMenuOpenId(null);
+    inputRef.current?.focus();
+  }, []);
+
+  const handleTableMenuAction = useCallback(
+    (action: TableAction, table: TableInfo) => {
+      const itemId = menuOpenId ?? "";
+      if (action === "structure") {
+        useWorkspaceStore.getState().openTableStructure(table);
+      } else if (action === "erd") {
+        useWorkspaceStore.getState().openTableRelations(table);
+        pushToRecents({
+          type: "diagram",
+          id: `diagram:${itemId}`,
+          label: `Diagram: ${table.name}`,
+          table,
+        });
+      } else if (action === "alter") {
+        useUiStore.getState().setAlterTarget(table);
+        pushToRecents({
+          type: "ddl",
+          id: `ddl:alter:${itemId}`,
+          label: `Alter ${table.name}`,
+          action: "alter",
+          table,
+        });
+      } else if (action === "insert") {
+        useWorkspaceStore.getState().setNavigateTo({ table, v: Date.now() } as any);
+        useWorkspaceStore.getState().triggerInsertRow();
+        pushToRecents({
+          type: "dml",
+          id: `dml:insert:${itemId}`,
+          label: `Insert ${table.name}`,
+          action: "insert",
+          table,
+        });
+      } else if (action === "rename") {
+        useUiStore.getState().setRenameTarget(table);
+      } else if (action === "drop") {
+        handleDropTable(table);
+      }
+      setMenuOpenId(null);
+      onClose();
+    },
+    [menuOpenId, pushToRecents, handleDropTable, onClose],
+  );
+
+  const handleMenuKeyDown = useArrowMenuNav({
+    // portal mounts only once menuPos is measured — key on both so the
+    // first item gets focused on the commit where the menu actually exists
+    openKey: menuOpenId && menuPos ? menuOpenId : null,
+    menuRef,
+    itemSelector: ".ui-menu-item",
+    onClose: closeTableMenu,
+  });
 
   useEffect(() => {
     if (!resultsRef.current) return;
@@ -146,7 +344,8 @@ export function CommandPalette({
     // Scripts are not fetched into local state — they're read live from
     // useWorkspaceStore (single source of truth shared with the Sidebar).
     // Just make sure the store has the latest data.
-    workspaceService.getInternalScripts()
+    workspaceService
+      .getInternalScripts()
       .then((scripts) => useWorkspaceStore.getState().setInternalScripts(scripts))
       .catch(console.error);
 
@@ -156,17 +355,20 @@ export function CommandPalette({
     // the palette mirrors that and skips virtual scripts (see wsFileItems).
     const savedId = useConnectionStore.getState().active?.savedId;
     if (savedId && !useWorkspaceStore.getState().activeWorkspacePath) {
-      workspaceService.getVirtualScripts(savedId)
-        .then((rows) => setVirtualScripts(
-          rows.map((r) => ({
-            id: r.id,
-            title: r.name,
-            content: r.content ?? "",
-            created_at: r.created_at ?? "",
-            updated_at: r.updated_at ?? "",
-            connection_id: r.connection_id,
-          })),
-        ))
+      workspaceService
+        .getVirtualScripts(savedId)
+        .then((rows) =>
+          setVirtualScripts(
+            rows.map((r) => ({
+              id: r.id,
+              title: r.name,
+              content: r.content ?? "",
+              created_at: r.created_at ?? "",
+              updated_at: r.updated_at ?? "",
+              connection_id: r.connection_id,
+            })),
+          ),
+        )
         .catch(() => setVirtualScripts([]));
     } else {
       setVirtualScripts([]);
@@ -174,7 +376,8 @@ export function CommandPalette({
 
     if (connectionId) {
       loaders.push(
-        dbService.listDatabases(connectionId)
+        dbService
+          .listDatabases(connectionId)
           .then((dbs) => {
             for (const db of dbs) {
               next.push({ kind: "database", id: `db:${db}`, label: db, dbName: db });
@@ -183,23 +386,34 @@ export function CommandPalette({
           .catch(() => {}),
       );
       loaders.push(
-        dbService.fetchSchemaObjects(connectionId)
+        dbService
+          .fetchSchemaObjects(connectionId)
           .then((obj) => {
             for (const t of obj.tables ?? []) {
               const label = t.schema ? `${t.schema}.${t.name}` : t.name;
               next.push({ kind: "table", id: `t:${label}`, label, table: t });
             }
-            const pushObj = (subtype: DbObjectSubtype, items: { name: string; schema?: string | null }[]) => {
+            const pushObj = (
+              subtype: DbObjectSubtype,
+              items: { name: string; schema?: string | null }[],
+            ) => {
               for (const it of items) {
                 const label = it.schema ? `${it.schema}.${it.name}` : it.name;
-                next.push({ kind: "object", id: `obj:${subtype}:${label}`, label, subtype, name: it.name, schema: it.schema ?? null });
+                next.push({
+                  kind: "object",
+                  id: `obj:${subtype}:${label}`,
+                  label,
+                  subtype,
+                  name: it.name,
+                  schema: it.schema ?? null,
+                });
               }
             };
-            pushObj("view",      obj.views ?? []);
-            pushObj("mat_view",  obj.materialized_views ?? []);
-            pushObj("function",  obj.functions ?? []);
+            pushObj("view", obj.views ?? []);
+            pushObj("mat_view", obj.materialized_views ?? []);
+            pushObj("function", obj.functions ?? []);
             pushObj("procedure", obj.procedures ?? []);
-            
+
             for (const t of obj.triggers ?? []) {
               const label = t.schema ? `${t.schema}.${t.trigger_name}` : t.trigger_name;
               const uniqueId = `obj:trigger:${label}:${t.table_name}`;
@@ -235,7 +449,10 @@ export function CommandPalette({
     if (!activeWorkspacePath || !workspaceTree) return [];
     const out: PaletteItem[] = [];
     const walk = (n: FsNode) => {
-      if (n.isDir || n.is_dir) { (n.children ?? []).forEach(walk); return; }
+      if (n.isDir || n.is_dir) {
+        (n.children ?? []).forEach(walk);
+        return;
+      }
       out.push({ kind: "wsfile", id: `f:${n.path}`, label: n.name, path: n.path });
     };
     (workspaceTree.children ?? []).forEach(walk);
@@ -245,12 +462,18 @@ export function CommandPalette({
   const scriptItems = useMemo<PaletteItem[]>(
     () => [
       ...wsFileItems,
-      ...(activeWorkspacePath ? [] : virtualScripts).map(
-        (s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s }),
-      ),
-      ...internalScripts.map(
-        (s) => ({ kind: "script" as const, id: `s:${s.id}`, label: s.title, script: s }),
-      ),
+      ...(activeWorkspacePath ? [] : virtualScripts).map((s) => ({
+        kind: "script" as const,
+        id: `s:${s.id}`,
+        label: s.title,
+        script: s,
+      })),
+      ...internalScripts.map((s) => ({
+        kind: "script" as const,
+        id: `s:${s.id}`,
+        label: s.title,
+        script: s,
+      })),
     ],
     [internalScripts, virtualScripts, wsFileItems, activeWorkspacePath],
   );
@@ -264,13 +487,44 @@ export function CommandPalette({
   }, []);
 
   // DDL static actions — built-in, appear under > prefix and in suggestions
-  const ddlActionItems = useMemo<PaletteItem[]>(() => connectionId ? [
-    { kind: "action", id: "ddl:drop",     label: "Drop Table…",     onAction: () => enterDdlMode("drop") },
-    { kind: "action", id: "ddl:truncate", label: "Truncate Table…", onAction: () => enterDdlMode("truncate") },
-    { kind: "action", id: "ddl:rename",   label: "Rename Table…",   onAction: () => enterDdlMode("rename") },
-    { kind: "action", id: "ddl:alter",    label: "Alter Table…",    onAction: () => enterDdlMode("alter") },
-    { kind: "action", id: "dml:insert",   label: "Insert Row…",     onAction: () => enterDdlMode("insert") },
-  ] : [], [connectionId, enterDdlMode]);
+  const ddlActionItems = useMemo<PaletteItem[]>(
+    () =>
+      connectionId
+        ? [
+            {
+              kind: "action",
+              id: "ddl:drop",
+              label: "Drop Table…",
+              onAction: () => enterDdlMode("drop"),
+            },
+            {
+              kind: "action",
+              id: "ddl:truncate",
+              label: "Truncate Table…",
+              onAction: () => enterDdlMode("truncate"),
+            },
+            {
+              kind: "action",
+              id: "ddl:rename",
+              label: "Rename Table…",
+              onAction: () => enterDdlMode("rename"),
+            },
+            {
+              kind: "action",
+              id: "ddl:alter",
+              label: "Alter Table…",
+              onAction: () => enterDdlMode("alter"),
+            },
+            {
+              kind: "action",
+              id: "dml:insert",
+              label: "Insert Row…",
+              onAction: () => enterDdlMode("insert"),
+            },
+          ]
+        : [],
+    [connectionId, enterDdlMode],
+  );
 
   const matchTables = useCallback((items: PaletteItem[], q: string): PaletteItem[] => {
     const qLower = q.toLowerCase();
@@ -294,28 +548,41 @@ export function CommandPalette({
     }
 
     const actionItems: PaletteItem[] = [
-      ...actions.map((a) => ({ kind: "action" as const, id: `a:${a.id}`, label: a.label, onAction: a.onAction })),
+      ...actions.map((a) => ({
+        kind: "action" as const,
+        id: `a:${a.id}`,
+        label: a.label,
+        onAction: a.onAction,
+      })),
       ...ddlActionItems,
     ];
 
     const q = query.trim();
     if (!q) {
-      const recent = recentCommands.map((rc) => {
-        if (rc.type === "action") return actionItems.find(a => a.id === rc.id);
-        if (rc.type === "table") return baseItems.find(b => b.kind === "table" && b.id === rc.id);
-        if (rc.type === "script") return scriptItems.find(s => s.id === rc.id);
-        if (rc.type === "wsfile") return scriptItems.find(s => s.id === rc.id);
-        if (rc.type === "database") return baseItems.find(b => b.kind === "database" && b.id === rc.id);
-        if (rc.type === "object") return baseItems.find(b => b.kind === "object" && b.id === rc.id);
-        if (rc.type === "diagram") return { kind: "diagram", id: rc.id, label: rc.label, table: rc.table };
-        if (rc.type === "ddl") return { kind: "ddl", id: rc.id, label: rc.label, action: rc.action, table: rc.table };
-        if (rc.type === "dml") return { kind: "dml", id: rc.id, label: rc.label, action: rc.action, table: rc.table };
-        return null;
-      }).filter(Boolean) as PaletteItem[];
-      
+      const recent = recentCommands
+        .map((rc) => {
+          if (rc.type === "action") return actionItems.find((a) => a.id === rc.id);
+          if (rc.type === "table")
+            return baseItems.find((b) => b.kind === "table" && b.id === rc.id);
+          if (rc.type === "script") return scriptItems.find((s) => s.id === rc.id);
+          if (rc.type === "wsfile") return scriptItems.find((s) => s.id === rc.id);
+          if (rc.type === "database")
+            return baseItems.find((b) => b.kind === "database" && b.id === rc.id);
+          if (rc.type === "object")
+            return baseItems.find((b) => b.kind === "object" && b.id === rc.id);
+          if (rc.type === "diagram")
+            return { kind: "diagram", id: rc.id, label: rc.label, table: rc.table };
+          if (rc.type === "ddl")
+            return { kind: "ddl", id: rc.id, label: rc.label, action: rc.action, table: rc.table };
+          if (rc.type === "dml")
+            return { kind: "dml", id: rc.id, label: rc.label, action: rc.action, table: rc.table };
+          return null;
+        })
+        .filter(Boolean) as PaletteItem[];
+
       if (recent.length > 0) return recent;
       return connectionId
-        ? [...actionItems, ...baseItems.filter(i => i.kind === "table")].slice(0, 5)
+        ? [...actionItems, ...baseItems.filter((i) => i.kind === "table")].slice(0, 5)
         : [...actionItems, ...scriptItems].slice(0, 5);
     }
 
@@ -335,14 +602,23 @@ export function CommandPalette({
     }
     if (symbol === "%") {
       const pool = baseItems.filter((i) => i.kind === "object");
-      return rest ? pool.filter((i) => i.label.toLowerCase().includes(rest) || (i.kind === "object" && OBJECT_TAG[i.subtype].includes(rest))) : pool;
+      return rest
+        ? pool.filter(
+            (i) =>
+              i.label.toLowerCase().includes(rest) ||
+              (i.kind === "object" && OBJECT_TAG[i.subtype].includes(rest)),
+          )
+        : pool;
     }
 
     // No prefix → tables with ORM alias priority
     return matchTables(baseItems, q);
   }, [query, baseItems, scriptItems, actions, ddlActionItems, ddlMode, matchTables]);
 
-  useEffect(() => { setSelectedIndex(0); }, [query, ddlMode]);
+  useEffect(() => {
+    setSelectedIndex(0);
+    setMenuOpenId(null);
+  }, [query, ddlMode]);
 
   const execute = useCallback(
     async (item: PaletteItem) => {
@@ -354,40 +630,71 @@ export function CommandPalette({
 
       // DDL sub-mode table selection
       if (ddlMode && item.kind === "table") {
-        if (ddlMode === "drop")     handleDropTable(item.table);
+        if (ddlMode === "drop") handleDropTable(item.table);
         if (ddlMode === "truncate") handleTruncateTable(item.table);
-        if (ddlMode === "rename")   import("@/store/uiStore").then(m => m.useUiStore.getState().setRenameTarget(item.table));
+        if (ddlMode === "rename")
+          useUiStore.getState().setRenameTarget(item.table);
         if (ddlMode === "alter") {
-          import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(item.table));
-          pushToRecents({ type: "ddl", id: `ddl:alter:${item.id}`, label: `Alter ${item.table.name}`, action: "alter", table: item.table });
+          useUiStore.getState().setAlterTarget(item.table);
+          pushToRecents({
+            type: "ddl",
+            id: `ddl:alter:${item.id}`,
+            label: `Alter ${item.table.name}`,
+            action: "alter",
+            table: item.table,
+          });
         }
         if (ddlMode === "insert") {
           useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
           useWorkspaceStore.getState().triggerInsertRow();
-          pushToRecents({ type: "dml", id: `dml:insert:${item.id}`, label: `Insert ${item.table.name}`, action: "insert", table: item.table });
+          pushToRecents({
+            type: "dml",
+            id: `dml:insert:${item.id}`,
+            label: `Insert ${item.table.name}`,
+            action: "insert",
+            table: item.table,
+          });
         }
         onClose();
         return;
       }
-      
+
       if (item.kind === "diagram") {
         useWorkspaceStore.getState().openTableRelations(item.table);
         pushToRecents({ type: "diagram", id: item.id, label: item.label, table: item.table });
         onClose();
         return;
       }
-      
+
       if (item.kind === "ddl" && item.action === "alter") {
-        import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(item.table));
-        pushToRecents({ type: "ddl", id: item.id, label: item.label, action: item.action, table: item.table });
+        useUiStore.getState().setAlterTarget(item.table);
+        pushToRecents({
+          type: "ddl",
+          id: item.id,
+          label: item.label,
+          action: item.action,
+          table: item.table,
+        });
         onClose();
         return;
       }
-      
+
+      if (item.kind === "ddl" && item.action !== "alter") {
+        useToastStore.getState().warn(`Unknown DDL action: "${item.action}"`);
+        onClose();
+        return;
+      }
+
       if (item.kind === "dml" && item.action === "insert") {
         useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
         useWorkspaceStore.getState().triggerInsertRow();
-        pushToRecents({ type: "dml", id: item.id, label: item.label, action: item.action, table: item.table });
+        pushToRecents({
+          type: "dml",
+          id: item.id,
+          label: item.label,
+          action: item.action,
+          table: item.table,
+        });
         onClose();
         return;
       }
@@ -395,34 +702,52 @@ export function CommandPalette({
       if (item.kind === "table") {
         useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
         pushToRecents({ type: "table", id: item.id, label: item.label, table: item.table });
-      }
-      else if (item.kind === "wsfile") {
+      } else if (item.kind === "wsfile") {
         // Disk file — read lazily, same flow as Sidebar's onNodeClick.
-        workspaceService.readTextFile(item.path)
-          .then((content) => useWorkspaceStore.getState().setOpenScript({ sql: content, name: item.label, id: item.path, v: Date.now() }))
+        workspaceService
+          .readTextFile(item.path)
+          .then((content) =>
+            useWorkspaceStore
+              .getState()
+              .setOpenScript({ sql: content, name: item.label, id: item.path, v: Date.now() }),
+          )
           .catch((e) => useToastStore.getState().error(`Failed to read file: ${String(e)}`));
         pushToRecents({ type: "wsfile", id: item.id, label: item.label, path: item.path });
-      }
-      else if (item.kind === "script") {
-        useWorkspaceStore.getState().setOpenScript({ sql: item.script.content, name: item.script.title, id: item.script.id, v: Date.now() } as any);
+      } else if (item.kind === "script") {
+        useWorkspaceStore.getState().setOpenScript({
+          sql: item.script.content,
+          name: item.script.title,
+          id: item.script.id,
+          v: Date.now(),
+        } as any);
         pushToRecents({ type: "script", id: item.id, label: item.label, script: item.script });
-      }
-      else if (item.kind === "database") {
+      } else if (item.kind === "database") {
         useConnectionStore.getState().switchDatabase(item.dbName);
         pushToRecents({ type: "database", id: item.id, label: item.label, dbName: item.dbName });
-      }
-      else if (item.kind === "object" && connectionId) {
+      } else if (item.kind === "object" && connectionId) {
         const { subtype, name, schema } = item;
         const fetcher =
-          subtype === "view" || subtype === "mat_view" ? dbService.getViewDdl(connectionId, name, schema)
-          : subtype === "function"  ? dbService.getFunctionDdl(connectionId, name, schema)
-          : subtype === "procedure" ? dbService.getFunctionDdl(connectionId, name, schema)
-          : subtype === "trigger"   ? dbService.getTriggerDdl(connectionId, name, schema)
-          : Promise.resolve({ ddl: "" });
-        fetcher.then((res) => useWorkspaceStore.getState().setOpenScript({ sql: res.ddl, name: `${OBJECT_TAG[subtype]}·${name}`, id: `obj-${item.id}`, v: Date.now() } as any)).catch(() => {});
+          subtype === "view" || subtype === "mat_view"
+            ? dbService.getViewDdl(connectionId, name, schema)
+            : subtype === "function"
+              ? dbService.getFunctionDdl(connectionId, name, schema)
+              : subtype === "procedure"
+                ? dbService.getFunctionDdl(connectionId, name, schema)
+                : subtype === "trigger"
+                  ? dbService.getTriggerDdl(connectionId, name, schema)
+                  : Promise.resolve({ ddl: "" });
+        fetcher
+          .then((res) =>
+            useWorkspaceStore.getState().setOpenScript({
+              sql: res.ddl,
+              name: `${OBJECT_TAG[subtype]}·${name}`,
+              id: `obj-${item.id}`,
+              v: Date.now(),
+            } as any),
+          )
+          .catch(() => {});
         pushToRecents({ type: "object", id: item.id, label: item.label, subtype, name, schema });
-      }
-      else if (item.kind === "action") {
+      } else if (item.kind === "action") {
         item.onAction();
         pushToRecents({ type: "action", id: item.id, label: item.label });
       }
@@ -433,6 +758,14 @@ export function CommandPalette({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (menuOpenId) {
+        if (e.key === "ArrowLeft" || e.key === "Escape") {
+          e.preventDefault();
+          setMenuOpenId(null);
+          inputRef.current?.focus();
+        }
+        return;
+      }
       if (e.key === "ArrowDown") {
         e.preventDefault();
         pointerActiveRef.current = false;
@@ -444,11 +777,35 @@ export function CommandPalette({
       } else if (e.key === "Enter" && e.altKey && filtered[selectedIndex]?.kind === "table") {
         // Alt+Enter → open ERD for focused table
         e.preventDefault();
-        const item = filtered[selectedIndex] as { kind: "table"; id: string; label: string; table: TableInfo };
+        const item = filtered[selectedIndex] as {
+          kind: "table";
+          id: string;
+          label: string;
+          table: TableInfo;
+        };
         useWorkspaceStore.getState().openTableRelations(item.table);
-        pushToRecents({ type: "diagram", id: `diagram:${item.id}`, label: `Diagram: ${item.table.name}`, table: item.table });
+        pushToRecents({
+          type: "diagram",
+          id: `diagram:${item.id}`,
+          label: `Diagram: ${item.table.name}`,
+          table: item.table,
+        });
         onClose();
-      } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && filtered[selectedIndex]?.kind === "table") {
+      } else if (
+        e.key === "ArrowRight" &&
+        !menuOpenId &&
+        filtered[selectedIndex]?.kind === "table"
+      ) {
+        e.preventDefault();
+        setMenuOpenId(filtered[selectedIndex].id);
+      } else if (e.key === "ArrowLeft" && menuOpenId) {
+        e.preventDefault();
+        setMenuOpenId(null);
+      } else if (
+        e.key === "Enter" &&
+        (e.ctrlKey || e.metaKey) &&
+        filtered[selectedIndex]?.kind === "table"
+      ) {
         useWorkspaceStore.getState().openTableStructure(filtered[selectedIndex].table!);
         onClose();
       } else if (e.key === "Enter" && filtered[selectedIndex]) {
@@ -456,22 +813,33 @@ export function CommandPalette({
       } else if (e.key === "Escape") {
         // handled by global handler — stop native event so it doesn't double-fire
         e.nativeEvent.stopImmediatePropagation();
-        if (ddlMode) { setDdlMode(null); setQuery(""); }
-        else onClose();
+        if (ddlMode) {
+          setDdlMode(null);
+          setQuery("");
+        } else onClose();
       }
     },
-    [filtered, selectedIndex, execute, ddlMode, onClose, pushToRecents],
+    [filtered, selectedIndex, execute, ddlMode, menuOpenId, onClose, pushToRecents],
   );
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (ddlMode) { setDdlMode(null); setQuery(""); }
-      else onClose();
+      if (ddlMode) {
+        setDdlMode(null);
+        setQuery("");
+      } else onClose();
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      // Don't steal focus if a modal was triggered from the palette
+      const s = useUiStore.getState();
+      if (!s.alterTarget && !s.renameTarget && !s.dbAction && !s.dangerDialog) {
+        focusWithRetry("#dib-main-panel", 3);
+      }
+    };
   }, [open, ddlMode, onClose]);
 
   if (!open) return null;
@@ -481,16 +849,32 @@ export function CommandPalette({
 
   return (
     <div className="dialog-backdrop palette-backdrop" onClick={onClose}>
-      <div className="palette" onClick={(e) => e.stopPropagation()}>
+      <div ref={paletteRef} className="palette" onClick={(e) => e.stopPropagation()}>
         {/* DDL sub-mode indicator */}
         {ddlMode && currentDdlMeta && (
-          <div className={`palette-ddl-bar${currentDdlMeta.danger ? " palette-ddl-bar--danger" : " palette-ddl-bar--alter"}`}>
-            <button className="palette-ddl-back" onClick={() => { setDdlMode(null); setQuery(""); }} title="Back (Esc)">
+          <div
+            className={`palette-ddl-bar${currentDdlMeta.danger ? " palette-ddl-bar--danger" : " palette-ddl-bar--alter"}`}
+          >
+            <button
+              className="palette-ddl-back"
+              onClick={() => {
+                setDdlMode(null);
+                setQuery("");
+              }}
+              title="Back (Esc)"
+            >
               <ChevronLeft size={14} />
             </button>
             <span className="palette-ddl-icon">{currentDdlMeta.icon}</span>
             <span className="palette-ddl-label">{currentDdlMeta.label}</span>
-            <span className="palette-ddl-hint">— type to filter · ↑↓ navigate · ↵ apply</span>
+            <PaletteKeyHint
+              className="palette-ddl-hint"
+              segments={[
+                paletteHint([], "type to filter"),
+                paletteHint(["↑↓"], "navigate"),
+                paletteHint(["↵"], "apply"),
+              ]}
+            />
           </div>
         )}
 
@@ -501,9 +885,11 @@ export function CommandPalette({
             className="palette-input"
             type="text"
             placeholder={
-              ddlMode ? "Filter tables…"
-              : connectionId ? "Tables · > actions · @ db · # scripts · % views/fn/triggers"
-              : "> actions · # scripts"
+              ddlMode
+                ? "Filter tables…"
+                : connectionId
+                  ? "Tables · > actions · @ db · # scripts · % views/fn/triggers"
+                  : "> actions · # scripts"
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -525,22 +911,19 @@ export function CommandPalette({
               const prevItem = i > 0 ? filtered[i - 1] : null;
               const showHeader = ddlMode
                 ? i === 0
-                : isRecentView ? i === 0 : (!prevItem || prevItem.kind !== item.kind);
+                : isRecentView
+                  ? i === 0
+                  : !prevItem || prevItem.kind !== item.kind;
               const headerText = ddlMode
                 ? "TABLES"
-                : isRecentView ? "RECENT" : (isEmpty ? "SUGGESTIONS" : ITEM_CATEGORY[item.kind].toUpperCase());
+                : isRecentView
+                  ? "RECENT"
+                  : isEmpty
+                    ? "SUGGESTIONS"
+                    : ITEM_CATEGORY[item.kind].toUpperCase();
 
-              let hintText = "↵ Select";
-              if (ddlMode && item.kind === "table") hintText = currentDdlMeta?.hint ?? "↵";
-              else if (item.kind === "table")    hintText = isMac ? "↵ Open · ⌥↵ ERD · ⌃↵ Structure" : "↵ Open · Alt+↵ ERD · Ctrl+↵ Structure";
-              else if (item.kind === "script")   hintText = "↵ Run Script";
-              else if (item.kind === "wsfile")   hintText = "↵ Open Script";
-              else if (item.kind === "database") hintText = "↵ Switch DB";
-              else if (item.kind === "action")   hintText = "↵ Execute";
-              else if (item.kind === "object")   hintText = `↵ View DDL [${OBJECT_TAG[item.subtype]}]`;
-              else if (item.kind === "diagram")  hintText = "↵ Open ERD";
-              else if (item.kind === "ddl")      hintText = item.action === "create" ? "↵ Create DB" : "↵ Alter Table";
-              else if (item.kind === "dml")      hintText = "↵ Insert row";
+              const hintSegments = getPaletteItemHint(item, ddlMode);
+              const isSelected = i === selectedIndex;
 
               const isDdlAction = item.kind === "action" && item.id.startsWith("ddl:");
               const isDangerItem = ddlMode === "drop" || ddlMode === "truncate";
@@ -550,60 +933,63 @@ export function CommandPalette({
               return (
                 <React.Fragment key={item.id}>
                   {showHeader && <div className="palette-group-header">{headerText}</div>}
-                  <div
-                    data-palette-index={i}
-                    className={[
-                      "palette-item",
-                      i === selectedIndex ? "palette-item--selected" : "",
-                      isDangerItem && item.kind === "table" ? "palette-item--danger" : "",
-                      isDdlAction ? "palette-item--ddl" : "",
-                      isTableItem && !ddlMode ? "palette-item--table" : "",
-                    ].filter(Boolean).join(" ")}
-                    onClick={() => execute(item)}
-                    onPointerMove={() => { pointerActiveRef.current = true; setSelectedIndex(i); }}
+                  <Tooltip
+                    content={
+                      hintSegments.length > 0 ? <PaletteKeyHint segments={hintSegments} /> : null
+                    }
                   >
-                    <span className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}>
-                      {ddlMode && item.kind === "table" ? currentDdlMeta?.icon
-                        : item.kind === "object" ? OBJECT_ICON[item.subtype]
-                        : item.kind === "ddl" ? (item.action === "create" ? <PlusSquare size={16} /> : <Wrench size={16} />)
-                        : ITEM_ICON[item.kind]}
-                    </span>
-                    <span className="palette-item-label">
-                      <span className="palette-item-label-text">{item.label}</span>
-                      {item.kind === "table" && (item as any).matchedAlias && (
-                        <span className="palette-item-alias">{(item as any).matchedAlias}</span>
-                      )}
-                    </span>
-                    {isTableItem && !ddlMode && (
-                      <span className="palette-table-actions" onClick={(e) => e.stopPropagation()}>
-                        <button className="palette-table-action" title="View Structure"
-                          onClick={(e) => { e.stopPropagation(); useWorkspaceStore.getState().openTableStructure(item.table); onClose(); }}>
-                          <Layers size={13} />
-                        </button>
-                        <button className="palette-table-action" title="ERD Diagram"
-                          onClick={(e) => { e.stopPropagation(); useWorkspaceStore.getState().openTableRelations(item.table); pushToRecents({ type: "diagram", id: `diagram:${item.id}`, label: `Diagram: ${item.table.name}`, table: item.table }); onClose(); }}>
-                          <Network size={13} />
-                        </button>
-                        <button className="palette-table-action" title="Alter Table"
-                          onClick={(e) => { e.stopPropagation(); import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(item.table)); pushToRecents({ type: "ddl", id: `ddl:alter:${item.id}`, label: `Alter ${item.table.name}`, action: "alter", table: item.table }); onClose(); }}>
-                          <Wrench size={13} />
-                        </button>
-                        <button className="palette-table-action" title="Insert Row"
-                          onClick={(e) => { e.stopPropagation(); useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any); useWorkspaceStore.getState().triggerInsertRow(); pushToRecents({ type: "dml", id: `dml:insert:${item.id}`, label: `Insert ${item.table.name}`, action: "insert", table: item.table }); onClose(); }}>
-                          <PlusSquare size={13} />
-                        </button>
-                        <button className="palette-table-action" title="Rename Table"
-                          onClick={(e) => { e.stopPropagation(); import("@/store/uiStore").then(m => m.useUiStore.getState().setRenameTarget(item.table)); onClose(); }}>
-                          <Edit3 size={13} />
-                        </button>
-                        <button className="palette-table-action palette-table-action--danger" title="Drop Table"
-                          onClick={(e) => { e.stopPropagation(); handleDropTable(item.table); onClose(); }}>
-                          <Trash2 size={13} />
-                        </button>
+                    <div
+                      data-palette-index={i}
+                      className={[
+                        "palette-item",
+                        isSelected ? "palette-item--selected" : "",
+                        isDangerItem && item.kind === "table" ? "palette-item--danger" : "",
+                        isDdlAction ? "palette-item--ddl" : "",
+                        isTableItem && !ddlMode ? "palette-item--table" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => execute(item)}
+                      onPointerMove={() => {
+                        pointerActiveRef.current = true;
+                        setSelectedIndex(i);
+                        if (menuOpenId && menuOpenId !== item.id) setMenuOpenId(null);
+                      }}
+                    >
+                      <span
+                        className={`palette-item-icon${item.kind === "action" || item.kind === "database" ? " palette-item-icon--action" : ""}`}
+                      >
+                        {getPaletteItemIcon(item, ddlMode, currentDdlMeta?.icon)}
                       </span>
-                    )}
-                    <span className="palette-item-shortcut">{hintText}</span>
-                  </div>
+                      <span className="palette-item-label">
+                        <span className="palette-item-label-text">{item.label}</span>
+                        {item.kind === "table" && (item as any).matchedAlias && (
+                          <span className="palette-item-alias">{(item as any).matchedAlias}</span>
+                        )}
+                      </span>
+                      {isTableItem && !ddlMode && (
+                        <span
+                          className="palette-table-actions"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            ref={(el) => {
+                              if (el && menuOpenId === item.id) menuBtnRef.current = el;
+                            }}
+                            className="palette-table-action-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              menuBtnRef.current = e.currentTarget;
+                              setMenuOpenId(menuOpenId === item.id ? null : item.id);
+                            }}
+                            title="More actions"
+                          >
+                            <MoreHorizontal size={14} />
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  </Tooltip>
                 </React.Fragment>
               );
             })
@@ -612,15 +998,35 @@ export function CommandPalette({
 
         {filtered.length > 0 && (
           <div className="palette-footer">
-            <span className="palette-footer-hint"><kbd>↑↓</kbd> navigate</span>
-            <span className="palette-footer-hint"><kbd>↵</kbd> select</span>
-            {ddlMode
-              ? <span className="palette-footer-hint"><kbd>esc</kbd> back</span>
-              : <span className="palette-footer-hint"><kbd>esc</kbd> close</span>
-            }
+            <PaletteKeyHint
+              className="palette-footer-hints"
+              segments={[
+                paletteHint(["↑↓"], "navigate"),
+                paletteHint(["↵"], "select"),
+                paletteHint(["esc"], ddlMode ? "back" : "close"),
+              ]}
+            />
           </div>
         )}
       </div>
+
+      {menuOpenId &&
+        menuPos &&
+        (() => {
+          const item = filtered.find((f) => f.id === menuOpenId);
+          if (!item || item.kind !== "table") return null;
+          return createPortal(
+            <TableActionsMenu
+              menuRef={menuRef}
+              className="palette-table-menu"
+              style={{ top: menuPos.top, left: menuPos.left }}
+              table={item.table}
+              onAction={handleTableMenuAction}
+              onKeyDown={handleMenuKeyDown}
+            />,
+            document.body,
+          );
+        })()}
     </div>
   );
 }
