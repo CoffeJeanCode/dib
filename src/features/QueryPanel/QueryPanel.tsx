@@ -1,12 +1,17 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useUiStore } from "@/store/uiStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { workspaceService } from "@/services/workspaceService";
 import { useDatabaseEngine, DEFAULT_PAGE_SIZE } from "@/shared/hooks/useDatabaseEngine";
 import { useWorkspaceService } from "@/shared/hooks/useWorkspaceService";
 import { useKeybindings } from "@/shared/hooks/useKeybindings";
-import { Braces, Layers, Wand2 } from "lucide-react";
-import type { TableInfo, PagedResult, PendingChange, GridFilter } from "@/types/db";
+import { useDangerDialog } from "@/shared/hooks/useDangerDialog";
+import { useArrowMenuNav } from "@/shared/hooks/useArrowMenuNav";
+import { focusWithRetry, FOCUS_SELECTORS } from "@/shared/utils/focusMain";
+import { TableActionsMenu, type TableAction } from "@/shared/ui/TableActionsMenu";
+import { Braces, Layers, MoreHorizontal, Wand2 } from "lucide-react";
+import type { TableInfo, PagedResult, PendingChange, GridFilter, OrderBy } from "@/types/db";
 import type { TabData, TabPayload } from "@/features/QueryPanel/Tab";
 import { TableStructureView } from "@/features/TableStructure/TableStructureView";
 import { DataGrid } from "@/features/DataGrid";
@@ -18,6 +23,7 @@ import { MockGenerator } from "@/features/MockGenerator/MockGenerator";
 import { UnsavedChangesDialog } from "@/shared/ui/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/features/QueryPanel/EmptyWorkspaceState";
 import { useToastStore } from "@/store/toastStore";
+import "@/shared/ui/menu-shared.css";
 import "./QueryPanel.css";
 
 function fmtErr(e: unknown): string {
@@ -35,6 +41,7 @@ interface TableTabState {
   loading: boolean;
   error: string | null;
   filters: GridFilter[];
+  orderBy: OrderBy | null;
   offset: number;
   pendingChanges: PendingChange[];
   primaryKeyColumn: string;
@@ -42,11 +49,55 @@ interface TableTabState {
 }
 
 function defaultTableTabState(table: TableInfo): TableTabState {
-  return { table, result: null, loading: false, error: null, filters: [], offset: 0, pendingChanges: [], primaryKeyColumn: "", pageSize: DEFAULT_PAGE_SIZE };
+  return {
+    table,
+    result: null,
+    loading: false,
+    error: null,
+    filters: [],
+    orderBy: null,
+    offset: 0,
+    pendingChanges: [],
+    primaryKeyColumn: "",
+    pageSize: DEFAULT_PAGE_SIZE,
+  };
 }
 
 function tableTabId(table: TableInfo): string {
   return `tab-table-${table.schema ?? "pub"}-${table.name}`;
+}
+
+// Per-scope (connection+database) tab snapshots. MainContent remounts
+// QueryPanel when scopeKey changes; this cache restores each scope's tab set
+// on return. Persisted as JSON to localStorage (same pattern as
+// treeStateStore) so tabs survive app restarts. Table data is NOT cached:
+// restored table tabs re-fetch on activation.
+type ScopeSnapshot = { tabs: TabData[]; activeTabId: string; tabSql: Record<string, string> };
+
+const LS_SCOPE_TABS_KEY = "dib_scope_tabs";
+
+function loadScopeTabCache(): Map<string, ScopeSnapshot> {
+  try {
+    const raw = localStorage.getItem(LS_SCOPE_TABS_KEY);
+    return new Map(raw ? Object.entries(JSON.parse(raw) as Record<string, ScopeSnapshot>) : []);
+  } catch {
+    return new Map();
+  }
+}
+
+const scopeTabCache = loadScopeTabCache();
+
+// Debounced: tabSql updates on every editor keystroke.
+let persistScopeTabsTimer: number | undefined;
+function persistScopeTabCache() {
+  window.clearTimeout(persistScopeTabsTimer);
+  persistScopeTabsTimer = window.setTimeout(() => {
+    try {
+      localStorage.setItem(LS_SCOPE_TABS_KEY, JSON.stringify(Object.fromEntries(scopeTabCache)));
+    } catch {
+      // quota exceeded — tab restore is best-effort
+    }
+  }, 500);
 }
 
 interface QueryPanelProps {
@@ -58,19 +109,88 @@ interface QueryPanelProps {
   openScript?: import("@/types/workspace").OpenScript | null;
 }
 
-export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _scopeKey, navigateTo, openScript }: QueryPanelProps) {
+export function QueryPanel({
+  connectionId,
+  connectionName,
+  engine,
+  scopeKey,
+  navigateTo,
+  openScript,
+}: QueryPanelProps) {
   const toast = useToastStore.getState();
+  const info = useToastStore((s) => s.info);
+  const error = useToastStore((s) => s.error);
+  const { handleDropTable } = useDangerDialog(connectionId, info, error);
+
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const actionsBtnRef = useRef<HTMLButtonElement>(null);
+
+  const closeActions = useCallback(() => {
+    setActionsOpen(false);
+    actionsBtnRef.current?.focus();
+  }, []);
+
+  const handleActionsMenuKeyDown = useArrowMenuNav({
+    openKey: actionsOpen,
+    menuRef: actionsRef,
+    itemSelector: ".ui-menu-item",
+    onClose: closeActions,
+  });
+
+  useEffect(() => {
+    if (!actionsOpen) return;
+    const close = (e: PointerEvent) => {
+      if (actionsRef.current?.contains(e.target as Node)) return;
+      if (actionsBtnRef.current?.contains(e.target as Node)) return;
+      setActionsOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActionsOpen(false);
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [actionsOpen]);
+
+  const handleTableAction = useCallback(
+    (action: TableAction, table: TableInfo) => {
+      setActionsOpen(false);
+      if (action === "structure") useWorkspaceStore.getState().openTableStructure(table);
+      else if (action === "erd") useWorkspaceStore.getState().openTableRelations(table);
+      else if (action === "alter")
+        useUiStore.getState().setAlterTarget(table);
+      else if (action === "insert") {
+        useWorkspaceStore.getState().setNavigateTo({ table, v: Date.now() } as any);
+        useWorkspaceStore.getState().triggerInsertRow();
+      } else if (action === "rename")
+        useUiStore.getState().setRenameTarget(table);
+      else if (action === "drop") handleDropTable(table);
+    },
+    [handleDropTable],
+  );
 
   // ── Engine: tables, columns, relations, data fetching, commits ─────────
-  const { tables, columnMap, tableRelations, fetchTablePage, loadTableRelations, loadColumnsBatch, commitChanges } =
-    useDatabaseEngine(connectionId);
+  const {
+    tables,
+    columnMap,
+    tableRelations,
+    fetchTablePage,
+    loadTableRelations,
+    loadColumnsBatch,
+    commitChanges,
+  } = useDatabaseEngine(connectionId);
 
   // ── Tab lifecycle state ────────────────────────────────────────────────
-  const [tabs, setTabs] = useState<TabData[]>([]);
+  const scopeSnapshot = scopeKey ? scopeTabCache.get(scopeKey) : undefined;
+  const [tabs, setTabs] = useState<TabData[]>(scopeSnapshot?.tabs ?? []);
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
 
-  const [activeTabId, setActiveTabId] = useState("");
+  const [activeTabId, setActiveTabId] = useState(scopeSnapshot?.activeTabId ?? "");
   const closedTabsHistoryRef = useRef<Array<{ tab: TabData; sql?: string }>>([]);
 
   const [tableTabStates, setTableTabStates] = useState<Record<string, TableTabState>>({});
@@ -83,18 +203,43 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
 
   // ── Workspace: script persistence, tab SQL buffer ──────────────────────
   const markTabDirty = useCallback((tabId: string) => {
-    setTabs((prev) => prev.map((t) => t.id === tabId ? { ...t, isDirty: true } : t));
+    setTabs((prev) => prev.map((t) => (t.id === tabId ? { ...t, isDirty: true } : t)));
   }, []);
 
   const markTabClean = useCallback((tabId: string) => {
-    setTabs((prev) => prev.map((t) => t.id === tabId ? { ...t, isDirty: false } : t));
+    setTabs((prev) => prev.map((t) => (t.id === tabId ? { ...t, isDirty: false } : t)));
   }, []);
 
-  const { tabSql, registerTabSql, removeTabSql, saveSqlTab, saveNewScript, persistContentChange, importScript } =
-    useWorkspaceService({ tabsRef, markTabClean, setTabs, connectionId });
+  const {
+    tabSql,
+    registerTabSql,
+    removeTabSql,
+    saveSqlTab,
+    saveNewScript,
+    persistContentChange,
+    importScript,
+  } = useWorkspaceService({
+    tabsRef,
+    markTabClean,
+    setTabs,
+    connectionId,
+    initialTabSql: scopeSnapshot?.tabSql,
+  });
 
   const tabSqlRef = useRef(tabSql);
   tabSqlRef.current = tabSql;
+
+  // Write-through: keep this scope's snapshot current so a remount (db or
+  // connection switch) or app restart restores exactly what the user left.
+  useEffect(() => {
+    if (!scopeKey) return;
+    // strip autoRun — a restored tab must never re-execute its query
+    const snapTabs = tabs.map((t) =>
+      t.payload.autoRun ? { ...t, payload: { ...t.payload, autoRun: undefined } } : t,
+    );
+    scopeTabCache.set(scopeKey, { tabs: snapTabs, activeTabId, tabSql });
+    persistScopeTabCache();
+  }, [scopeKey, tabs, activeTabId, tabSql]);
 
   // ── Focus management ───────────────────────────────────────────────────
   useEffect(() => {
@@ -117,17 +262,32 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   }, []);
 
   const loadTablePage = useCallback(
-    async (tabId: string, table: TableInfo, pageOffset: number, pageSize: number, filters: GridFilter[] = []) => {
+    async (
+      tabId: string,
+      table: TableInfo,
+      pageOffset: number,
+      pageSize: number,
+      filters: GridFilter[] = [],
+      orderBy?: OrderBy | null,
+    ) => {
       updateTableTabState(tabId, { loading: true, error: null });
       try {
-        const r = await fetchTablePage(table, pageOffset, pageSize, filters.length > 0 ? filters : null);
+        const r = await fetchTablePage(
+          table,
+          pageOffset,
+          pageSize,
+          filters.length > 0 ? filters : null,
+          orderBy,
+        );
         let pkCol = "";
         if (pageOffset === 0) {
           const cols = r.columns;
           const lower = cols.map((c) => c.toLowerCase());
-          pkCol = cols[lower.indexOf("id")] ??
+          pkCol =
+            cols[lower.indexOf("id")] ??
             cols[lower.findIndex((c) => c.endsWith("_id") || c === "uuid")] ??
-            cols[0] ?? "";
+            cols[0] ??
+            "";
           // Empty table — eagerly load schema so the grid can show columns for row insertion.
           if (cols.length === 0) loadColumnsBatch([table], {});
         }
@@ -136,7 +296,10 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
           offset: pageOffset,
           pageSize,
           loading: false,
-          ...(pageOffset === 0 ? { primaryKeyColumn: pkCol, filters, pendingChanges: [] } : { filters }),
+          orderBy: orderBy ?? null,
+          ...(pageOffset === 0
+            ? { primaryKeyColumn: pkCol, filters, pendingChanges: [] }
+            : { filters }),
         });
       } catch (e) {
         const msg = fmtErr(e);
@@ -147,10 +310,24 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     [fetchTablePage, updateTableTabState, toast, loadColumnsBatch],
   );
 
+  // Table tabs restored from scopeTabCache carry no data — hydrate the active
+  // one on activation (initial mount included).
+  useEffect(() => {
+    const tab = tabsRef.current.find((t) => t.id === activeTabId);
+    if (tab?.type === "table" && tab.payload.table && !tableTabStates[tab.id]) {
+      const table = tab.payload.table;
+      setTableTabStates((prev) => ({ ...prev, [tab.id]: defaultTableTabState(table) }));
+      loadTablePage(tab.id, table, 0, DEFAULT_PAGE_SIZE, []);
+      loadTableRelations(table);
+    }
+  }, [activeTabId, tableTabStates, loadTablePage, loadTableRelations]);
+
   const reloadHandlerRef = useRef<(() => void) | null>(null);
   // React to reloadVersion from store — replaces dib:reload window event
   const reloadVersion = useConnectionStore((s) => s.reloadVersion);
-  useEffect(() => { reloadHandlerRef.current?.(); }, [reloadVersion]);
+  useEffect(() => {
+    reloadHandlerRef.current?.();
+  }, [reloadVersion]);
 
   // Batch-load columns when SchemaVisualizer or MockGenerator tab opens
   useEffect(() => {
@@ -171,7 +348,9 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
       const ts = tableTabStates[tab.id];
       if (ts) {
         setIsReloading(true);
-        loadTablePage(tab.id, ts.table, ts.offset, ts.pageSize, ts.filters).finally(() => setIsReloading(false));
+        loadTablePage(tab.id, ts.table, ts.offset, ts.pageSize, ts.filters)
+          .catch(() => performClose(tab.id))
+          .finally(() => setIsReloading(false));
       }
     } else {
       setIsReloading(true);
@@ -203,17 +382,30 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   );
 
   // ── Tab lifecycle ──────────────────────────────────────────────────────
-  const openSqlTab = useCallback((sql: string, name: string, scriptId?: string, autoRun?: boolean) => {
-    const tabId = scriptId ?? crypto.randomUUID();
-    setTabs((prev) => {
-      if (prev.some((t) => t.id === tabId)) { setActiveTabId(tabId); return prev; }
-      // scriptId provided → tab is already saved; null → draft
-      const newTab: TabData = { id: tabId, type: "script", title: name, isDirty: false, payload: { sql, filename: name, scriptId: scriptId ?? null, autoRun }, closeable: true };
-      registerTabSql(tabId, sql);
-      setActiveTabId(tabId);
-      return [...prev, newTab];
-    });
-  }, [registerTabSql]);
+  const openSqlTab = useCallback(
+    (sql: string, name: string, scriptId?: string, autoRun?: boolean) => {
+      const tabId = scriptId ?? crypto.randomUUID();
+      setTabs((prev) => {
+        if (prev.some((t) => t.id === tabId)) {
+          setActiveTabId(tabId);
+          return prev;
+        }
+        // scriptId provided → tab is already saved; null → draft
+        const newTab: TabData = {
+          id: tabId,
+          type: "script",
+          title: name,
+          isDirty: false,
+          payload: { sql, filename: name, scriptId: scriptId ?? null, autoRun },
+          closeable: true,
+        };
+        registerTabSql(tabId, sql);
+        setActiveTabId(tabId);
+        return [...prev, newTab];
+      });
+    },
+    [registerTabSql],
+  );
 
   const openTableTab = useCallback(
     (table: TableInfo, initialFilters?: GridFilter[]) => {
@@ -224,7 +416,14 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
         if (initialFilters?.length) loadTablePage(tid, table, 0, DEFAULT_PAGE_SIZE, initialFilters);
         return;
       }
-      const newTab: TabData = { id: tid, type: "table", title: table.schema ? `${table.schema}.${table.name}` : table.name, isDirty: false, payload: { table }, closeable: true };
+      const newTab: TabData = {
+        id: tid,
+        type: "table",
+        title: table.schema ? `${table.schema}.${table.name}` : table.name,
+        isDirty: false,
+        payload: { table },
+        closeable: true,
+      };
       tabsRef.current = [...tabsRef.current, newTab];
       setTabs(tabsRef.current);
       setTableTabStates((prev) => ({ ...prev, [tid]: prev[tid] || defaultTableTabState(table) }));
@@ -239,43 +438,91 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     const structureTabId = `structure-${table.schema ?? "public"}-${table.name}`;
     const dataTabId = tableTabId(table);
     setTabs((prev) => {
-      if (prev.some((t) => t.id === structureTabId)) { setActiveTabId(structureTabId); return prev; }
-      const newTab: TabData = { id: structureTabId, type: "table_structure", title: table.schema ? `${table.schema}.${table.name}` : table.name, isDirty: false, payload: { table }, closeable: true };
+      if (prev.some((t) => t.id === structureTabId)) {
+        setActiveTabId(structureTabId);
+        return prev;
+      }
+      const newTab: TabData = {
+        id: structureTabId,
+        type: "table_structure",
+        title: table.schema ? `${table.schema}.${table.name}` : table.name,
+        isDirty: false,
+        payload: { table },
+        closeable: true,
+      };
       const dataTabIdx = prev.findIndex((t) => t.id === dataTabId);
       setActiveTabId(structureTabId);
-      if (dataTabIdx !== -1) { const next = [...prev]; next.splice(dataTabIdx + 1, 0, newTab); return next; }
+      if (dataTabIdx !== -1) {
+        const next = [...prev];
+        next.splice(dataTabIdx + 1, 0, newTab);
+        return next;
+      }
       return [...prev, newTab];
     });
   }, []);
 
-  const toggleStructureTab = useCallback((table: TableInfo) => {
-    const structureTabId = `structure-${table.schema ?? "public"}-${table.name}`;
-    const dataTabId = tableTabId(table);
-    setTabs((prev) => {
-      const structureExists = prev.some((t) => t.id === structureTabId);
-      const dataExists = prev.some((t) => t.id === dataTabId);
-      if (activeTabId === dataTabId) {
-        if (structureExists) { setActiveTabId(structureTabId); return prev; }
-        const newTab: TabData = { id: structureTabId, type: "table_structure", title: table.schema ? `${table.schema}.${table.name}` : table.name, isDirty: false, payload: { table }, closeable: true };
-        const dataTabIdx = prev.findIndex((t) => t.id === dataTabId);
+  const toggleStructureTab = useCallback(
+    (table: TableInfo) => {
+      const structureTabId = `structure-${table.schema ?? "public"}-${table.name}`;
+      const dataTabId = tableTabId(table);
+      setTabs((prev) => {
+        const structureExists = prev.some((t) => t.id === structureTabId);
+        const dataExists = prev.some((t) => t.id === dataTabId);
+        if (activeTabId === dataTabId) {
+          if (structureExists) {
+            setActiveTabId(structureTabId);
+            return prev;
+          }
+          const newTab: TabData = {
+            id: structureTabId,
+            type: "table_structure",
+            title: table.schema ? `${table.schema}.${table.name}` : table.name,
+            isDirty: false,
+            payload: { table },
+            closeable: true,
+          };
+          const dataTabIdx = prev.findIndex((t) => t.id === dataTabId);
+          setActiveTabId(structureTabId);
+          if (dataTabIdx !== -1) {
+            const next = [...prev];
+            next.splice(dataTabIdx + 1, 0, newTab);
+            return next;
+          }
+          return [...prev, newTab];
+        }
+        if (activeTabId === structureTabId && dataExists) {
+          setActiveTabId(dataTabId);
+          return prev;
+        }
+        if (!structureExists) {
+          const newTab: TabData = {
+            id: structureTabId,
+            type: "table_structure",
+            title: table.schema ? `${table.schema}.${table.name}` : table.name,
+            isDirty: false,
+            payload: { table },
+            closeable: true,
+          };
+          setActiveTabId(structureTabId);
+          return [...prev, newTab];
+        }
         setActiveTabId(structureTabId);
-        if (dataTabIdx !== -1) { const next = [...prev]; next.splice(dataTabIdx + 1, 0, newTab); return next; }
-        return [...prev, newTab];
-      }
-      if (activeTabId === structureTabId && dataExists) { setActiveTabId(dataTabId); return prev; }
-      if (!structureExists) {
-        const newTab: TabData = { id: structureTabId, type: "table_structure", title: table.schema ? `${table.schema}.${table.name}` : table.name, isDirty: false, payload: { table }, closeable: true };
-        setActiveTabId(structureTabId);
-        return [...prev, newTab];
-      }
-      setActiveTabId(structureTabId);
-      return prev;
-    });
-  }, [activeTabId]);
+        return prev;
+      });
+    },
+    [activeTabId],
+  );
 
   const openRelationTab = useCallback((table: TableInfo) => {
     const tabId = `tab-rel-${table.name}-${crypto.randomUUID()}`;
-    const newTab: TabData = { id: tabId, type: "schema", title: `~ ${table.name}`, isDirty: false, payload: { table }, closeable: true };
+    const newTab: TabData = {
+      id: tabId,
+      type: "schema",
+      title: `~ ${table.name}`,
+      isDirty: false,
+      payload: { table },
+      closeable: true,
+    };
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(tabId);
   }, []);
@@ -283,8 +530,18 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   const openMockGeneratorTab = useCallback((table: TableInfo) => {
     const tabId = `tab-mock-${table.schema ?? "pub"}-${table.name}`;
     setTabs((prev) => {
-      if (prev.some((t) => t.id === tabId)) { setActiveTabId(tabId); return prev; }
-      const newTab: TabData = { id: tabId, type: "mock_generator", title: `Mock: ${table.name}`, isDirty: false, payload: { table }, closeable: true };
+      if (prev.some((t) => t.id === tabId)) {
+        setActiveTabId(tabId);
+        return prev;
+      }
+      const newTab: TabData = {
+        id: tabId,
+        type: "mock_generator",
+        title: `Mock: ${table.name}`,
+        isDirty: false,
+        payload: { table },
+        closeable: true,
+      };
       setActiveTabId(tabId);
       return [...prev, newTab];
     });
@@ -294,30 +551,45 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     setActiveTabId(id);
   }, []);
 
-  const performClose = useCallback((id: string) => {
-    setTabs((prev) => {
-      const tab = prev.find((t) => t.id === id);
-      if (!tab) return prev;
-      if (tab.closeable) {
-        closedTabsHistoryRef.current = [...closedTabsHistoryRef.current.slice(-9), { tab, sql: tabSqlRef.current[id] }];
-      }
-      const next = prev.filter((t) => t.id !== id);
-      setActiveTabId((cur) => cur === id ? (next.length > 0 ? next[next.length - 1].id : "") : cur);
-      removeTabSql(id);
-      setTableTabStates((p) => { const n = { ...p }; delete n[id]; return n; });
-      return next;
-    });
-    setClosingTabId(null);
-  }, [removeTabSql]);
+  const performClose = useCallback(
+    (id: string) => {
+      setTabs((prev) => {
+        const tab = prev.find((t) => t.id === id);
+        if (!tab) return prev;
+        if (tab.closeable) {
+          closedTabsHistoryRef.current = [
+            ...closedTabsHistoryRef.current.slice(-9),
+            { tab, sql: tabSqlRef.current[id] },
+          ];
+        }
+        const next = prev.filter((t) => t.id !== id);
+        setActiveTabId((cur) =>
+          cur === id ? (next.length > 0 ? next[next.length - 1].id : "") : cur,
+        );
+        removeTabSql(id);
+        setTableTabStates((p) => {
+          const n = { ...p };
+          delete n[id];
+          return n;
+        });
+        return next;
+      });
+      setClosingTabId(null);
+    },
+    [removeTabSql],
+  );
 
-  const handleTabClose = useCallback((id: string) => {
-    const tab = tabsRef.current.find(t => t.id === id);
-    if (tab?.isDirty) {
-      setClosingTabId(id);
-    } else {
-      performClose(id);
-    }
-  }, [performClose]);
+  const handleTabClose = useCallback(
+    (id: string) => {
+      const tab = tabsRef.current.find((t) => t.id === id);
+      if (tab?.isDirty) {
+        setClosingTabId(id);
+      } else {
+        performClose(id);
+      }
+    },
+    [performClose],
+  );
 
   const handleTabReorder = useCallback((newTabs: TabData[]) => setTabs(newTabs), []);
 
@@ -362,42 +634,41 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
       const nextNum = maxUntitled + 1;
       openSqlTab("", nextNum === 1 ? "Untitled.sql" : `Untitled ${nextNum}.sql`);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabAction]);
 
   // ── Navigate/openScript from App ───────────────────────────────────────
-  useEffect(() => { if (navigateTo) openTableTab(navigateTo.table); }, [navigateTo, openTableTab]);
-  const lastOpenScriptIdRef = useRef<string | null>(null);
+  // One-shot events: consume then clear the store value. Leaving it set
+  // replays stale opens on remount (db switch) or when callback identities
+  // churn between renders.
   useEffect(() => {
-    if (openScript && openScript.id !== lastOpenScriptIdRef.current) {
-      lastOpenScriptIdRef.current = openScript.id;
-      openSqlTab(openScript.sql, openScript.name, openScript.id, openScript.autoRun);
-    }
+    if (!navigateTo) return;
+    openTableTab(navigateTo.table);
+    useWorkspaceStore.getState().setNavigateTo(null);
+  }, [navigateTo, openTableTab]);
+  useEffect(() => {
+    if (!openScript) return;
+    openSqlTab(openScript.sql, openScript.name, openScript.id, openScript.autoRun);
+    useWorkspaceStore.getState().setOpenScript(null);
   }, [openScript, openSqlTab]);
 
   // ── Active table → sidebar highlight ──────────────────────────────────
   useEffect(() => {
     const tab = tabs.find((t) => t.id === activeTabId);
-    const detail = (tab?.type === "table" && tab.payload.table)
-      ? { name: tab.payload.table.name, schema: tab.payload.table.schema ?? null }
-      : null;
+    const detail =
+      tab?.type === "table" && tab.payload.table
+        ? { name: tab.payload.table.name, schema: tab.payload.table.schema ?? null }
+        : null;
     useWorkspaceStore.getState().setActiveTable(detail);
   }, [activeTabId, tabs]);
 
   // ── Focus active tab ───────────────────────────────────────────────────
   useEffect(() => {
     if (!activeTabId) return;
-    requestAnimationFrame(() => {
-      const main = document.getElementById("dib-main-panel");
-      const tab = tabs.find((t) => t.id === activeTabId);
-      if (tab?.type === "script") {
-        main?.querySelector<HTMLElement>(".monaco-editor textarea")?.focus();
-      } else {
-        const grid = main?.querySelector<HTMLElement>(".dg-wrap");
-        const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
-        (grid ?? editor)?.focus();
-      }
-    });
+    const tab = tabs.find((t) => t.id === activeTabId);
+    if (!tab) return;
+    const selector = FOCUS_SELECTORS[tab.type] ?? "[data-focus-host]";
+    focusWithRetry(selector);
   }, [activeTabId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Stable refs ───────────────────────────────────────────────────────
@@ -411,7 +682,10 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   useKeybindings([
     {
       combo: "ctrl+w",
-      handler: () => { const tab = tabs.find((t) => t.id === activeTabId); if (tab?.closeable) handleTabClose(activeTabId); },
+      handler: () => {
+        const tab = tabs.find((t) => t.id === activeTabId);
+        if (tab?.closeable) handleTabClose(activeTabId);
+      },
       allowInMonaco: true,
     },
     {
@@ -434,13 +708,18 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     },
     {
       combo: "ctrl+shift+w",
-      handler: () => { setTabs([]); setActiveTabId(""); setTableTabStates({}); },
+      handler: () => {
+        setTabs([]);
+        setActiveTabId("");
+        setTableTabStates({});
+      },
       allowInMonaco: true,
     },
     {
       combo: "ctrl+o",
       handler: () => {
-        workspaceService.importScriptDialog()
+        workspaceService
+          .importScriptDialog()
           .then(async (result) => {
             if (result) {
               // Mode-aware: workspace → .sql file on disk, standalone → virtual script.
@@ -464,7 +743,9 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     },
     {
       combo: "ctrl+n",
-      handler: () => { if (activeTabRef.current?.type === "table") useWorkspaceStore.getState().triggerInsertRow(); },
+      handler: () => {
+        if (activeTabRef.current?.type === "table") useWorkspaceStore.getState().triggerInsertRow();
+      },
       allowInMonaco: false,
     },
     {
@@ -497,7 +778,10 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
           openTableTab(tab.payload.table);
         } else {
           setTabs((prev) => {
-            if (prev.some((t) => t.id === tab.id)) { setActiveTabId(tab.id); return prev; }
+            if (prev.some((t) => t.id === tab.id)) {
+              setActiveTabId(tab.id);
+              return prev;
+            }
             return [...prev, { ...tab, isDirty: false }];
           });
           if (sql !== undefined) registerTabSql(tab.id, sql);
@@ -510,48 +794,66 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
 
   // ── Grid callbacks ─────────────────────────────────────────────────────
   const handleSaveViewState = useCallback((tabId: string, viewState: unknown) => {
-    setTabs((prev) => prev.map((t) => t.id === tabId ? { ...t, payload: { ...t.payload, viewState } } : t));
+    setTabs((prev) =>
+      prev.map((t) => (t.id === tabId ? { ...t, payload: { ...t.payload, viewState } } : t)),
+    );
   }, []);
 
   // Adapter: SqlEditor sends just `sql`; we add the active tabId context
-  const handleContentChange = useCallback((sql: string) => {
-    persistContentChange(activeTabIdRef.current, sql);
-  }, [persistContentChange]);
+  const handleContentChange = useCallback(
+    (sql: string) => {
+      persistContentChange(activeTabIdRef.current, sql);
+    },
+    [persistContentChange],
+  );
 
-  const handleImportScriptAndSave = useCallback((sql: string, name: string) => {
-    // Mode-aware: workspace → .sql file on disk, standalone → virtual script.
-    importScript(crypto.randomUUID(), name, sql)
-      .then((finalId) => openSqlTab(sql, name, finalId))
-      .catch(console.error);
-  }, [openSqlTab, importScript]);
+  const handleImportScriptAndSave = useCallback(
+    (sql: string, name: string) => {
+      // Mode-aware: workspace → .sql file on disk, standalone → virtual script.
+      importScript(crypto.randomUUID(), name, sql)
+        .then((finalId) => openSqlTab(sql, name, finalId))
+        .catch(console.error);
+    },
+    [openSqlTab, importScript],
+  );
 
-  const handleSaveScript = useCallback((sql: string) => {
-    const tab = tabsRef.current.find((t) => t.id === activeTabIdRef.current);
-    if (!tab) return;
-    if (tab.payload.scriptId == null || tab.payload.scriptId.startsWith("new-")) {
-      setSaveAsTabId(tab.id);
-      setSaveAsName(tab.title);
-    } else {
-      saveSqlTab(tab.id, sql);
-    }
-  }, [saveSqlTab]);
+  const handleSaveScript = useCallback(
+    (sql: string) => {
+      const tab = tabsRef.current.find((t) => t.id === activeTabIdRef.current);
+      if (!tab) return;
+      if (tab.payload.scriptId == null || tab.payload.scriptId.startsWith("new-")) {
+        setSaveAsTabId(tab.id);
+        setSaveAsName(tab.title);
+      } else {
+        saveSqlTab(tab.id, sql);
+      }
+    },
+    [saveSqlTab],
+  );
 
-  const handleSaveAsConfirm = useCallback(async (finalName: string) => {
-    if (!saveAsTabId || !finalName.trim()) return;
-    const sql = tabSqlRef.current[saveAsTabId]
-      ?? tabsRef.current.find((t) => t.id === saveAsTabId)?.payload.sql ?? "";
-    await saveNewScript(saveAsTabId, finalName.trim(), sql);
-    const tabId = saveAsTabId;
-    const shouldClose = closeAfterSaveAs;
-    setSaveAsTabId(null);
-    setSaveAsName("");
-    setCloseAfterSaveAs(false);
-    if (shouldClose) performClose(tabId);
-  }, [saveAsTabId, closeAfterSaveAs, saveNewScript, performClose]);
+  const handleSaveAsConfirm = useCallback(
+    async (finalName: string) => {
+      if (!saveAsTabId || !finalName.trim()) return;
+      const sql =
+        tabSqlRef.current[saveAsTabId] ??
+        tabsRef.current.find((t) => t.id === saveAsTabId)?.payload.sql ??
+        "";
+      await saveNewScript(saveAsTabId, finalName.trim(), sql);
+      const tabId = saveAsTabId;
+      const shouldClose = closeAfterSaveAs;
+      setSaveAsTabId(null);
+      setSaveAsName("");
+      setCloseAfterSaveAs(false);
+      if (shouldClose) performClose(tabId);
+    },
+    [saveAsTabId, closeAfterSaveAs, saveNewScript, performClose],
+  );
 
   const handleGridActiveCellChange = useCallback((cell: { row: number; col: number } | null) => {
     const tabId = activeTabIdRef.current;
-    setTabs((prev) => prev.map((t) => t.id === tabId ? { ...t, payload: { ...t.payload, activeCell: cell } } : t));
+    setTabs((prev) =>
+      prev.map((t) => (t.id === tabId ? { ...t, payload: { ...t.payload, activeCell: cell } } : t)),
+    );
   }, []);
 
   const handleGridPendingChanges = useCallback(
@@ -569,29 +871,57 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     [activeTabId, markTabDirty, markTabClean],
   );
 
-  const handleGridFiltersChange = useCallback((newFilters: GridFilter[]) => {
-    const tab = activeTabRef.current;
-    if (tab?.payload.table) {
-      const statePageSize = tableTabStates[activeTabIdRef.current]?.pageSize ?? DEFAULT_PAGE_SIZE;
-      loadTablePage(activeTabIdRef.current, tab.payload.table, 0, statePageSize, newFilters);
-    }
-  }, [loadTablePage, tableTabStates]);
+  const handleGridFiltersChange = useCallback(
+    (newFilters: GridFilter[]) => {
+      const tab = activeTabRef.current;
+      const state = activeTabIdRef.current ? tableTabStates[activeTabIdRef.current] : undefined;
+      if (tab?.payload.table) {
+        const statePageSize = state?.pageSize ?? DEFAULT_PAGE_SIZE;
+        loadTablePage(activeTabIdRef.current, tab.payload.table, 0, statePageSize, newFilters, state?.orderBy ?? undefined);
+      }
+    },
+    [loadTablePage, tableTabStates],
+  );
 
-  const handleGridSave = useCallback((changes: PendingChange[]): Promise<void> => {
-    if (changes.length > 0) return handleCommit(activeTabIdRef.current);
-    return Promise.resolve();
-  }, [handleCommit]);
+  const handleGridSortChange = useCallback(
+    (orderBy: OrderBy | null) => {
+      const tab = activeTabRef.current;
+      const ts = activeTabIdRef.current ? tableTabStates[activeTabIdRef.current] : undefined;
+      if (tab?.payload.table && ts) {
+        loadTablePage(activeTabIdRef.current, tab.payload.table, 0, ts.pageSize, ts.filters, orderBy);
+      }
+    },
+    [loadTablePage, tableTabStates],
+  );
+
+  const handleGridSave = useCallback(
+    (changes: PendingChange[]): Promise<void> => {
+      if (changes.length > 0) return handleCommit(activeTabIdRef.current);
+      return Promise.resolve();
+    },
+    [handleCommit],
+  );
 
   const handleFkNavigate = useCallback(
     (targetTable: string, targetColumn: string, value: unknown) => {
-      const table = tables.find((t) => t.name === targetTable) ?? { name: targetTable, schema: null };
+      const table = tables.find((t) => t.name === targetTable) ?? {
+        name: targetTable,
+        schema: null,
+      };
       openTableTab(table, [{ column: targetColumn, operator: "=", value: String(value) }]);
     },
     [tables, openTableTab],
   );
 
-  const handleGridSaveError = useCallback((msg: string) => { toast.warn(`Rollback: ${msg}`); }, [toast]);
-  const handleGridForceClose = useCallback(() => { handleTabClose(activeTabIdRef.current); }, [handleTabClose]);
+  const handleGridSaveError = useCallback(
+    (msg: string) => {
+      toast.warn(`Rollback: ${msg}`);
+    },
+    [toast],
+  );
+  const handleGridForceClose = useCallback(() => {
+    handleTabClose(activeTabIdRef.current);
+  }, [handleTabClose]);
   const handleGridFocusEditor = useCallback(() => {
     const main = document.getElementById("dib-main-panel");
     const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
@@ -600,14 +930,17 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
   }, []);
 
   // ── Derived state ──────────────────────────────────────────────────────
-  const activeTableState = activeTabId ? tableTabStates[activeTabId] ?? null : null;
-  const gridRows = useMemo(() => activeTableState?.result?.rows ?? [], [activeTableState?.result?.rows]);
+  const activeTableState = activeTabId ? (tableTabStates[activeTabId] ?? null) : null;
+  const gridRows = useMemo(
+    () => activeTableState?.result?.rows ?? [],
+    [activeTableState?.result?.rows],
+  );
   const gridCols = useMemo(() => {
     const fromResult = activeTableState?.result?.columns ?? [];
     if (fromResult.length > 0) return fromResult;
     // Empty table — use schema column names as fallback so the grid renders for row insertion.
     const table = activeTab?.type === "table" ? activeTab.payload.table : null;
-    return table ? (columnMap[table.name]?.map(c => c.name) ?? []) : [];
+    return table ? (columnMap[table.name]?.map((c) => c.name) ?? []) : [];
   }, [activeTableState?.result?.columns, activeTab, columnMap]);
   const totalRows = activeTableState?.result?.total ?? 0;
   const currentPageSize = activeTableState?.pageSize ?? DEFAULT_PAGE_SIZE;
@@ -619,12 +952,20 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
     <div className="qp">
       <div className="qp-data">
         {tabs.length > 0 && (
-          <TabBar tabs={tabs} activeId={activeTabId} onSelect={handleTabSelect} onClose={handleTabClose} onReorder={handleTabReorder} />
+          <TabBar
+            tabs={tabs}
+            activeId={activeTabId}
+            onSelect={handleTabSelect}
+            onClose={handleTabClose}
+            onReorder={handleTabReorder}
+          />
         )}
 
         {activeTab?.type === "table" && (
           <>
-            {activeTableState?.error && <div className="qp-data-error">{activeTableState.error}</div>}
+            {activeTableState?.error && (
+              <div className="qp-data-error">{activeTableState.error}</div>
+            )}
             <div className="qp-grid-header">
               <span className="qp-breadcrumb">
                 {activeTab.payload.table?.schema
@@ -632,9 +973,13 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
                   : activeTab.payload.table?.name}
               </span>
             </div>
-            {!activeTableState?.loading && !activeTableState?.result && !activeTableState?.error && (
-              <div className="qp-data-empty"><p>Loading table…</p></div>
-            )}
+            {!activeTableState?.loading &&
+              !activeTableState?.result &&
+              !activeTableState?.error && (
+                <div className="qp-data-empty">
+                  <p>Loading table…</p>
+                </div>
+              )}
             <div className="qp-grid-wrap">
               {(activeTableState?.loading || activeTableState?.result) && (
                 <DataGrid
@@ -644,9 +989,17 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
                   tableName={activeTab.payload.table?.name}
                   tableSchema={activeTab.payload.table?.schema ?? null}
                   primaryKeyColumn={activeTableState?.primaryKeyColumn}
-                  columnInfos={activeTab.payload.table ? columnMap[activeTab.payload.table.name] : undefined}
+                  columnInfos={
+                    activeTab.payload.table ? columnMap[activeTab.payload.table.name] : undefined
+                  }
                   filters={activeTableState?.filters}
-                  relations={activeTab.payload.table ? tableRelations[activeTab.payload.table.name] : undefined}
+                  orderBy={activeTableState?.orderBy ?? null}
+                  onSortChange={handleGridSortChange}
+                  relations={
+                    activeTab.payload.table
+                      ? tableRelations[activeTab.payload.table.name]
+                      : undefined
+                  }
                   onPendingChanges={handleGridPendingChanges}
                   onFiltersChange={handleGridFiltersChange}
                   onSave={handleGridSave}
@@ -657,54 +1010,90 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
                   activeCell={activeTab.payload.activeCell ?? null}
                   onActiveCellChange={handleGridActiveCellChange}
                   footerRight={
-                    activeTab.payload.table ? (() => {
-                      const t = activeTab.payload.table!;
-                      const structId = `structure-${t.schema ?? "public"}-${t.name}`;
-                      const structureIsOpen = tabs.some((tb) => tb.id === structId);
-                      return (
-                        <>
-                          <button
-                            className="qp-structure-footer-btn"
-                            onClick={() => openMockGeneratorTab(t)}
-                            title="Generar datos mock para esta tabla"
-                          >
-                            <Wand2 size={12} />
-                            Mock Data
-                          </button>
-                          <button
-                            className="qp-structure-footer-btn"
-                            onClick={() => {
-                              const r = activeTableState?.result;
-                              if (!r) return;
-                              useWorkspaceStore.getState().openJsonPanel({
-                                title: `Table: ${t.name}`,
-                                result: {
-                                  columns: r.columns,
-                                  rows: r.rows as (string | number | boolean | null)[][],
-                                  rows_affected: 0,
-                                  column_metadata: [],
-                                  is_updatable: false,
-                                },
-                              });
-                            }}
-                            title="View table data as JSON"
-                          >
-                            <Braces size={12} />
-                            JSON
-                          </button>
-                          <button
-                            id="dib-structure-toggle-btn"
-                            className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
-                            onClick={() => toggleStructureTab(t)}
-                            title={structureIsOpen ? "View table data" : "View table structure (toggle)"}
-                            aria-pressed={structureIsOpen}
-                          >
-                            <Layers size={12} />
-                            {structureIsOpen ? "Data" : "Structure"}
-                          </button>
-                        </>
-                      );
-                    })() : undefined
+                    activeTab.payload.table
+                      ? (() => {
+                          const t = activeTab.payload.table!;
+                          const structId = `structure-${t.schema ?? "public"}-${t.name}`;
+                          const structureIsOpen = tabs.some((tb) => tb.id === structId);
+                          return (
+                            <>
+                              <button
+                                className="qp-structure-footer-btn"
+                                onClick={() => openMockGeneratorTab(t)}
+                                title="Generar datos mock para esta tabla"
+                              >
+                                <Wand2 size={12} />
+                                Mock Data
+                              </button>
+                              <button
+                                className="qp-structure-footer-btn"
+                                onClick={() => {
+                                  const r = activeTableState?.result;
+                                  if (!r) return;
+                                  useWorkspaceStore.getState().openJsonPanel({
+                                    title: `Table: ${t.name}`,
+                                    result: {
+                                      columns: r.columns,
+                                      rows: r.rows as (string | number | boolean | null)[][],
+                                      rows_affected: 0,
+                                      column_metadata: [],
+                                      is_updatable: false,
+                                    },
+                                  });
+                                }}
+                                title="View table data as JSON"
+                              >
+                                <Braces size={12} />
+                                JSON
+                              </button>
+                              <button
+                                id="dib-structure-toggle-btn"
+                                className={`qp-structure-footer-btn${structureIsOpen ? " qp-structure-footer-btn--active" : ""}`}
+                                onClick={() => toggleStructureTab(t)}
+                                title={
+                                  structureIsOpen
+                                    ? "View table data"
+                                    : "View table structure (toggle)"
+                                }
+                                aria-pressed={structureIsOpen}
+                              >
+                                <Layers size={12} />
+                                {structureIsOpen ? "Data" : "Structure"}
+                              </button>
+                              <div className="dg-footer-actions-wrap">
+                                <button
+                                  ref={actionsBtnRef}
+                                  className={`qp-structure-footer-btn dg-footer-actions-btn${actionsOpen ? " qp-structure-footer-btn--active" : ""}`}
+                                  onClick={() => setActionsOpen((v) => !v)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "ArrowRight" && !actionsOpen) {
+                                      e.preventDefault();
+                                      setActionsOpen(true);
+                                    } else if (e.key === "ArrowLeft" && actionsOpen) {
+                                      e.preventDefault();
+                                      setActionsOpen(false);
+                                    }
+                                  }}
+                                  aria-haspopup="menu"
+                                  aria-expanded={actionsOpen}
+                                  title="Table actions"
+                                >
+                                  <MoreHorizontal size={14} />
+                                </button>
+                                {actionsOpen && (
+                                  <TableActionsMenu
+                                    menuRef={actionsRef}
+                                    className="dg-footer-actions-menu"
+                                    table={t}
+                                    onAction={handleTableAction}
+                                    onKeyDown={handleActionsMenuKeyDown}
+                                  />
+                                )}
+                              </div>
+                            </>
+                          );
+                        })()
+                      : undefined
                   }
                 />
               )}
@@ -714,20 +1103,51 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
                 <button
                   className="qp-page-btn"
                   disabled={currentPage === 0 || activeTableState.loading}
-                  onClick={() => activeTab.payload.table && loadTablePage(activeTabId, activeTab.payload.table, (activeTableState.offset ?? 0) - currentPageSize, currentPageSize, activeTableState.filters)}
-                >‹ Prev</button>
-                <span className="qp-page-info">{currentPage + 1} / {totalPages}</span>
+                  onClick={() =>
+                    activeTab.payload.table &&
+                    loadTablePage(
+                      activeTabId,
+                      activeTab.payload.table,
+                      (activeTableState.offset ?? 0) - currentPageSize,
+                      currentPageSize,
+                      activeTableState.filters,
+                    )
+                  }
+                >
+                  ‹ Prev
+                </button>
+                <span className="qp-page-info">
+                  {currentPage + 1} / {totalPages}
+                </span>
                 <button
                   className="qp-page-btn"
                   disabled={currentPage >= totalPages - 1 || activeTableState.loading}
-                  onClick={() => activeTab.payload.table && loadTablePage(activeTabId, activeTab.payload.table, (activeTableState.offset ?? 0) + currentPageSize, currentPageSize, activeTableState.filters)}
-                >Next ›</button>
+                  onClick={() =>
+                    activeTab.payload.table &&
+                    loadTablePage(
+                      activeTabId,
+                      activeTab.payload.table,
+                      (activeTableState.offset ?? 0) + currentPageSize,
+                      currentPageSize,
+                      activeTableState.filters,
+                    )
+                  }
+                >
+                  Next ›
+                </button>
                 <select
                   className="qp-page-size-select"
                   value={currentPageSize}
                   onChange={(e) => {
                     const newSize = Number(e.target.value);
-                    if (activeTab.payload.table) loadTablePage(activeTabId, activeTab.payload.table, 0, newSize, activeTableState.filters);
+                    if (activeTab.payload.table)
+                      loadTablePage(
+                        activeTabId,
+                        activeTab.payload.table,
+                        0,
+                        newSize,
+                        activeTableState.filters,
+                      );
                   }}
                 >
                   <option value={50}>50 / page</option>
@@ -743,7 +1163,14 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
                 onRevert={() => {
                   updateTableTabState(activeTabId, { pendingChanges: [] });
                   markTabClean(activeTabId);
-                  if (activeTab.payload.table) loadTablePage(activeTabId, activeTab.payload.table, 0, activeTableState?.pageSize ?? DEFAULT_PAGE_SIZE, []);
+                  if (activeTab.payload.table)
+                    loadTablePage(
+                      activeTabId,
+                      activeTab.payload.table,
+                      0,
+                      activeTableState?.pageSize ?? DEFAULT_PAGE_SIZE,
+                      [],
+                    );
                 }}
                 onApply={() => handleCommit(activeTabId)}
               />
@@ -793,7 +1220,14 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
       </div>
 
       {saveAsTabId && (
-        <div className="qp-save-as-overlay" onClick={() => { setSaveAsTabId(null); setSaveAsName(""); setCloseAfterSaveAs(false); }}>
+        <div
+          className="qp-save-as-overlay"
+          onClick={() => {
+            setSaveAsTabId(null);
+            setSaveAsName("");
+            setCloseAfterSaveAs(false);
+          }}
+        >
           <div className="qp-save-as-dialog" onClick={(e) => e.stopPropagation()}>
             <label className="qp-save-as-label">Nombre del script</label>
             <input
@@ -802,21 +1236,39 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
               onChange={(e) => setSaveAsName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSaveAsConfirm(saveAsName);
-                if (e.key === "Escape") { setSaveAsTabId(null); setSaveAsName(""); setCloseAfterSaveAs(false); }
+                if (e.key === "Escape") {
+                  setSaveAsTabId(null);
+                  setSaveAsName("");
+                  setCloseAfterSaveAs(false);
+                }
               }}
               autoFocus
             />
             <div className="qp-save-as-actions">
-              <button onClick={() => { setSaveAsTabId(null); setSaveAsName(""); setCloseAfterSaveAs(false); }}>Cancel</button>
-              <button className="qp-save-as-confirm" onClick={() => handleSaveAsConfirm(saveAsName)} disabled={!saveAsName.trim()}>Save</button>
+              <button
+                onClick={() => {
+                  setSaveAsTabId(null);
+                  setSaveAsName("");
+                  setCloseAfterSaveAs(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="qp-save-as-confirm"
+                onClick={() => handleSaveAsConfirm(saveAsName)}
+                disabled={!saveAsName.trim()}
+              >
+                Save
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {closingTabId && (
+      {closingTabId &&
         (() => {
-          const tabToClose = tabs.find(t => t.id === closingTabId);
+          const tabToClose = tabs.find((t) => t.id === closingTabId);
           if (!tabToClose) return null;
           return (
             <UnsavedChangesDialog
@@ -831,7 +1283,10 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
                     setSaveAsName(tabToClose.title);
                     setCloseAfterSaveAs(true);
                   } else {
-                    await saveSqlTab(tabToClose.id, tabSqlRef.current[tabToClose.id] ?? tabToClose.payload.sql ?? "");
+                    await saveSqlTab(
+                      tabToClose.id,
+                      tabSqlRef.current[tabToClose.id] ?? tabToClose.payload.sql ?? "",
+                    );
                     performClose(tabToClose.id);
                   }
                 } else if (tabToClose.type === "table") {
@@ -844,8 +1299,7 @@ export function QueryPanel({ connectionId, connectionName, engine, scopeKey: _sc
               onCancel={() => setClosingTabId(null)}
             />
           );
-        })()
-      )}
+        })()}
     </div>
   );
 }

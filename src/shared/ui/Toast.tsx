@@ -1,11 +1,12 @@
 import { createPortal } from "react-dom";
 import { useEffect, useState, useCallback } from "react";
-import { Copy, X, AlertTriangle, Info } from "lucide-react";
+import { Copy, X, AlertTriangle, Info, Check } from "lucide-react";
 import { useToastStore, type Toast as ToastType } from "@/store/toastStore";
 import "./Toast.css";
 
 const HIDE_ANIM_MS = 300;
 const INFO_TIMEOUT = 4000;
+const SUCCESS_TIMEOUT = 4000;
 const WARN_TIMEOUT = 5000;
 const ERROR_TIMEOUT = 8000;
 
@@ -22,6 +23,7 @@ function ToastItem({ toast }: { toast: ToastType }) {
     const timeout =
       toast.type === "error" ? ERROR_TIMEOUT
       : toast.type === "warning" ? WARN_TIMEOUT
+      : toast.type === "success" ? SUCCESS_TIMEOUT
       : INFO_TIMEOUT;
     const t = setTimeout(doRemove, timeout);
     return () => clearTimeout(t);
@@ -33,7 +35,9 @@ function ToastItem({ toast }: { toast: ToastType }) {
     navigator.clipboard.writeText(toast.message).catch(() => {});
   };
 
-  const Icon = toast.type === "error" || toast.type === "warning" ? AlertTriangle : Info;
+  const Icon = toast.type === "success" ? Check
+    : toast.type === "error" || toast.type === "warning" ? AlertTriangle
+    : Info;
 
   return (
     <div className={`toast toast--${toast.type}${hiding ? " toast--hiding" : ""}`}>

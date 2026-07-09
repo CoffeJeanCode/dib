@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronRight, Table2, Eye, Layers, Hash, FileCode2, Zap,
   FolderTree, Users, Puzzle, BookA, Columns3, ListOrdered, Database,
@@ -9,6 +9,7 @@ import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { SkeletonRow } from "@/shared/ui/Skeleton";
 import { useTreeStateStore, useNodeExpanded } from "@/store/treeStateStore";
 import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
+import { useConnectionStore } from "@/store/connectionStore";
 import { ENGINE_COLORS } from "./utils";
 import type { DbTreeNode } from "@/types/db";
 
@@ -176,9 +177,20 @@ function useLazyChildren(
   const [children, setChildren] = useState<DbTreeNode[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reloadVersion = useConnectionStore((s) => s.reloadVersion);
+  const prevReloadRef = useRef(reloadVersion);
 
   useEffect(() => {
-    if (!enabled || children !== null || loading || !fetchType) return;
+    if (!enabled || !fetchType) return;
+    // Invalidate cached children on reloadVersion change (e.g. DROP TABLE)
+    if (prevReloadRef.current !== reloadVersion) {
+      prevReloadRef.current = reloadVersion;
+      setChildren(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+    if (children !== null || loading) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -192,7 +204,7 @@ function useLazyChildren(
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, children, sessionId, fetchType, parentId]);
+  }, [enabled, children, loading, sessionId, fetchType, parentId, reloadVersion]);
 
   return { children, loading, error };
 }

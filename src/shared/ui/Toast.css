@@ -105,3 +105,7 @@
   flex-shrink: 0;
   color: var(--color-bg-elevated);
 }
+
+.toast--success {
+  border-left: 3px solid var(--color-teal, #14b8a6);
+} 

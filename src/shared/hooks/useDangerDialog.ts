@@ -19,9 +19,9 @@ export function useDangerDialog(
       useUiStore.getState().setDangerDialog({
         message: `Drop table "${label}"? This action cannot be undone.`,
         onConfirm: async () => {
-          useUiStore.getState().setDangerDialog(null);
           try {
             await dbService.dropTable(connId, table.name, table.schema ?? null);
+            useUiStore.getState().setDangerDialog(null);
             onInfo(`Table "${label}" dropped`);
             triggerReload();
           } catch (e: unknown) {
@@ -29,6 +29,7 @@ export function useDangerDialog(
               ? String((e as { message: unknown }).message)
               : String(e);
             onError(msg);
+            throw e;
           }
         },
       });
@@ -44,12 +45,12 @@ export function useDangerDialog(
       useUiStore.getState().setDangerDialog({
         message: `Truncate table "${label}"? ALL records will be deleted. This action cannot be undone.`,
         onConfirm: async () => {
-          useUiStore.getState().setDangerDialog(null);
           try {
             const sql = table.schema
               ? `TRUNCATE TABLE "${table.schema}"."${table.name}"`
               : `TRUNCATE TABLE "${table.name}"`;
             await dbService.runQuery(connId, sql);
+            useUiStore.getState().setDangerDialog(null);
             onInfo(`Table "${label}" truncated`);
             triggerReload();
           } catch (e: unknown) {
@@ -57,6 +58,7 @@ export function useDangerDialog(
               ? String((e as { message: unknown }).message)
               : String(e);
             onError(msg);
+            throw e;
           }
         },
       });
