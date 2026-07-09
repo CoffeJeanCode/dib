@@ -1,12 +1,20 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { dbService } from "@/services/dbService";
-import type { TableInfo, ColumnInfo, PagedResult, GridFilter, TableRelation, PendingChange } from "@/types/db";
+import { useConnectionStore } from "@/store/connectionStore";
+import type { TableInfo, ColumnInfo, PagedResult, GridFilter, TableRelation, PendingChange, OrderBy } from "@/types/db";
 
 export const DEFAULT_PAGE_SIZE = 100;
 
 export function useDatabaseEngine(connectionId: string) {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [columnMap, setColumnMap] = useState<Record<string, ColumnInfo[]>>({});
+  const reloadVersion = useConnectionStore((s) => s.reloadVersion);
+
+  // Invalidate columnMap on reload (e.g. after ALTER TABLE) so next
+  // loadColumnsBatch re-fetches instead of hitting the early-return guard.
+  useEffect(() => {
+    setColumnMap({});
+  }, [reloadVersion]);
   const [tableRelations, setTableRelations] = useState<Record<string, TableRelation[]>>({});
   const tableRelationsRef = useRef<Record<string, TableRelation[]>>({});
 
@@ -23,8 +31,8 @@ export function useDatabaseEngine(connectionId: string) {
 
   // Pure fetch — callers own state updates
   const fetchTablePage = useCallback(
-    (table: TableInfo, offset: number, pageSize: number, filters: GridFilter[] | null): Promise<PagedResult> =>
-      dbService.fetchTableData(connectionId, table.name, table.schema ?? null, offset, pageSize, filters),
+    (table: TableInfo, offset: number, pageSize: number, filters: GridFilter[] | null, orderBy?: OrderBy | null): Promise<PagedResult> =>
+      dbService.fetchTableData(connectionId, table.name, table.schema ?? null, offset, pageSize, filters, orderBy),
     [connectionId],
   );
 
