@@ -368,14 +368,11 @@ export function QueryPanel({
         await commitChanges(ts.table.name, ts.primaryKeyColumn, ts.pendingChanges);
         updateTableTabState(tabId, { pendingChanges: [] });
         markTabClean(tabId);
-        loadTablePage(tabId, ts.table, ts.offset, ts.pageSize, ts.filters);
+        loadTablePage(tabId, ts.table, ts.offset, ts.pageSize, ts.filters, ts.orderBy);
       } catch (e) {
         updateTableTabState(tabId, { error: fmtErr(e) });
       } finally {
         setCommitting(null);
-        requestAnimationFrame(() => {
-          document.querySelector<HTMLElement>(".dg-wrap")?.focus();
-        });
       }
     },
     [tableTabStates, commitChanges, updateTableTabState, markTabClean, loadTablePage],

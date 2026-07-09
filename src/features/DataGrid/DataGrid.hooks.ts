@@ -39,6 +39,8 @@ export function useDataGridState({
   primaryKeyColumn,
   columnInfos,
   filters,
+  orderBy,
+  onSortChange,
   activeCell: activeCellProp,
   relations,
   disableAutoFocus = false,
@@ -56,6 +58,8 @@ export function useDataGridState({
   onPendingChangesRef.current = onPendingChanges;
   const onFiltersChangeRef = useRef(onFiltersChange);
   onFiltersChangeRef.current = onFiltersChange;
+  const onSortChangeRef = useRef(onSortChange);
+  onSortChangeRef.current = onSortChange;
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
   const onForceCloseRef = useRef(onForceClose);
@@ -299,41 +303,56 @@ export function useDataGridState({
     if (containerRef.current) containerRef.current.scrollLeft = scrollLeftRef.current;
   }, [orderedColumns, columnWidths]);
 
-  useEffect(() => {
-    if (preserveOrderRef.current) {
-      preserveOrderRef.current = false;
-      const colIdx = pkColIdxRef.current;
-      const prev = displayedRowsRef.current;
-      if (colIdx >= 0 && prev.length > 0) {
-        const orderMap = new Map<unknown, number>();
-        for (let i = 0; i < prev.length; i++) {
-          const pk = (prev[i] as unknown[])[colIdx];
-          if (pk != null) orderMap.set(pk, i);
-        }
-        const sorted = [...rows].sort((a, b) => {
-          const ia = orderMap.get((a as unknown[])[colIdx]) ?? Number.MAX_SAFE_INTEGER;
-          const ib = orderMap.get((b as unknown[])[colIdx]) ?? Number.MAX_SAFE_INTEGER;
-          return ia - ib;
-        });
-        setEditState(makeEditState(sorted));
-        setSelectedCells(new Set());
-        setAnchorCell(null);
-        return;
-      }
+  // Synchronous PK-keyed reorder — one paint, no flicker
+  const sortedRows = useMemo(() => {
+    if (!preserveOrderRef.current) return rows;
+    preserveOrderRef.current = false;
+    // Skip reorder when user has an active sort — backend returns correct order
+    if (orderBy?.direction) return rows;
+    const colIdx = pkColIdxRef.current;
+    const prev = displayedRowsRef.current;
+    if (colIdx < 0 || prev.length === 0) return rows;
+    const orderMap = new Map<unknown, number>();
+    for (let i = 0; i < prev.length; i++) {
+      const pk = (prev[i] as unknown[])[colIdx];
+      if (pk != null) orderMap.set(pk, i);
     }
-    setEditState(makeEditState(rows));
-    setSelectedCells(new Set());
-    setAnchorCell(null);
-  }, [rows]); // eslint-disable-line react-hooks/exhaustive-deps
+    return [...rows].sort((a, b) => {
+      const ia = orderMap.get((a as unknown[])[colIdx]) ?? Number.MAX_SAFE_INTEGER;
+      const ib = orderMap.get((b as unknown[])[colIdx]) ?? Number.MAX_SAFE_INTEGER;
+      return ia - ib;
+    });
+  }, [rows, orderBy]);
 
   useEffect(() => {
-    if (disableAutoFocus || rows.length === 0) return;
+    setEditState(makeEditState(sortedRows));
+    // Preserve selection — clamp instead of clearing
+    const maxRow = sortedRows.length - 1;
+    if (anchorCell && anchorCell.row > maxRow) {
+      setAnchorCell({ row: maxRow >= 0 ? maxRow : 0, col: anchorCell.col });
+    }
+    if (maxRow >= 0) {
+      setSelectedCells((prev) => {
+        const next = new Set(prev);
+        let changed = false;
+        for (const id of next) {
+          const [, r] = id.split(":").map(Number);
+          if (r > maxRow) { next.delete(id); changed = true; }
+        }
+        return changed ? next : prev;
+      });
+    }
+    displayedRowsRef.current = sortedRows;
+  }, [sortedRows]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (disableAutoFocus || sortedRows.length === 0) return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         gridRef.current?.focus({ preventScroll: true });
       });
     });
-  }, [disableAutoFocus, rows.length]);
+  }, [disableAutoFocus, sortedRows.length]);
 
   useEffect(() => {
     onPendingChangesRef.current?.(Array.from(editState.changes.values()));
@@ -553,12 +572,13 @@ export function useDataGridState({
   const startEdit = useCallback(
     (rowIdx: number, colIdx: number) => {
       if (!tableName) return;
+      const col = orderedColumns[colIdx];
+      if (!col) return;
       setActiveCell({ row: rowIdx, col: colIdx });
-      const origIdx = orderedColumns[colIdx].origIdx;
-      setEditValue(cellStr(editState.rows[rowIdx]?.[origIdx]));
+      setEditValue(cellStr(editState.rows[rowIdx]?.[col.origIdx]));
       setIsEditing(true);
     },
-    [editState.rows, tableName, setActiveCell],
+    [editState.rows, orderedColumns, tableName, setActiveCell],
   );
 
   // Row operations
@@ -748,9 +768,9 @@ export function useDataGridState({
     navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
   }, [selectedCells, editState.rows]);
 
-  const cutSelection = useCallback(() => {
+  // Clear cell contents (→ null) without touching the clipboard — Ctrl+Delete
+  const clearSelection = useCallback(() => {
     if (!selectedCells.size || !tableName) return;
-    copySelection();
     const nextRows = editState.rows.map((r) => [...(r as unknown[])]) as unknown[][];
     const nextChanges = new Map(editState.changes);
     for (const id of selectedCells) {
@@ -800,7 +820,6 @@ export function useDataGridState({
   }, [
     selectedCells,
     tableName,
-    copySelection,
     editState,
     rows,
     columns,
@@ -810,6 +829,12 @@ export function useDataGridState({
     getPkStr,
     mutate,
   ]);
+
+  const cutSelection = useCallback(() => {
+    if (!selectedCells.size || !tableName) return;
+    copySelection();
+    clearSelection();
+  }, [selectedCells, tableName, copySelection, clearSelection]);
 
   const pasteFromClipboard = useCallback(async () => {
     if (!activeCell || !tableName) return;
@@ -924,6 +949,7 @@ export function useDataGridState({
         redo,
         copySelection,
         cutSelection,
+        clearSelection,
         pasteFromClipboard,
         insertGhostRow,
         duplicateRows,
@@ -959,6 +985,7 @@ export function useDataGridState({
       redo,
       copySelection,
       cutSelection,
+      clearSelection,
       pasteFromClipboard,
       insertGhostRow,
       duplicateRows,
@@ -1022,6 +1049,106 @@ export function useDataGridState({
       setActiveCell,
       generateJoinQuery,
     ],
+  );
+
+  // ── Excel-style drag selection ─────────────────────────────────────────
+  const dragSelAnchorRef = useRef<{ row: number; col: number } | null>(null);
+  const dragSelLastRef = useRef<{ row: number; col: number } | null>(null);
+  const dragSelPosRef = useRef<{ x: number; y: number } | null>(null);
+  const dragSelRafRef = useRef<number | null>(null);
+  const dragSelStopRef = useRef<(() => void) | null>(null);
+
+  const extendDragTo = useCallback(
+    (x: number, y: number) => {
+      const anchor = dragSelAnchorRef.current;
+      if (!anchor) return;
+      const el = (document.elementFromPoint(x, y) as HTMLElement | null)?.closest(
+        "[data-dg-r]",
+      ) as HTMLElement | null;
+      if (!el) return;
+      const row = Number(el.dataset.dgR);
+      const col = Number(el.dataset.dgC);
+      if (Number.isNaN(row) || Number.isNaN(col)) return;
+      const last = dragSelLastRef.current;
+      if (last && last.row === row && last.col === col) return;
+      dragSelLastRef.current = { row, col };
+      setSelectedCells(buildRangeSet(anchor.row, anchor.col, row, col));
+      // moving end of the range — same semantics as shift+arrow/shift+click
+      setActiveCell({ row, col });
+    },
+    [setActiveCell],
+  );
+
+  const handleCellMouseDown = useCallback(
+    (rowIdx: number, colIdx: number, e: React.MouseEvent) => {
+      // modifier clicks (shift/ctrl range & toggle, FK nav) resolve in handleCellClick
+      if (e.button !== 0 || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isEditing) return; // the edit input owns the mouse (text selection)
+      e.preventDefault(); // block native text selection while dragging
+      gridRef.current?.focus({ preventScroll: true });
+      dragSelAnchorRef.current = { row: rowIdx, col: colIdx };
+      dragSelLastRef.current = { row: rowIdx, col: colIdx };
+      dragSelPosRef.current = { x: e.clientX, y: e.clientY };
+      setAnchorCell({ row: rowIdx, col: colIdx });
+      setActiveCell({ row: rowIdx, col: colIdx });
+      setSelectedCells(new Set([cellId(rowIdx, colIdx)]));
+
+      const onMove = (ev: MouseEvent) => {
+        dragSelPosRef.current = { x: ev.clientX, y: ev.clientY };
+        extendDragTo(ev.clientX, ev.clientY);
+      };
+      const stop = () => {
+        dragSelAnchorRef.current = null;
+        dragSelPosRef.current = null;
+        if (dragSelRafRef.current != null) cancelAnimationFrame(dragSelRafRef.current);
+        dragSelRafRef.current = null;
+        dragSelStopRef.current = null;
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", stop);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", stop);
+      dragSelStopRef.current = stop;
+
+      // Edge auto-scroll: keeps painting while the pointer rests at a border.
+      const EDGE = 40;
+      const SPEED = 14;
+      const step = () => {
+        if (!dragSelAnchorRef.current) return;
+        const pos = dragSelPosRef.current;
+        const cont = containerRef.current;
+        if (pos && cont) {
+          const r = cont.getBoundingClientRect();
+          const dy = pos.y > r.bottom - EDGE ? SPEED : pos.y < r.top + EDGE ? -SPEED : 0;
+          const dx = pos.x > r.right - EDGE ? SPEED : pos.x < r.left + EDGE ? -SPEED : 0;
+          if (dx || dy) {
+            cont.scrollTop += dy;
+            cont.scrollLeft += dx;
+            extendDragTo(pos.x, pos.y);
+          }
+        }
+        dragSelRafRef.current = requestAnimationFrame(step);
+      };
+      dragSelRafRef.current = requestAnimationFrame(step);
+    },
+    [isEditing, extendDragTo, setActiveCell],
+  );
+
+  // Cancel a drag in flight if the grid unmounts mid-gesture
+  useEffect(() => () => dragSelStopRef.current?.(), []);
+
+  // Header click → whole-column selection; shift+click extends from anchor column.
+  const selectColumnRange = useCallback(
+    (colIdx: number, extend: boolean) => {
+      const rowCount = editState.rows.length;
+      if (rowCount === 0) return;
+      const fromCol = extend && anchorCell ? anchorCell.col : colIdx;
+      setSelectedCells(buildRangeSet(0, fromCol, rowCount - 1, colIdx));
+      if (!(extend && anchorCell)) setAnchorCell({ row: 0, col: colIdx });
+      setActiveCell({ row: 0, col: colIdx });
+      gridRef.current?.focus({ preventScroll: true });
+    },
+    [editState.rows.length, anchorCell, setActiveCell],
   );
 
   // Resize
@@ -1101,9 +1228,34 @@ export function useDataGridState({
     [filters],
   );
 
+  const handleHeaderSort = useCallback(
+    (colName: string) => {
+      const fn = onSortChangeRef.current;
+      if (!fn) return;
+      if (orderBy?.column === colName) {
+        fn(orderBy.direction === "ASC" ? { column: colName, direction: "DESC" } : null);
+      } else {
+        fn({ column: colName, direction: "ASC" });
+      }
+    },
+    [orderBy],
+  );
+
+  const handleSortColumn = useCallback(
+    (colName: string, direction: "ASC" | "DESC" | null) => {
+      const fn = onSortChangeRef.current;
+      if (!fn) return;
+      fn(direction ? { column: colName, direction } : null);
+    },
+    [],
+  );
+
   return {
     orderedColumns,
     setOrderedColumns,
+    orderBy,
+    handleHeaderSort,
+    handleSortColumn,
     // refs
     containerRef,
     setContainerEl,
@@ -1154,6 +1306,8 @@ export function useDataGridState({
     // handlers
     handleGridKeyDown,
     handleCellClick,
+    handleCellMouseDown,
+    selectColumnRange,
     handleResizeStart,
     autoFitColumn,
     openFilterPopover,
