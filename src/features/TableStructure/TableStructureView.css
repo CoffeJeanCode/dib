@@ -656,3 +656,49 @@
   color: var(--color-teal);
   border-color: var(--color-teal);
 }
+
+/* ── FK sort dropdown ─────────────────────────────────────────── */
+.sv2-sort {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sv2-sort-select {
+  appearance: none;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 22px 4px 8px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.12s;
+  min-width: 90px;
+}
+
+.sv2-sort-select:focus {
+  border-color: var(--color-teal);
+}
+
+.sv2-sort-chevron {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.sv2-badge--on-update {
+  background: color-mix(in srgb, var(--color-blue) 10%, transparent);
+  color: var(--color-blue);
+  border: 1px solid color-mix(in srgb, var(--color-blue) 22%, transparent);
+  font-size: 9px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}

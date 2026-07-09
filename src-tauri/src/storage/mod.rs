@@ -160,9 +160,12 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             is_pinned     INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY(folder_id) REFERENCES virtual_folders(id) ON DELETE CASCADE
         );
+        CREATE INDEX IF NOT EXISTS idx_query_history_connection_id ON query_history(connection_id);
+        CREATE INDEX IF NOT EXISTS idx_virtual_folders_connection_id ON virtual_folders(connection_id);
+        CREATE INDEX IF NOT EXISTS idx_virtual_scripts_connection_id ON virtual_scripts(connection_id);
         ",
     )?;
-    
+
     // Add password column to existing DBs (keyring fallback; silently ignored if already present).
     let _ = conn.execute_batch("ALTER TABLE saved_connections ADD COLUMN password TEXT;");
     // Add workspace_id column for isolated workspaces
@@ -171,6 +174,11 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
     let _ = conn.execute_batch("ALTER TABLE virtual_folders ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
     let _ = conn.execute_batch("ALTER TABLE virtual_scripts ADD COLUMN color TEXT;");
     let _ = conn.execute_batch("ALTER TABLE virtual_scripts ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
+
+    // workspace_id is added via ALTER above on pre-existing DBs, so this index
+    // must run after it — creating it in the main CREATE TABLE batch would
+    // fail on any DB that predates the column.
+    conn.execute_batch("CREATE INDEX IF NOT EXISTS idx_saved_connections_workspace_id ON saved_connections(workspace_id);")?;
 
     Ok(())
 }

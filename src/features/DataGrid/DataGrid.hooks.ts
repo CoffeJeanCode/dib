@@ -1,5 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useConnectionStore } from "@/store/connectionStore";
+import { dbService } from "@/services/dbService";
 import type { PendingChange, ColumnInfo, GridFilter, FilterOperator } from "@/types/db";
 import { ROW_H, OVERSCAN, DEFAULT_COL_W, MIN_COL_W, MAX_HISTORY } from "./DataGrid.constants";
 import { operatorsForType, cellStr, makeKey, cellId, buildRangeSet } from "./DataGrid.utils";
@@ -95,7 +97,9 @@ export function useDataGridState({
   const [viewH, setViewH] = useState(400);
 
   const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(e.currentTarget.scrollTop);
+    const top = e.currentTarget.scrollTop;
+    const bucket = Math.floor(top / ROW_H) * ROW_H;
+    setScrollTop((prev) => (prev === bucket ? prev : bucket));
     scrollLeftRef.current = e.currentTarget.scrollLeft;
     if (headerRef.current) headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
   }, []);
@@ -106,8 +110,13 @@ export function useDataGridState({
   useEffect(() => {
     const currentStr = columns.join(",");
     if (currentStr !== prevColsStr.current || orderedColumns.length === 0) {
+      const seen = new Map<string, number>();
       setOrderedColumns(
-        columns.map((name, origIdx) => ({ id: `${name}-${origIdx}`, name, origIdx })),
+        columns.map((name, origIdx) => {
+          const count = seen.get(name) ?? 0;
+          seen.set(name, count + 1);
+          return { id: `${name}-${origIdx}`, name, origIdx, label: count > 0 ? `${name} (${count})` : undefined };
+        }),
       );
       prevColsStr.current = currentStr;
     }
@@ -207,10 +216,27 @@ export function useDataGridState({
   const fkMenuRef = useRef<HTMLDivElement | null>(null);
 
   const generateJoinQuery = useCallback(
-    (col: string) => {
+    async (col: string) => {
       const fk = fkMap[col];
       if (!fk || !tableName) return;
-      const sql = `SELECT src.*, ref.*\nFROM ${tableName} src\nJOIN ${fk.targetTable} ref ON src.${col} = ref.${fk.targetColumn};\n`;
+
+      // Alias only the columns that actually collide with the src table —
+      // ref.* stays untouched otherwise, so the query reads naturally.
+      let refSelect = "ref.*";
+      const connectionId = useConnectionStore.getState().active?.activeId;
+      if (connectionId) {
+        try {
+          const structure = await dbService.getTableStructure(connectionId, fk.targetTable, null);
+          const srcNames = new Set(Object.keys(colInfoMap));
+          refSelect = structure.columns
+            .map((c) => (srcNames.has(c.name) ? `ref.${c.name} AS ${fk.targetTable}_${c.name}` : `ref.${c.name}`))
+            .join(", ");
+        } catch {
+          // Fall back to ref.* if the structure lookup fails.
+        }
+      }
+
+      const sql = `SELECT src.*, ${refSelect}\nFROM ${tableName} src\nJOIN ${fk.targetTable} ref ON src.${col} = ref.${fk.targetColumn};\n`;
       // Same channel the command palette uses — QueryPanel opens it as a new tab.
       useWorkspaceStore.getState().setOpenScript({
         sql,
@@ -220,17 +246,17 @@ export function useDataGridState({
         autoRun: true,
       });
     },
-    [fkMap, tableName],
+    [fkMap, tableName, colInfoMap],
   );
 
   const handleCellContextMenu = useCallback(
     (colIdx: number, e: React.MouseEvent) => {
       const col = orderedColumns[colIdx];
-      if (!fkMap[col.name]) return;
+      if (!fkMap[col.name] && !selectedCells.size) return;
       e.preventDefault();
       setFkMenu({ x: e.clientX, y: e.clientY, col: col.name });
     },
-    [columns, fkMap],
+    [orderedColumns, fkMap, selectedCells],
   );
 
   useEffect(() => {
@@ -481,7 +507,8 @@ export function useDataGridState({
     (moveDirection: "down" | "right" | null) => {
       if (!activeCell || !tableName) return;
       const { row, col } = activeCell;
-      const newValue = editValue || null;
+      const liveValue = inputRef.current?.value ?? editValue;
+      const newValue = liveValue || null;
 
       if (editState.ghostRowIds.has(row)) {
         const changeId = editState.ghostRowIds.get(row)!;
@@ -768,6 +795,31 @@ export function useDataGridState({
     navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
   }, [selectedCells, editState.rows]);
 
+  // Same range as copySelection, with a header row of column names prepended.
+  const copySelectionWithHeaders = useCallback(() => {
+    if (!selectedCells.size) return;
+    const coords = Array.from(selectedCells).map((id) => {
+      const [r, c] = id.split(":").map(Number);
+      return { r, c };
+    });
+    const minR = Math.min(...coords.map((x) => x.r));
+    const maxR = Math.max(...coords.map((x) => x.r));
+    const minC = Math.min(...coords.map((x) => x.c));
+    const maxC = Math.max(...coords.map((x) => x.c));
+    const header: string[] = [];
+    for (let c = minC; c <= maxC; c++) header.push(orderedColumns[c].name);
+    const lines: string[] = [header.join("\t")];
+    for (let r = minR; r <= maxR; r++) {
+      const cells: string[] = [];
+      for (let c = minC; c <= maxC; c++) {
+        const origIdx = orderedColumns[c].origIdx;
+        cells.push(selectedCells.has(cellId(r, c)) ? cellStr(editState.rows[r]?.[origIdx]) : "");
+      }
+      lines.push(cells.join("\t"));
+    }
+    navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
+  }, [selectedCells, editState.rows, orderedColumns]);
+
   // Clear cell contents (→ null) without touching the clipboard — Ctrl+Delete
   const clearSelection = useCallback(() => {
     if (!selectedCells.size || !tableName) return;
@@ -956,6 +1008,11 @@ export function useDataGridState({
         markRowsForDeletion,
         onForceClose: () => onForceCloseRef.current?.(),
         onFocusEditor: () => onFocusEditorRef.current?.(),
+        onFkNavigate: (targetTable, targetColumn, value) => onFkNavigateRef.current?.(targetTable, targetColumn, value),
+        onGenerateJoinQuery: generateJoinQuery,
+        fkMap,
+        editStateRows: editState.rows,
+        orderedColumnNames: columns,
         setSelectedCells,
         setAnchorCell,
         setActiveCell,
@@ -1297,12 +1354,14 @@ export function useDataGridState({
     colInfoMap,
     fkMap,
     deletedRowIndices,
-    // FK context menu
+    // FK / cell context menu
     fkMenu,
     setFkMenu,
     fkMenuRef,
     generateJoinQuery,
     handleCellContextMenu,
+    copySelection,
+    copySelectionWithHeaders,
     // handlers
     handleGridKeyDown,
     handleCellClick,

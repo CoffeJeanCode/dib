@@ -1,5 +1,5 @@
 import { safeInvoke } from "@/shared/utils/ipc";
-import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects } from "@/types/db";
+import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects, CreateColumn } from "@/types/db";
 
 export const dbService = {
   fetchTableSchema: (connectionId: string, tableName: string, schema: string | null) =>
@@ -12,8 +12,9 @@ export const dbService = {
     offset: number,
     limit: number,
     filters: GridFilter[] | null,
+    orderBy?: { column: string; direction: "ASC" | "DESC" } | null,
   ) =>
-    safeInvoke<PagedResult>("fetch_table_data", { connectionId, tableName, schema, offset, limit, filters }),
+    safeInvoke<PagedResult>("fetch_table_data", { connectionId, tableName, schema, offset, limit, filters, orderBy }),
 
   runQuery: (connectionId: string, sql: string) =>
     safeInvoke<QueryResult>("run_query", { connectionId, sql }),
@@ -60,6 +61,9 @@ export const dbService = {
 
   explainQuery: (connectionId: string, sql: string) =>
     safeInvoke<ExplainPlan>("explain_query", { connectionId, sql }),
+
+  createTable: (connectionId: string, tableName: string, schema: string | null, columns: CreateColumn[]) =>
+    safeInvoke<void>("create_table", { connectionId, tableName, schema, columns }),
 
   dropTable: (connectionId: string, tableName: string, schema: string | null) =>
     safeInvoke<void>("drop_table", { connectionId, tableName, schema }),

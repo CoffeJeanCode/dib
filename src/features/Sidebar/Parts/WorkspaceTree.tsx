@@ -29,6 +29,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { workspaceService } from "@/services/workspaceService";
 import { useTreeStateStore } from "@/store/treeStateStore";
+import { useTreeKeyboardNav } from "@/shared/hooks/useTreeKeyboardNav";
 import type { FsNode } from "@/types/workspace";
 import { ScriptsContextMenu } from "@/features/Sidebar/Parts/ScriptsContextMenu";
 
@@ -63,6 +64,7 @@ interface TreeItemProps {
   onCreateRequest?: (type: "file" | "folder", targetPath: string) => void;
   onDeleteRequest?: (node: FsNode) => void;
   onRenameRequest?: (node: FsNode) => void;
+  onDuplicateRequest?: (node: FsNode) => void;
   renameTargetId?: string | null;
   renameValue?: string;
   onRenameChange?: (val: string) => void;
@@ -72,7 +74,7 @@ interface TreeItemProps {
   onSelectRequest?: (e: React.MouseEvent, node: FsNode) => void;
 }
 
-function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh, onCreateRequest, onDeleteRequest, onRenameRequest, renameTargetId, renameValue, onRenameChange, onRenameSubmit, onRenameCancel, selectedPaths, onSelectRequest }: TreeItemProps) {
+function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh, onCreateRequest, onDeleteRequest, onRenameRequest, onDuplicateRequest, renameTargetId, renameValue, onRenameChange, onRenameSubmit, onRenameCancel, selectedPaths, onSelectRequest }: TreeItemProps) {
   const isExpanded = useTreeStateStore((s) => s.expandedNodes[node.path]);
   const toggleNode = useTreeStateStore((s) => s.toggleNode);
 
@@ -165,6 +167,7 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
       onColorChange={changeColor}
       onDelete={() => onDeleteRequest?.(node)}
       onRename={() => onRenameRequest?.(node)}
+      onDuplicate={() => onDuplicateRequest?.(node)}
       isFolder={node.isDir || node.is_dir}
       selectedCount={selectedPaths?.has(node.path) ? Math.max(1, selectedPaths.size) : 1}
     >
@@ -172,9 +175,12 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
         ref={setRefs}
         style={style}
         className="tree-item"
+        data-tree-item
         onClick={handleClick}
+        onDoubleClick={(e) => { e.stopPropagation(); onRenameRequest?.(node); }}
         {...attributes}
         {...listeners}
+        tabIndex={-1}
       >
         <span className="tree-item__spacer" />
         {node.isDir || node.is_dir ? (
@@ -194,6 +200,7 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
               if (e.key === "Enter") { e.stopPropagation(); onRenameSubmit?.(); }
               if (e.key === "Escape") { e.stopPropagation(); onRenameCancel?.(); }
             }}
+            onBlur={() => onRenameSubmit?.()}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             style={{ margin: "0 4px" }}
@@ -228,6 +235,7 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
               onCreateRequest={onCreateRequest}
               onDeleteRequest={onDeleteRequest}
               onRenameRequest={onRenameRequest}
+              onDuplicateRequest={onDuplicateRequest}
               renameTargetId={renameTargetId}
               renameValue={renameValue}
               onRenameChange={onRenameChange}
@@ -252,6 +260,37 @@ function findNode(node: FsNode, path: string): FsNode | null {
     }
   }
   return null;
+}
+
+/** Every file (non-folder) path under `node`, including itself if it's a file. */
+function collectFilePaths(node: FsNode): string[] {
+  if (!node.isDir && !node.is_dir) return [node.path];
+  return (node.children ?? []).flatMap(collectFilePaths);
+}
+
+/** Path of the node's parent, or null if it's at the tree root / not found. */
+function findParentPath(node: FsNode, targetPath: string): string | null {
+  if (!node.children) return null;
+  if (node.children.some((c) => c.path === targetPath)) {
+    return node.path === "root" ? null : node.path;
+  }
+  for (const child of node.children) {
+    const found = findParentPath(child, targetPath);
+    if (found !== null) return found;
+  }
+  return null;
+}
+
+/** "name.sql" -> "name copy.sql" -> "name copy 2.sql", skipping existing siblings. */
+function generateCopyName(existingNames: Set<string>, baseName: string): string {
+  const dotIdx = baseName.lastIndexOf(".");
+  const stem = dotIdx > 0 ? baseName.slice(0, dotIdx) : baseName;
+  const ext = dotIdx > 0 ? baseName.slice(dotIdx) : "";
+  let candidate = `${stem} copy${ext}`;
+  for (let n = 2; existingNames.has(candidate); n++) {
+    candidate = `${stem} copy ${n}${ext}`;
+  }
+  return candidate;
 }
 
 function getVisibleNodes(tree: FsNode, expanded: Record<string, boolean>): FsNode[] {
@@ -295,6 +334,10 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
 
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const [lastSelectedPath, setLastSelectedPath] = useState<string | null>(null);
+
+  const { containerRef: treeNavRef, handleKeyDown: treeNavKeyDown } = useTreeKeyboardNav({
+    itemSelector: "[data-tree-item]",
+  });
 
   const refresh = useCallback(() => {
     if (rootPath) loadWorkspaceTree(rootPath, workspaceId);
@@ -351,6 +394,10 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
   };
 
   const { setNodeRef: setRootRef, isOver: isRootOver } = useDroppable({ id: 'root' });
+  const rootRefCallback = useCallback((el: HTMLDivElement | null) => {
+    (treeNavRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    setRootRef(el);
+  }, [treeNavRef, setRootRef]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -443,6 +490,13 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
     
     if (!confirm(`Are you sure you want to delete ${pathsToDelete.length > 1 ? pathsToDelete.length + ' items' : node.name}?`)) return;
     try {
+      // Snapshot open-tab targets (files, including everything under deleted
+      // folders) before the nodes disappear from the tree.
+      const affectedFilePaths = pathsToDelete.flatMap((path) => {
+        const targetNode = findNode(tree, path);
+        return targetNode ? collectFilePaths(targetNode) : [path];
+      });
+
       for (const path of pathsToDelete) {
         if (workspaceId) {
           await workspaceService.deleteFsItem(path);
@@ -457,12 +511,41 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
           }
         }
       }
+      for (const filePath of affectedFilePaths) {
+        useWorkspaceStore.getState().dispatchTabAction("mark_deleted", filePath);
+      }
       setSelectedPaths(new Set());
       refresh();
     } catch (e: any) {
       alert("Error deleting item(s): " + e);
     }
   }, [workspaceId, connectionId, refresh, selectedPaths, tree]);
+
+  const handleDuplicateRequest = useCallback(async (node: FsNode) => {
+    if (node.isDir || node.is_dir) return;
+    try {
+      if (workspaceId) {
+        const content = await workspaceService.readTextFile(node.path);
+        const sep = node.path.includes("\\") ? "\\" : "/";
+        const dir = node.path.slice(0, node.path.lastIndexOf(sep));
+        const parentNode = findNode(tree, dir);
+        const siblingNames = new Set((parentNode?.children ?? []).map((c) => c.name));
+        const newName = generateCopyName(siblingNames, node.name);
+        await workspaceService.writeTextFile(`${dir}${sep}${newName}`, content);
+      } else if (connectionId) {
+        const parentPath = findParentPath(tree, node.path);
+        const parentNode = parentPath ? findNode(tree, parentPath) : tree;
+        const siblingNames = new Set((parentNode?.children ?? []).map((c) => c.name));
+        const newName = generateCopyName(siblingNames, node.name);
+        await workspaceService.saveVirtualScript(
+          crypto.randomUUID(), newName, node.content ?? "", parentPath, connectionId, node.color ?? null, false,
+        );
+      }
+      refresh();
+    } catch (e: any) {
+      alert("Error duplicating script: " + e);
+    }
+  }, [tree, workspaceId, connectionId, refresh]);
 
   const handleRenameRequest = useCallback((node: FsNode) => {
     setRenameNode(node);
@@ -515,7 +598,7 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
           onNewScript={() => handleCreateRequest("file", "root")}
           onNewFolder={() => handleCreateRequest("folder", "root")}
         >
-          <div ref={setRootRef} className="workspace-tree-root min-h-[100px]" style={isRootOver ? { background: "var(--color-bg-hover)" } : undefined}>
+          <div ref={rootRefCallback} className="workspace-tree-root min-h-[100px]" tabIndex={-1} onKeyDown={treeNavKeyDown} style={isRootOver ? { background: "var(--color-bg-hover)" } : undefined}>
             {tree.children && tree.children.length > 0 ? (
               <SortableContext
                 items={tree.children.map(c => c.path)}
@@ -533,6 +616,7 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
                     onCreateRequest={handleCreateRequest}
                     onDeleteRequest={handleDeleteRequest}
                     onRenameRequest={handleRenameRequest}
+                    onDuplicateRequest={handleDuplicateRequest}
                     renameTargetId={renameNode?.path}
                     renameValue={renameValue}
                     onRenameChange={setRenameValue}

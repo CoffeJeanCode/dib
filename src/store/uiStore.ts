@@ -55,10 +55,12 @@ export const useUiStore = create<UiState>(() => ({
 
   renameTarget: null,
   alterTarget: null,
+  createTarget: null,
   dbAction: null,
   dangerDialog: null,
   setRenameTarget: (t) => useUiStore.setState({ renameTarget: t }),
   setAlterTarget: (t) => useUiStore.setState({ alterTarget: t }),
+  setCreateTarget: (t) => useUiStore.setState({ createTarget: t }),
   setDbAction: (action) => useUiStore.setState({ dbAction: action }),
   setDangerDialog: (d) => useUiStore.setState({ dangerDialog: d }),
   pushToRecents: (cmd) => useUiStore.setState((s) => {

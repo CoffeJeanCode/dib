@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use crate::db::{
-    ChangeRow, ColumnInfo, ColumnMetadata, DatabaseDriver, DbConfig, DbTreeNode, DdlResult, ExplainNode,
-    ExplainPlan, ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange,
+    ChangeRow, ColumnInfo, ColumnMetadata, CreateColumn, DatabaseDriver, DbConfig, DbTreeNode, DdlResult, ExplainNode,
+    ExplainPlan, ForeignKey, GridFilter, OrderBy, PagedResult, QueryError, QueryResult, SchemaChange,
     SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation,
     TableStructure, TriggerInfo,
 };
@@ -1433,10 +1433,14 @@ impl DatabaseDriver for PostgresDriver {
         offset: u64,
         limit: u64,
         filters: &[GridFilter],
+        order_by: Option<OrderBy>,
     ) -> Result<PagedResult, QueryError> {
         use sqlx::postgres::PgArguments;
         let q = qualified(table_name, schema);
         let (where_sql, filter_values) = build_where_pg(filters);
+        let order_sql = order_by
+            .map(|o| format!(" ORDER BY \"{}\" {}", o.column.replace('"', ""), o.direction))
+            .unwrap_or_default();
         let n = filter_values.len();
 
         let count_sql = format!("SELECT COUNT(*) FROM {q}{where_sql}");
@@ -1447,7 +1451,7 @@ impl DatabaseDriver for PostgresDriver {
             .await
             .map_err(|e| QueryError::from(e.to_string()))?;
 
-        let data_sql = format!("SELECT * FROM {q}{where_sql} LIMIT ${} OFFSET ${}", n + 1, n + 2);
+        let data_sql = format!("SELECT * FROM {q}{where_sql}{order_sql} LIMIT ${} OFFSET ${}", n + 1, n + 2);
         let mut data_args = PgArguments::default();
         for v in &filter_values { pg_bind_json(&mut data_args, v); }
         pg_bind_json(&mut data_args, &json!(limit as i64));
@@ -1662,16 +1666,20 @@ impl DatabaseDriver for PostgresDriver {
 
     async fn create_database(&self, name: &str) -> Result<(), QueryError> {
         let safe = name.replace("'", "''");
-        sqlx::query(&format!("CREATE DATABASE \"{}\"", safe))
+        // raw_sql: simple protocol; prepared statements run in an implicit
+        // transaction and CREATE/DROP DATABASE cannot run inside one.
+        sqlx::raw_sql(&format!("CREATE DATABASE \"{}\"", safe))
             .execute(&self.pool)
             .await
             .map_err(|e| QueryError::from(e.to_string()))?;
         Ok(())
     }
 
-    async fn drop_database(&self, name: &str) -> Result<(), QueryError> {
+    async fn drop_database(&self, name: &str, force: bool) -> Result<(), QueryError> {
         let safe = name.replace("'", "''");
-        sqlx::query(&format!("DROP DATABASE IF EXISTS \"{}\"", safe))
+        // WITH (FORCE) terminates active connections to the target db (PG 13+)
+        let force_clause = if force { " WITH (FORCE)" } else { "" };
+        sqlx::raw_sql(&format!("DROP DATABASE IF EXISTS \"{}\"{}", safe, force_clause))
             .execute(&self.pool)
             .await
             .map_err(|e| QueryError::from(e.to_string()))?;
@@ -1681,7 +1689,7 @@ impl DatabaseDriver for PostgresDriver {
     async fn rename_database(&self, old_name: &str, new_name: &str) -> Result<(), QueryError> {
         let old_safe = old_name.replace("'", "''");
         let new_safe = new_name.replace("'", "''");
-        sqlx::query(&format!("ALTER DATABASE \"{}\" RENAME TO \"{}\"", old_safe, new_safe))
+        sqlx::raw_sql(&format!("ALTER DATABASE \"{}\" RENAME TO \"{}\"", old_safe, new_safe))
             .execute(&self.pool)
             .await
             .map_err(|e| QueryError::from(e.to_string()))?;
@@ -1743,6 +1751,42 @@ impl DatabaseDriver for PostgresDriver {
         }
         let q = qualified(&safe_name, schema);
         let sql = format!("DROP TABLE IF EXISTS {q} CASCADE");
+        let mut tx = self.pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
+        sqlx::query(&sql).execute(&mut *tx).await.map_err(|e| QueryError::from(e.to_string()))?;
+        tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn create_table(&self, table_name: &str, schema: Option<&str>, columns: &[CreateColumn]) -> Result<(), QueryError> {
+        let safe_name = table_name.replace(['"', ';'], "");
+        if safe_name.is_empty() {
+            return Err(QueryError::from("Invalid table name".to_string()));
+        }
+        if columns.is_empty() {
+            return Err(QueryError::from("Table must have at least one column".to_string()));
+        }
+        let q = qualified(&safe_name, schema);
+        let mut col_defs: Vec<String> = columns.iter().map(|c| {
+            let name = c.name.replace(['"', ';'], "");
+            let mut def = format!("\"{}\" {}", name, c.data_type);
+            if !c.is_nullable {
+                def.push_str(" NOT NULL");
+            }
+            if let Some(ref dv) = c.default_value {
+                if !dv.is_empty() {
+                    def.push_str(&format!(" DEFAULT {}", dv));
+                }
+            }
+            def
+        }).collect();
+        let pk_cols: Vec<&str> = columns.iter().filter(|c| c.is_primary_key).map(|c| c.name.as_str()).collect();
+        let sql = if pk_cols.is_empty() {
+            format!("CREATE TABLE {} (\n  {}\n)", q, col_defs.join(",\n  "))
+        } else {
+            let pk_def = format!("  PRIMARY KEY ({})", pk_cols.iter().map(|n| format!("\"{}\"", n)).collect::<Vec<_>>().join(", "));
+            col_defs.push(pk_def);
+            format!("CREATE TABLE {} (\n  {}\n)", q, col_defs.join(",\n  "))
+        };
         let mut tx = self.pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
         sqlx::query(&sql).execute(&mut *tx).await.map_err(|e| QueryError::from(e.to_string()))?;
         tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;

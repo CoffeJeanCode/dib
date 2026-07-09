@@ -7,7 +7,7 @@ pub use driver::{create_driver, DatabaseDriver};
 #[allow(unused_imports)]
 pub use types::{
     ChangeRow, ColumnInfo, ColumnMetadata, ConnectionInfo, ConnectionStatus,
-    DbConfig, DbTreeNode, DdlResult, ExplainNode, ExplainPlan, ForeignKey, GridFilter, PagedResult,
+    CreateColumn, DbConfig, DbTreeNode, DdlResult, ExplainNode, ExplainPlan, ForeignKey, GridFilter, OrderBy, PagedResult,
     QueryError, QueryResult, SchemaChange, SchemaObjects, StructureColumn, StructureIndex,
     StructureTrigger, TableInfo, TableRelation, TableStructure, TriggerInfo,
 };

@@ -1,6 +1,6 @@
 use tauri::{Manager, State};
 
-use crate::db::{ChangeRow, ExplainPlan, GridFilter, PagedResult, QueryError, QueryResult};
+use crate::db::{ChangeRow, ExplainPlan, GridFilter, OrderBy, PagedResult, QueryError, QueryResult};
 use crate::commands::connection::DbState;
 
 #[tauri::command]
@@ -54,6 +54,7 @@ pub async fn fetch_table_data(
     limit: u64,
     #[allow(clippy::default_trait_access)]
     filters: Option<Vec<GridFilter>>,
+    order_by: Option<OrderBy>,
     state: State<'_, DbState>,
 ) -> Result<PagedResult, QueryError> {
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
@@ -61,7 +62,7 @@ pub async fn fetch_table_data(
         code: None,
         severity: Some("ERROR".to_string()),
     })?.clone();
-    driver.fetch_page(&table_name, schema.as_deref(), offset, limit, filters.as_deref().unwrap_or(&[])).await
+    driver.fetch_page(&table_name, schema.as_deref(), offset, limit, filters.as_deref().unwrap_or(&[]), order_by).await
 }
 
 #[tauri::command]

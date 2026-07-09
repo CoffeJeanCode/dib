@@ -190,7 +190,6 @@
   font-size: var(--font-size-xs);
   color: var(--color-danger-text);
   background: var(--color-danger-bg);
-  border-left: 3px solid var(--color-danger-border);
   font-family: var(--font-mono);
   white-space: pre-wrap;
   flex-shrink: 0;

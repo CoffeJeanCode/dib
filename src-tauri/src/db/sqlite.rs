@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use sqlx::{Column, Row, SqlitePool, TypeInfo};
 
-use crate::db::{ChangeRow, ColumnInfo, DatabaseDriver, ExplainNode, ExplainPlan, ForeignKey, GridFilter, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation, TableStructure};
+use crate::db::{ChangeRow, ColumnInfo, CreateColumn, DatabaseDriver, DbTreeNode, ExplainNode, ExplainPlan, ForeignKey, GridFilter, OrderBy, PagedResult, QueryError, QueryResult, SchemaChange, SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation, TableStructure};
 
 /// Builds ` WHERE ...` clause with ? placeholders for SQLite.
 fn build_where_sqlite(filters: &[GridFilter]) -> (String, Vec<String>) {
@@ -307,9 +307,13 @@ impl DatabaseDriver for SqliteDriver {
         offset: u64,
         limit: u64,
         filters: &[GridFilter],
+        order_by: Option<OrderBy>,
     ) -> Result<PagedResult, QueryError> {
         let safe = table_name.replace('"', "");
         let (where_sql, filter_values) = build_where_sqlite(filters);
+        let order_sql = order_by
+            .map(|o| format!(" ORDER BY \"{}\" {}", o.column.replace('"', ""), o.direction))
+            .unwrap_or_default();
 
         let count_sql = format!("SELECT COUNT(*) FROM \"{safe}\"{where_sql}");
         let mut count_q = sqlx::query_scalar::<_, i64>(&count_sql);
@@ -319,7 +323,7 @@ impl DatabaseDriver for SqliteDriver {
             .await
             .map_err(|e| QueryError::from(e.to_string()))?;
 
-        let data_sql = format!("SELECT * FROM \"{safe}\"{where_sql} LIMIT ? OFFSET ?");
+        let data_sql = format!("SELECT * FROM \"{safe}\"{where_sql}{order_sql} LIMIT ? OFFSET ?");
         let mut data_q = sqlx::query(&data_sql);
         for v in &filter_values { data_q = data_q.bind(v.clone()); }
         let rows = data_q
@@ -491,6 +495,36 @@ impl DatabaseDriver for SqliteDriver {
         Ok(())
     }
 
+    async fn create_table(&self, table_name: &str, _schema: Option<&str>, columns: &[CreateColumn]) -> Result<(), QueryError> {
+        let safe_name = table_name.replace(['"', ';'], "");
+        if safe_name.is_empty() {
+            return Err(QueryError::from("Invalid table name".to_string()));
+        }
+        if columns.is_empty() {
+            return Err(QueryError::from("Table must have at least one column".to_string()));
+        }
+        let col_defs: Vec<String> = columns.iter().map(|c| {
+            let name = c.name.replace(['"', ';'], "");
+            let mut def = format!("\"{}\" {}", name, c.data_type);
+            if c.is_primary_key {
+                def.push_str(" PRIMARY KEY");
+            }
+            if !c.is_nullable && !c.is_primary_key {
+                def.push_str(" NOT NULL");
+            }
+            if let Some(ref dv) = c.default_value {
+                if !dv.is_empty() {
+                    def.push_str(&format!(" DEFAULT {}", dv));
+                }
+            }
+            def
+        }).collect();
+        let sql = format!("CREATE TABLE \"{safe_name}\" (\n  {}\n)", col_defs.join(",\n  "));
+        let mut conn = self.pool.acquire().await.map_err(|e| QueryError::from(e.to_string()))?;
+        sqlx::query(&sql).execute(&mut *conn).await.map_err(|e| QueryError::from(e.to_string()))?;
+        Ok(())
+    }
+
     async fn get_table_structure(&self, table_name: &str, _schema: Option<&str>) -> Result<TableStructure, QueryError> {
         let safe = table_name.replace('"', "");
 
@@ -641,6 +675,163 @@ impl DatabaseDriver for SqliteDriver {
             foreign_keys,
             triggers,
         })
+    }
+
+    async fn fetch_node_children(
+        &self,
+        node_type: &str,
+        parent_id: Option<&str>,
+    ) -> Result<Vec<DbTreeNode>, QueryError> {
+        let mut nodes: Vec<DbTreeNode> = Vec::new();
+
+        match node_type {
+            "schema_tables" => {
+                let rows = sqlx::query(
+                    "SELECT name FROM sqlite_master \
+                     WHERE type='table' AND name NOT LIKE 'sqlite_%' \
+                     ORDER BY name",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+                for r in &rows {
+                    let name: String = r.try_get("name").unwrap_or_default();
+                    nodes.push(DbTreeNode {
+                        id: format!("table_{name}"),
+                        label: name.clone(),
+                        node_type: "table".into(),
+                        has_children: true,
+                    });
+                }
+            }
+            "schema_views" => {
+                let rows = sqlx::query(
+                    "SELECT name FROM sqlite_master WHERE type='view' ORDER BY name",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+                for r in &rows {
+                    let name: String = r.try_get("name").unwrap_or_default();
+                    nodes.push(DbTreeNode {
+                        id: format!("view_{name}"),
+                        label: name.clone(),
+                        node_type: "view".into(),
+                        has_children: true,
+                    });
+                }
+            }
+            "schema_indexes" => {
+                let rows = sqlx::query(
+                    "SELECT name, tbl_name FROM sqlite_master \
+                     WHERE type='index' AND name NOT LIKE 'sqlite_%' \
+                     ORDER BY name",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+                for r in &rows {
+                    let name: String = r.try_get("name").unwrap_or_default();
+                    nodes.push(DbTreeNode {
+                        id: format!("index_{name}"),
+                        label: name,
+                        node_type: "index".into(),
+                        has_children: false,
+                    });
+                }
+            }
+            "schema_triggers" => {
+                let rows = sqlx::query(
+                    "SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?;
+                for r in &rows {
+                    let name: String = r.try_get("name").unwrap_or_default();
+                    nodes.push(DbTreeNode {
+                        id: format!("trigger_{name}"),
+                        label: name,
+                        node_type: "trigger".into(),
+                        has_children: false,
+                    });
+                }
+            }
+            "table_columns" => {
+                let table = parent_id
+                    .and_then(|pid| pid.split_once('.').map(|(_, t)| t))
+                    .unwrap_or(parent_id.unwrap_or(""));
+                let safe = table.replace('"', "");
+                let sql = format!("PRAGMA table_info(\"{safe}\")");
+                let rows = sqlx::query(&sql)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                for r in &rows {
+                    let name: String = r.try_get("name").unwrap_or_default();
+                    let dt: String = r.try_get("type").unwrap_or_default();
+                    nodes.push(DbTreeNode {
+                        id: format!("column_{name}"),
+                        label: format!("{name} : {dt}"),
+                        node_type: "column".into(),
+                        has_children: false,
+                    });
+                }
+            }
+            "table_indexes" => {
+                let table = parent_id
+                    .and_then(|pid| pid.split_once('.').map(|(_, t)| t))
+                    .unwrap_or(parent_id.unwrap_or(""));
+                let safe = table.replace('"', "");
+                let sql = format!(
+                    "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=\"{safe}\" ORDER BY name",
+                );
+                let rows = sqlx::query(&sql)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                for r in &rows {
+                    let name: String = r.try_get("name").unwrap_or_default();
+                    nodes.push(DbTreeNode {
+                        id: format!("index_{name}"),
+                        label: name,
+                        node_type: "index".into(),
+                        has_children: false,
+                    });
+                }
+            }
+            "table_triggers" => {
+                let table = parent_id
+                    .and_then(|pid| pid.split_once('.').map(|(_, t)| t))
+                    .unwrap_or(parent_id.unwrap_or(""));
+                let safe = table.replace('"', "");
+                let sql = format!(
+                    "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name=\"{safe}\" ORDER BY name",
+                );
+                let rows = sqlx::query(&sql)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                for r in &rows {
+                    let name: String = r.try_get("name").unwrap_or_default();
+                    nodes.push(DbTreeNode {
+                        id: format!("trigger_{name}"),
+                        label: name,
+                        node_type: "trigger".into(),
+                        has_children: false,
+                    });
+                }
+            }
+            _ => {
+                return Err(QueryError {
+                    message: format!("SQLite catalog: unknown node_type '{node_type}'"),
+                    code: None,
+                    severity: Some("ERROR".into()),
+                });
+            }
+        }
+
+        Ok(nodes)
     }
 
     fn driver_name(&self) -> &'static str {

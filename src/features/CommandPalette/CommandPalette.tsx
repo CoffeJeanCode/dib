@@ -52,6 +52,7 @@ export interface CommandAction {
   onAction: () => void;
 }
 
+// "create" is not a sub-mode — it opens the wizard directly with no table picker
 type DdlMode = "drop" | "truncate" | "rename" | "alter" | "insert" | null;
 
 type DbObjectSubtype = "view" | "mat_view" | "function" | "procedure" | "trigger";
@@ -299,6 +300,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
         useUiStore.getState().setRenameTarget(table);
       } else if (action === "drop") {
         handleDropTable(table);
+        pushToRecents({ type: "ddl", id: `ddl:drop:${menuOpenId}`, label: `Drop ${table.name}`, action: "drop", table });
       }
       setMenuOpenId(null);
       onClose();
@@ -514,6 +516,15 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
               id: "ddl:alter",
               label: "Alter Table…",
               onAction: () => enterDdlMode("alter"),
+            },
+            {
+              kind: "action",
+              id: "ddl:create",
+              label: "Create Table…",
+              onAction: () => {
+                useUiStore.getState().setCreateTarget({ name: "", schema: null });
+                onClose();
+              },
             },
             {
               kind: "action",

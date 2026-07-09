@@ -1,0 +1,18 @@
+/* ── Shared tooltip ──────────────────────────────────────── */
+.ui-tooltip-wrap {
+  display: contents;
+}
+
+.ui-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  /* above .dialog-backdrop (9000) and portaled menus (9100) */
+  z-index: 9200;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+  white-space: nowrap;
+}

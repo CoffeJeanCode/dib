@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, lazy, Suspense } from "react";
 import { Play, Upload, Download, Zap, Lock, Square, Braces } from "lucide-react";
 import type { QueryResult, PendingChange, ColumnInfo } from "@/types/db";
 import { dbService } from "@/services/dbService";
@@ -6,9 +6,13 @@ import { useSqlEditor } from "@/shared/hooks/useSqlEditor";
 import { MonacoEditor } from "@/features/MonacoEditor/MonacoEditor";
 import { MOD } from "@/shared/utils/platform";
 import { DataGrid } from "@/features/DataGrid";
-import { VisualExplain } from "@/features/SqlEditor/VisualExplain";
+import { Skeleton } from "@/shared/ui/Skeleton";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import "./SqlEditor.css";
+
+const VisualExplain = lazy(() =>
+  import("@/features/SqlEditor/VisualExplain").then((m) => ({ default: m.VisualExplain })),
+);
 
 interface SqlEditorProps {
   connectionId: string;
@@ -201,7 +205,9 @@ export function SqlEditor({
       {/* Visual EXPLAIN results — rendered in a dedicated panel */}
       {explainResult && (
         <div className="sqleditor-explain-panel">
-          <VisualExplain plan={explainResult} />
+          <Suspense fallback={<Skeleton height="100%" />}>
+            <VisualExplain plan={explainResult} />
+          </Suspense>
         </div>
       )}
 

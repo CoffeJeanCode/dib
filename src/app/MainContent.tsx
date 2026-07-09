@@ -22,7 +22,19 @@ interface Props {
   onNewConnection: () => void;
 }
 
-export function MainContent({ editingConn, showNewConnection, connecting, active, navigateTo, openScript, onEditSaved, onConnected, onBack, onConnectionSelect, onNewConnection }: Props) {
+export function MainContent({
+  editingConn,
+  showNewConnection,
+  connecting,
+  active,
+  navigateTo,
+  openScript,
+  onEditSaved,
+  onConnected,
+  onBack,
+  onConnectionSelect,
+  onNewConnection,
+}: Props) {
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
 
   if (editingConn) {
@@ -48,12 +60,13 @@ export function MainContent({ editingConn, showNewConnection, connecting, active
     );
   }
   if (!connecting && active) {
-    // Tab scope: in a workspace, tabs belong to the WORKSPACE (survive
-    // connection switches); standalone, they belong to the specific database
-    // (each database restores its own tab set). 
-    // We do not force remounts unnecessarily in workspace mode; useDatabaseEngine 
-    // handles connectionId changes gracefully, maintaining UI state (scroll, cursor).
-    const scopeKey = activeWorkspaceId ? `ws:${activeWorkspaceId}` : `conn:${active.savedId}:${active.name}`;
+    // Tab scope: tabs belong to a specific connection+database in BOTH modes —
+    // switching db (or connection, in a workspace) remounts QueryPanel, and
+    // scopeTabCache (QueryPanel.tsx) restores that scope's tab set on return.
+    // active.name is the database name (or file path for sqlite).
+    const scopeKey = activeWorkspaceId
+      ? `ws:${activeWorkspaceId}:${active.savedId}:${active.name}`
+      : `conn:${active.savedId}:${active.name}`;
     return (
       <QueryPanel
         key={scopeKey}

@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
 use crate::db::types::{
-    ChangeRow, ColumnInfo, DbConfig, DbTreeNode, DdlResult, ExplainPlan,
-    GridFilter, PagedResult, QueryError, QueryResult,
+    ChangeRow, ColumnInfo, CreateColumn, DbConfig, DbTreeNode, DdlResult, ExplainPlan,
+    GridFilter, OrderBy, PagedResult, QueryError, QueryResult,
     SchemaChange, SchemaObjects, TableInfo, TableRelation, TableStructure,
 };
 
@@ -40,6 +40,7 @@ pub trait DatabaseDriver: Send + Sync {
         offset: u64,
         limit: u64,
         filters: &[GridFilter],
+        order_by: Option<OrderBy>,
     ) -> Result<PagedResult, QueryError>;
     async fn get_table_relations(
         &self,
@@ -57,8 +58,8 @@ pub trait DatabaseDriver: Send + Sync {
         let _ = name;
         Err(QueryError { message: "Creating databases is not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
     }
-    async fn drop_database(&self, name: &str) -> Result<(), QueryError> {
-        let _ = name;
+    async fn drop_database(&self, name: &str, force: bool) -> Result<(), QueryError> {
+        let _ = (name, force);
         Err(QueryError { message: "Dropping databases is not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
     }
     async fn rename_database(&self, old_name: &str, new_name: &str) -> Result<(), QueryError> {
@@ -70,6 +71,11 @@ pub trait DatabaseDriver: Send + Sync {
     async fn explain_query(&self, sql: &str) -> Result<ExplainPlan, QueryError>;
     /// Drop a table transactionally. Backend validates the identifier.
     async fn drop_table(&self, table_name: &str, schema: Option<&str>) -> Result<(), QueryError>;
+    /// Create a new table with the given columns.
+    async fn create_table(&self, table_name: &str, schema: Option<&str>, columns: &[CreateColumn]) -> Result<(), QueryError> {
+        let _ = (table_name, schema, columns);
+        Err(QueryError { message: "Creating tables is not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })
+    }
     async fn get_view_ddl(&self, view_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {
         let _ = (view_name, schema);
         Err(QueryError { message: "Not supported by this driver".into(), code: None, severity: Some("ERROR".into()) })

@@ -85,6 +85,25 @@
 .ve-raw-btn:hover { border-color: var(--color-teal); color: var(--color-teal); }
 .ve-close-btn:hover { border-color: var(--color-red); color: var(--color-red); }
 
+/* ── ReactFlow controls theme ───────────────────────────── */
+.ve-canvas .react-flow__controls-button {
+  border-bottom: 1px solid var(--ve-border);
+  background: transparent;
+  color: var(--ve-muted);
+  fill: var(--ve-muted);
+  transition: background var(--transition-fastest), color var(--transition-fastest), fill var(--transition-fastest);
+}
+
+.ve-canvas .react-flow__controls-button:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-teal);
+  fill: var(--color-teal);
+}
+
+.ve-canvas .react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+
 /* ── Canvas ────────────────────────────────────────────────────────── */
 .ve-canvas {
   flex: 1;

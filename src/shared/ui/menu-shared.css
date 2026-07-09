@@ -1,0 +1,54 @@
+/* ── Shared dropdown menu (glass) ─────────────────────────────
+   Base look for small action dropdowns. Positioning (absolute/fixed,
+   z-index, anchoring) stays in a per-use companion class. */
+
+.ui-menu {
+  min-width: 150px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-bg-elevated) 95%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fastest);
+}
+
+.ui-menu-item:hover,
+.ui-menu-item:focus-visible {
+  background: var(--color-bg-hover);
+  outline: none;
+  color: var(--color-teal);
+}
+
+.ui-menu-item--danger:hover,
+.ui-menu-item--danger:focus-visible {
+  color: var(--color-red);
+  background: var(--color-danger-bg);
+}
+
+.ui-menu-sep {
+  height: 1px;
+  margin: 3px 6px;
+  background: var(--color-border);
+}

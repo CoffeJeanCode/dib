@@ -62,12 +62,11 @@ export function useWorkspaceService({ tabsRef, markTabClean, setTabs, connection
   // Save a draft tab for the first time (shows name in dialog, called after user confirms)
   const saveNewScript = useCallback(async (tabId: string, name: string, sql: string) => {
     try {
-      const workspaceId = useWorkspaceStore.getState().activeWorkspaceId;
+      const ws = useWorkspaceStore.getState();
       let finalId = tabId;
-      if (workspaceId) {
-        const rootPath = useWorkspaceStore.getState().activeWorkspacePath || "";
+      if (ws.activeWorkspaceId && ws.activeWorkspacePath) {
         const fileName = name + (name.includes('.') ? '' : '.sql');
-        finalId = rootPath.replace(/\\/g, "/") + "/" + fileName;
+        finalId = ws.activeWorkspacePath.replace(/\\/g, "/") + "/" + fileName;
         await invoke("write_text_file", { path: finalId, content: sql });
       } else {
         await workspaceService.saveVirtualScript(tabId, name, sql, null, stableConnectionId(connectionId));

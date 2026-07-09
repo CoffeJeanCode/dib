@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { Filter } from "lucide-react";
+import { memo, useRef, useMemo } from "react";
+import { Filter, ArrowUp, ArrowDown } from "lucide-react";
 import { useDataGridContext } from "./DataGridContext";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -10,13 +10,16 @@ import { type GridColumn } from "../DataGrid.types";
 interface SortableHeaderCellProps {
   col: GridColumn;
   ci: number;
+  /** set on dnd activation — suppresses the click that follows a column reorder */
+  reorderingRef: React.MutableRefObject<boolean>;
 }
 
-const SortableHeaderCell = memo(function SortableHeaderCell({ col, ci }: SortableHeaderCellProps) {
-  const { colInfoMap, fkMap, filters, openFilterPopover, handleResizeStart, autoFitColumn } = useDataGridContext();
+const SortableHeaderCell = memo(function SortableHeaderCell({ col, ci, reorderingRef }: SortableHeaderCellProps) {
+  const { colInfoMap, fkMap, filters, orderBy, openFilterPopover, handleResizeStart, autoFitColumn, selectColumnRange } = useDataGridContext();
   const info = colInfoMap[col.name];
   const activeFilter = filters?.find((f) => f.column === col.name);
-  
+  const sortDir = orderBy?.column === col.name ? orderBy.direction : null;
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: col.id });
   
   const style = {
@@ -32,13 +35,28 @@ const SortableHeaderCell = memo(function SortableHeaderCell({ col, ci }: Sortabl
   return (
     <div
       ref={setNodeRef}
-      className="dg-cell dg-th"
+      className={`dg-cell dg-th${sortDir ? " dg-th--sorted" : ""}`}
       role="columnheader"
       style={style}
-      title={info ? `${col.name} (${info.data_type})` : col.name}
+      title={info ? `${col.label ?? col.name} (${info.data_type})` : (col.label ?? col.name)}
     >
-      <div className="dg-th-content" {...attributes} {...listeners} style={{ cursor: "grab" }}>
-        <span className="dg-th-name">{col.name}</span>
+      <div
+        className="dg-th-content"
+        {...attributes}
+        {...listeners}
+        style={{ cursor: "grab" }}
+        onClick={(e) => {
+          if (reorderingRef.current) {
+            reorderingRef.current = false;
+            return;
+          }
+          selectColumnRange(ci, e.shiftKey);
+        }}
+      >
+        <span className="dg-th-name">
+          {col.label ?? col.name}
+          {sortDir === "ASC" ? <ArrowUp size={10} className="dg-sort-icon" /> : sortDir === "DESC" ? <ArrowDown size={10} className="dg-sort-icon" /> : null}
+        </span>
         {info && (
           <span className="dg-th-type">
             {info.data_type}{info.is_primary_key ? " · PK" : ""}{fkMap[col.name] ? ` · FK→${fkMap[col.name].targetTable}` : ""}
@@ -66,7 +84,26 @@ export const GridHeader = memo(function GridHeader() {
     orderedColumns,
     setOrderedColumns,
     headerRef,
+    selectedCells,
+    editState,
   } = useDataGridContext();
+
+  // Contiguous block of fully-selected columns (from header click / shift+click).
+  // Dragging any column inside it moves the whole block.
+  const selectedColBlock = useMemo(() => {
+    const rowCount = editState.rows.length;
+    if (rowCount === 0 || selectedCells.size < rowCount * 2) return null;
+    const cols = new Set<number>();
+    for (const key of selectedCells) cols.add(Number(key.slice(key.indexOf(":") + 1)));
+    if (cols.size * rowCount !== selectedCells.size) return null; // not full columns
+    const sorted = [...cols].sort((a, b) => a - b);
+    if (sorted[sorted.length - 1] - sorted[0] !== sorted.length - 1) return null; // not contiguous
+    return { start: sorted[0], end: sorted[sorted.length - 1] };
+  }, [selectedCells, editState.rows.length]);
+
+  // dnd-kit still fires a click after a reorder drag — flag it so the
+  // header click-to-select-column handler can swallow that click.
+  const reorderingRef = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -78,19 +115,33 @@ export const GridHeader = memo(function GridHeader() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = orderedColumns.findIndex(c => c.id === active.id);
-      const newIndex = orderedColumns.findIndex(c => c.id === over.id);
-      setOrderedColumns(arrayMove(orderedColumns, oldIndex, newIndex));
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedColumns.findIndex(c => c.id === active.id);
+    const newIndex = orderedColumns.findIndex(c => c.id === over.id);
+    const block = selectedColBlock;
+    if (block && oldIndex >= block.start && oldIndex <= block.end) {
+      // Drop target inside the block → nothing to move
+      if (newIndex >= block.start && newIndex <= block.end) return;
+      const blockCols = orderedColumns.slice(block.start, block.end + 1);
+      const rest = orderedColumns.filter((_, i) => i < block.start || i > block.end);
+      const insert = newIndex > block.end ? newIndex - blockCols.length + 1 : newIndex;
+      setOrderedColumns([...rest.slice(0, insert), ...blockCols, ...rest.slice(insert)]);
+      return;
     }
+    setOrderedColumns(arrayMove(orderedColumns, oldIndex, newIndex));
   };
 
   return (
     <div ref={headerRef} className="dg-header" role="row">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={() => { reorderingRef.current = true; }}
+        onDragEnd={handleDragEnd}
+      >
         <SortableContext items={orderedColumns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
           {orderedColumns.map((col, ci) => (
-            <SortableHeaderCell key={col.id} col={col} ci={ci} />
+            <SortableHeaderCell key={col.id} col={col} ci={ci} reorderingRef={reorderingRef} />
           ))}
         </SortableContext>
       </DndContext>

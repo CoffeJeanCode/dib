@@ -104,6 +104,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dg-sort-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.dg-th--sorted .dg-th-name {
+  color: var(--color-text-primary);
 }
 
 .dg-th-type {
@@ -312,7 +324,6 @@
   border-radius: var(--radius-sm);
   padding: 4px 8px;
   outline: none;
-  width: 100%;
 }
 
 .dg-filter-select:focus,
@@ -352,64 +363,59 @@
 
 .dg-filter-clear:hover { background: var(--color-bg-hover); }
 
-/* ── Table toolbar ──────────────────────────────────────────── */
-.dg-toolbar {
+/* ── Filter popover sort section ────────────────────────── */
+.dg-filter-sort-row {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 4px var(--space-3);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-secondary);
-  flex-shrink: 0;
-  min-height: 32px;
+  gap: 4px;
 }
 
-.dg-toolbar-title {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-teal);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-right: auto;
-  max-width: 200px;
-}
-
-.dg-toolbar-actions {
+.dg-filter-sort-btn {
   display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.dg-toolbar-btn {
-  display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
+  flex: 1;
+  background: none;
   border: 1px solid transparent;
-  background: transparent;
-  color: var(--color-text-tertiary);
+  cursor: pointer;
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-fastest);
-  white-space: nowrap;
+  color: var(--color-text-secondary);
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  justify-content: center;
+  transition: background var(--transition-fastest), border-color var(--transition-fastest);
 }
 
-.dg-toolbar-btn:hover {
+.dg-filter-sort-btn:hover {
   background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.dg-filter-sort-btn--active {
   border-color: var(--color-teal);
   color: var(--color-teal);
+  background: color-mix(in srgb, var(--color-teal) 8%, transparent);
 }
 
-.dg-toolbar-btn--danger:hover {
-  border-color: var(--color-red);
-  background: var(--color-danger-bg);
-  color: var(--color-red);
+.dg-filter-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 2px 0;
+}
+
+.dg-filter-input-row {
+  display: flex;
+  gap: 4px;
+}
+
+.dg-filter-input-row .dg-filter-select {
+  width: auto;
+  flex-shrink: 0;
+  min-width: 90px;
+}
+
+.dg-filter-input-row .dg-filter-input {
+  flex: 1;
 }
 
 /* ── Empty / Loading states ──────────────────────────────── */

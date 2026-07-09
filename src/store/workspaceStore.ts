@@ -35,7 +35,7 @@ interface WorkspaceState {
   /** Pending insert-row trigger — replaces dib:insert-row */
   pendingInsertRow: number;
   /** Pending tab action from Monaco keybindings or sidebar deletes */
-  tabAction: { type: "close" | "new" | "close_by_path"; payload?: string; v: number } | null;
+  tabAction: { type: "close" | "new" | "close_by_path" | "mark_deleted"; payload?: string; v: number } | null;
   /** Right-side sliding JSON viewer panel */
   jsonPanel: JsonPanelData | null;
 
@@ -49,7 +49,7 @@ interface WorkspaceState {
   openTableRelations: (t: TableInfo) => void;
   clearPendingOpenRelations: () => void;
   triggerInsertRow: () => void;
-  dispatchTabAction: (type: "close" | "new" | "close_by_path", payload?: string) => void;
+  dispatchTabAction: (type: "close" | "new" | "close_by_path" | "mark_deleted", payload?: string) => void;
   openJsonPanel: (data: JsonPanelData) => void;
   closeJsonPanel: () => void;
   internalScripts: InternalScript[];

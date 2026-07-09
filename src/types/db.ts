@@ -51,6 +51,14 @@ export interface ColumnInfo {
   is_nullable: boolean;
 }
 
+export interface CreateColumn {
+  name: string;
+  data_type: string;
+  is_primary_key: boolean;
+  is_nullable: boolean;
+  default_value?: string | null;
+}
+
 export interface ColumnMetadata {
   table_name: string | null;
   column_name: string;
@@ -96,6 +104,13 @@ export interface GridFilter {
   column: string;
   operator: FilterOperator;
   value?: string;
+}
+
+export type SortDirection = "ASC" | "DESC";
+
+export interface OrderBy {
+  column: string;
+  direction: SortDirection;
 }
 
 export interface TableRelation {

@@ -33,6 +33,9 @@ export function GlobalModals({ activeConnectionId }: GlobalModalsProps) {
   const alterTarget = useUiStore((s) => s.alterTarget);
   const setAlterTarget = useUiStore((s) => s.setAlterTarget);
 
+  const createTarget = useUiStore((s) => s.createTarget);
+  const setCreateTarget = useUiStore((s) => s.setCreateTarget);
+
   const dbAction = useUiStore((s) => s.dbAction);
   const setDbAction = useUiStore((s) => s.setDbAction);
 
@@ -76,7 +79,18 @@ export function GlobalModals({ activeConnectionId }: GlobalModalsProps) {
           connectionId={activeConnectionId}
           tableName={alterTarget.name}
           schema={alterTarget.schema}
+          mode="alter"
           onClose={reopenPaletteOnDismiss(() => setAlterTarget(null))}
+        />
+      )}
+
+      {createTarget && activeConnectionId && (
+        <SchemaChangeWizard
+          connectionId={activeConnectionId}
+          tableName={createTarget.name}
+          schema={createTarget.schema}
+          mode="create"
+          onClose={reopenPaletteOnDismiss(() => setCreateTarget(null))}
         />
       )}
 

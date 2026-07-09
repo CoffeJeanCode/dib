@@ -20,11 +20,10 @@ export default defineConfig(async () => ({
   },
   build: {
     rollupOptions: {
-      external: ["@tauri-apps/plugin-dialog"],
       output: {
         manualChunks: {
           "vendor-react": ["react", "react-dom"],
-          "vendor-monaco": ["@monaco-editor/react"],
+          "vendor-monaco": ["@monaco-editor/react", "monaco-editor"],
           "vendor-xyflow": ["@xyflow/react"],
           "vendor-ui": [
             "@dnd-kit/core",

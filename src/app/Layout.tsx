@@ -138,11 +138,15 @@ export function Layout({ children, onSettingsOpen }: LayoutProps) {
         const delta = upEvt.clientX - resizeStartXRef.current;
         const newW = resizeStartWRef.current + delta;
         cleanup();
+        // Sync the CSS variable immediately so the sidebar doesn't
+        // flash back to the old width before React re-renders.
+        const finalWidth = Math.max(SIDEBAR_MIN, newW);
+        document.documentElement.style.setProperty("--sidebar-width", `${finalWidth}px`);
         document.documentElement.style.removeProperty("--sidebar-width-dynamic");
         if (newW < SIDEBAR_SNAP) {
           updateState({ is_sidebar_open: false });
         } else {
-          updateState({ sidebar_width: Math.max(SIDEBAR_MIN, newW) });
+          updateState({ sidebar_width: finalWidth });
         }
       };
 

@@ -12,7 +12,7 @@ import {
   DatabaseSelector,
   ConnectionItem,
   WorkspaceTree,
-  DatabaseCategories,
+  DatabaseTree,
   WorkspaceList,
   QueryHistoryPanel,
 } from "./Parts";
@@ -87,6 +87,7 @@ export function Sidebar({
   return (
     <aside
       className="sidebar"
+      id="dib-sidebar-nav"
       style={width ? { "--sidebar-width": `${width}px` } as React.CSSProperties : undefined}
     >
       {onResizeStart && (
@@ -183,10 +184,12 @@ export function Sidebar({
        ) : activeView === "database" ? (
         // Split layout, tab 2/4 — Entities (tables/views/functions/procedures/triggers), isolated.
         <nav className="sidebar-nav dg-scroll" aria-label="Entities">
-          <DatabaseCategories
-            sessionId={activeSessionId}
-            onTableSelect={onTableSelect}
-            onScriptOpen={onScriptOpen}
+          <DatabaseTree
+            onNodeClick={(node) => {
+              if (node.type === "table") {
+                setNavigateTo({ table: { name: node.label, schema: null }, v: Date.now() } as any);
+              }
+            }}
           />
         </nav>
       ) : (

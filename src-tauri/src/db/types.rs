@@ -147,6 +147,12 @@ pub struct GridFilter {
     pub value: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBy {
+    pub column: String,
+    pub direction: String, // "ASC" | "DESC"
+}
+
 // ── Mutations ─────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -177,6 +183,17 @@ pub struct ChangeRow {
     /// For INSERT: map of column name → data_type
     #[serde(default)]
     pub column_types: Option<serde_json::Value>,
+}
+
+/// One column definition for CREATE TABLE.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateColumn {
+    pub name: String,
+    pub data_type: String,
+    pub is_primary_key: bool,
+    pub is_nullable: bool,
+    #[serde(default)]
+    pub default_value: Option<String>,
 }
 
 /// One structural change to apply to an existing table.

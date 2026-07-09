@@ -18,10 +18,10 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
     selectedCells,
     isEditing,
     editValue,
-    setEditValue,
     deletedRowIndices,
     inputRef,
     handleCellClick,
+    handleCellMouseDown,
     handleCellContextMenu,
     startEdit,
     commitEdit,
@@ -65,11 +65,14 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
               isFk ? " dg-cell--fk" : "",
             ].join("")}
             role="cell"
+            data-dg-r={absIdx}
+            data-dg-c={j}
             style={{
               width: cssW,
               minWidth: cssW,
               maxWidth: cssW,
             }}
+            onMouseDown={(e) => handleCellMouseDown(absIdx, j, e)}
             onClick={(e) => handleCellClick(absIdx, j, e)}
             onContextMenu={(e) => handleCellContextMenu(j, e)}
             onDoubleClick={() => startEdit(absIdx, j)}
@@ -80,8 +83,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
                 ref={inputRef}
                 className="dg-cell-input"
                 autoFocus
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
+                defaultValue={editValue}
                 onBlur={() => commitEdit(null)}
               />
             ) : isFk ? (

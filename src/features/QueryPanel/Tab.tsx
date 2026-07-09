@@ -10,6 +10,8 @@ export interface TabPayload {
   sql?: string;
   filename?: string;
   scriptId?: string | null;
+  /** Underlying file/script was deleted from disk while this tab stayed open — VSCode-style strikethrough. */
+  isDeleted?: boolean;
   // Hoisted DataGrid cursor — lives on the tab so it survives unmount/tab switch
   activeCell?: { row: number; col: number } | null;
   // Hoisted Monaco view state (cursor, scroll, folds) for script tabs
@@ -49,17 +51,18 @@ const ICON_MAP: Record<TabType, React.ReactNode> = {
 };
 
 export function Tab({ tab, active, onSelect, onClose, dragListeners, dragAttributes, style, dragging }: TabProps) {
+  const isDeleted = !!tab.payload.scriptId && tab.payload.isDeleted;
   return (
     <button
-      className={`tab${active ? " tab--active" : ""}${dragging ? " tab--dragging" : ""}`}
+      className={`tab${active ? " tab--active" : ""}${dragging ? " tab--dragging" : ""}${isDeleted ? " tab--deleted" : ""}`}
       style={style}
       onClick={() => onSelect(tab.id)}
-      title={tab.title}
+      title={isDeleted ? `${tab.title} (deleted)` : tab.title}
       {...dragAttributes}
       {...dragListeners}
     >
       <span className="tab-icon">{ICON_MAP[tab.type]}</span>
-      <span className={`tab-label`}>
+      <span className={`tab-label${isDeleted ? " tab-label--deleted" : ""}`}>
         {tab.title}
       </span>
       {tab.closeable && (

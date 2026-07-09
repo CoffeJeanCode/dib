@@ -24,12 +24,18 @@ export type GridKeyDownDeps = {
   redo: () => void;
   copySelection: () => void;
   cutSelection: () => void;
+  clearSelection: () => void;
   pasteFromClipboard: () => Promise<void>;
   insertGhostRow: () => void;
   duplicateRows: (rows: number[]) => void;
   markRowsForDeletion: (rows: number[]) => void;
   onForceClose?: () => void;
   onFocusEditor?: () => void;
+  onFkNavigate?: (targetTable: string, targetColumn: string, value: unknown) => void;
+  onGenerateJoinQuery?: (col: string) => void;
+  fkMap?: Record<string, { targetTable: string; targetColumn: string }>;
+  editStateRows?: unknown[][];
+  orderedColumnNames?: string[];
   setSelectedCells: (cells: Set<string>) => void;
   setAnchorCell: (cell: CellCoord) => void;
   setActiveCell: (cell: CellCoord) => void;
@@ -91,6 +97,12 @@ function handleCtrlClipboard(d: GridKeyDownDeps): boolean {
   if (e.key === "v") {
     e.preventDefault();
     void d.pasteFromClipboard();
+    return true;
+  }
+  // Ctrl+Delete clears cell CONTENT; plain Delete marks whole rows (handleGridDeleteKey)
+  if (e.key === "Delete") {
+    e.preventDefault();
+    d.clearSelection();
     return true;
   }
   return false;
@@ -255,12 +267,40 @@ function handleGridArrowMove(d: GridKeyDownDeps): boolean {
 
 function handleGridStartEdit(d: GridKeyDownDeps): boolean {
   const { e, row, col, ctrl } = d;
-  if (e.key === "Enter" || e.key === "F2") {
+  if (e.key === "Enter") {
+    // FK: Ctrl+Enter → navigate to parent table
+    if (ctrl && d.fkMap && d.onFkNavigate && d.orderedColumnNames && d.editStateRows) {
+      const colName = d.orderedColumnNames[col];
+      const fk = d.fkMap[colName];
+      if (fk) {
+        e.preventDefault();
+        const value = (d.editStateRows[row] as unknown[])?.[col];
+        if (value != null) {
+          d.onFkNavigate(fk.targetTable, fk.targetColumn, value);
+          return true;
+        }
+      }
+    }
+    // FK: Alt+Enter → generate JOIN query
+    if (e.altKey && !ctrl && d.fkMap && d.onGenerateJoinQuery) {
+      const colName = d.orderedColumnNames?.[col] ?? "";
+      if (d.fkMap[colName]) {
+        e.preventDefault();
+        d.onGenerateJoinQuery(colName);
+        return true;
+      }
+    }
+    e.preventDefault();
+    d.startEdit(row, col);
+    return true;
+  }
+  if (e.key === "F2") {
     e.preventDefault();
     d.startEdit(row, col);
     return true;
   }
   if (e.key.length === 1 && !ctrl && !e.altKey) {
+    e.preventDefault();
     d.startEdit(row, col);
     d.setEditValue(e.key);
     return true;

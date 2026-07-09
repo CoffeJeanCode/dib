@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { FolderPlus, FilePlus, Pin, PinOff, Palette, ChevronRight, Trash2, Edit2 } from "lucide-react";
+import { FolderPlus, FilePlus, Pin, PinOff, Palette, ChevronRight, Trash2, Edit2, Copy } from "lucide-react";
 import "./ScriptsContextMenu.css";
 
 interface ScriptsContextMenuProps {
@@ -10,6 +10,7 @@ interface ScriptsContextMenuProps {
   onNewFolder?: () => void;
   onNewScript?: () => void;
   onRename?: () => void;
+  onDuplicate?: () => void;
   onTogglePin?: () => void;
   onColorChange?: (color: string | null) => void;
   onDelete?: () => void;
@@ -24,6 +25,7 @@ export function ScriptsContextMenu({
   onNewFolder,
   onNewScript,
   onRename,
+  onDuplicate,
   onTogglePin,
   onColorChange,
   onDelete,
@@ -48,7 +50,10 @@ export function ScriptsContextMenu({
       </ContextMenu.Trigger>
       
       <ContextMenu.Portal>
-        <ContextMenu.Content className="scripts-ctx-menu z-50 min-w-[160px] overflow-hidden rounded-md border border-gray-700 bg-gray-800/90 backdrop-blur-md p-1 shadow-lg">
+        <ContextMenu.Content
+          className="scripts-ctx-menu z-50 min-w-[160px] overflow-hidden rounded-md border border-gray-700 bg-gray-800/90 backdrop-blur-md p-1 shadow-lg"
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           {selectedCount <= 1 && onNewFolder && (
             <ContextMenu.Item
               onSelect={onNewFolder}
@@ -74,6 +79,15 @@ export function ScriptsContextMenu({
             >
               <Edit2 className="mr-2 h-3.5 w-3.5" size={14} />
               Rename
+            </ContextMenu.Item>
+          )}
+          {selectedCount <= 1 && !isFolder && onDuplicate && (
+            <ContextMenu.Item
+              onSelect={onDuplicate}
+              className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200"
+            >
+              <Copy className="mr-2 h-3.5 w-3.5" size={14} />
+              Duplicate
             </ContextMenu.Item>
           )}
 

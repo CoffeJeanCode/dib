@@ -33,7 +33,6 @@
   padding: 6px var(--space-4);
   color: var(--color-danger-text);
   background: var(--color-danger-bg);
-  border-left: 3px solid var(--color-danger-border);
   font-size: var(--font-size-xs);
   font-family: var(--font-mono);
   flex-shrink: 0;
@@ -243,4 +242,26 @@
 .qp-save-as-actions .qp-save-as-confirm:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* ── Footer table actions dropdown ──────────────────────── */
+.dg-footer-actions-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* trigger reuses .qp-structure-footer-btn; only kill its trailing margin */
+.dg-footer-actions-btn {
+  margin-right: 0;
+  padding: 3px 5px;
+}
+
+/* look comes from .ui-menu (menu-shared.css); this is anchoring only */
+.dg-footer-actions-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  z-index: 100;
+  margin-bottom: 4px;
 }

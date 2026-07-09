@@ -333,13 +333,13 @@ pub async fn create_database(connection_id: String, name: String, state: State<'
 }
 
 #[tauri::command]
-pub async fn drop_database(connection_id: String, name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
+pub async fn drop_database(connection_id: String, name: String, force: Option<bool>, state: State<'_, DbState>) -> Result<(), QueryError> {
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
         severity: Some("ERROR".to_string()),
     })?.clone();
-    driver.drop_database(&name).await
+    driver.drop_database(&name, force.unwrap_or(false)).await
 }
 
 #[tauri::command]

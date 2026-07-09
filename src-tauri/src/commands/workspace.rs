@@ -423,7 +423,7 @@ pub fn write_text_file(path: String, content: String) -> Result<(), String> {
 
 /// Deletes a file or folder (recursively) from the workspace tree.
 #[tauri::command]
-pub async fn delete_fs_item(path: String) -> Result<(), String> {
+pub fn delete_fs_item(path: String) -> Result<(), String> {
     let p = std::path::Path::new(&path);
     let meta = fs::metadata(p).map_err(|e| e.to_string())?;
     if meta.is_dir() {
@@ -499,8 +499,12 @@ pub struct TreeNode {
     pub is_pinned: bool,
 }
 
+// Sync (not async): the body is a blocking recursive fs walk with no .await
+// points. A plain `pub fn` command lets Tauri dispatch it on its own blocking
+// thread pool instead of running it inline on a tokio worker thread, which
+// otherwise stalls other in-flight async commands on large workspaces.
 #[tauri::command]
-pub async fn read_workspace_tree(
+pub fn read_workspace_tree(
     path: String,
     workspace_id: Option<String>,
     app_handle: tauri::AppHandle,
@@ -607,20 +611,21 @@ pub async fn read_workspace_tree(
     build_tree(root_path_obj, root_path_obj, &meta_map)
 }
 
+// Sync (see read_workspace_tree above) — plain blocking fs::* calls, no .await.
 #[tauri::command]
-pub async fn create_folder(path: String, name: String) -> Result<(), String> {
+pub fn create_folder(path: String, name: String) -> Result<(), String> {
     let p = std::path::Path::new(&path).join(name);
     fs::create_dir_all(&p).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn create_file(path: String, name: String) -> Result<(), String> {
+pub fn create_file(path: String, name: String) -> Result<(), String> {
     let p = std::path::Path::new(&path).join(name);
     fs::write(&p, "").map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn rename_fs_item(
+pub fn rename_fs_item(
     app_handle: tauri::AppHandle,
     old_path: String,
     new_path: String,
@@ -659,14 +664,14 @@ pub async fn rename_fs_item(
 }
 
 #[tauri::command]
-pub async fn move_fs_item(
+pub fn move_fs_item(
     app_handle: tauri::AppHandle,
     source_path: String,
     target_path: String,
     workspace_id: Option<String>,
     root_path: Option<String>,
 ) -> Result<(), String> {
-    rename_fs_item(app_handle, source_path, target_path, workspace_id, root_path).await
+    rename_fs_item(app_handle, source_path, target_path, workspace_id, root_path)
 }
 
 #[tauri::command]

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { useUiStore } from "@/store/uiStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
@@ -18,11 +18,17 @@ import { DataGrid } from "@/features/DataGrid";
 import { CommitFooter } from "@/features/QueryPanel/CommitFooter";
 import { TabBar } from "@/features/QueryPanel/TabBar";
 import { SqlEditor } from "@/features/SqlEditor";
-import { SchemaVisualizer } from "@/features/SchemaVisualizer";
-import { MockGenerator } from "@/features/MockGenerator/MockGenerator";
 import { UnsavedChangesDialog } from "@/shared/ui/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/features/QueryPanel/EmptyWorkspaceState";
+import { Skeleton } from "@/shared/ui/Skeleton";
 import { useToastStore } from "@/store/toastStore";
+
+const SchemaVisualizer = lazy(() =>
+  import("@/features/SchemaVisualizer").then((m) => ({ default: m.SchemaVisualizer })),
+);
+const MockGenerator = lazy(() =>
+  import("@/features/MockGenerator/MockGenerator").then((m) => ({ default: m.MockGenerator })),
+);
 import "@/shared/ui/menu-shared.css";
 import "./QueryPanel.css";
 
@@ -348,6 +354,7 @@ export function QueryPanel({
       const ts = tableTabStates[tab.id];
       if (ts) {
         setIsReloading(true);
+        loadColumnsBatch([ts.table], columnMap);
         loadTablePage(tab.id, ts.table, ts.offset, ts.pageSize, ts.filters)
           .catch(() => performClose(tab.id))
           .finally(() => setIsReloading(false));
@@ -617,6 +624,11 @@ export function QueryPanel({
     } else if (tabAction.type === "close_by_path" && tabAction.payload) {
       const tabToClose = tabsRef.current.find((t) => t.payload.scriptId === tabAction.payload);
       if (tabToClose) performClose(tabToClose.id);
+    } else if (tabAction.type === "mark_deleted" && tabAction.payload) {
+      const deletedId = tabAction.payload;
+      setTabs((prev) => prev.map((t) =>
+        t.payload.scriptId === deletedId ? { ...t, payload: { ...t.payload, isDeleted: true } } : t,
+      ));
     } else if (tabAction.type === "new") {
       // Find next available "Untitled N" number from current tabs
       const currentTabs = tabsRef.current;
@@ -1192,21 +1204,25 @@ export function QueryPanel({
         )}
 
         {activeTab?.type === "mock_generator" && activeTab.payload.table && (
-          <MockGenerator
-            connectionId={connectionId}
-            table={activeTab.payload.table}
-            columns={columnMap[activeTab.payload.table.name] ?? []}
-          />
+          <Suspense fallback={<Skeleton height="100%" />}>
+            <MockGenerator
+              connectionId={connectionId}
+              table={activeTab.payload.table}
+              columns={columnMap[activeTab.payload.table.name] ?? []}
+            />
+          </Suspense>
         )}
 
         {activeTab?.type === "schema" && (
-          <SchemaVisualizer
-            engine={engine ?? "postgres"}
-            tables={tables}
-            columnMap={columnMap}
-            connectionId={connectionId}
-            focusTable={(activeTab.payload as TabPayload).table}
-          />
+          <Suspense fallback={<Skeleton height="100%" />}>
+            <SchemaVisualizer
+              engine={engine ?? "postgres"}
+              tables={tables}
+              columnMap={columnMap}
+              connectionId={connectionId}
+              focusTable={(activeTab.payload as TabPayload).table}
+            />
+          </Suspense>
         )}
 
         {activeTab?.type === "table_structure" && activeTab.payload.table && (

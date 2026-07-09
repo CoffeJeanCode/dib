@@ -3,7 +3,7 @@ mod db;
 mod storage;
 
 use commands::connection::{connect_saved, connect_to_db, create_database, disconnect, drop_database, list_databases, rename_database, switch_database, test_connection, DbState, set_active_workspace, connect_db_lazily};
-use commands::ddl::{apply_schema_changes, drop_table, generate_crud_sql, get_function_ddl, get_trigger_ddl, get_view_ddl};
+use commands::ddl::{apply_schema_changes, create_table, drop_table, generate_crud_sql, get_function_ddl, get_trigger_ddl, get_view_ddl};
 use commands::persistence::{delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state};
 use commands::mock::generate_mock_data;
 use commands::query::{apply_changes, cancel_query, explain_query, fetch_table_data, run_query};
@@ -64,6 +64,7 @@ pub fn run() {
             cancel_query,
             // ddl
             apply_schema_changes,
+            create_table,
             drop_table,
             get_view_ddl,
             get_function_ddl,

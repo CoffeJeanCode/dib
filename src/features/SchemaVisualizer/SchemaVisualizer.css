@@ -17,6 +17,24 @@
   box-shadow: var(--shadow-sm);
 }
 
+.sv-controls .react-flow__controls-button {
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  fill: var(--color-text-secondary);
+  transition: background var(--transition-fastest), color var(--transition-fastest), fill var(--transition-fastest);
+}
+
+.sv-controls .react-flow__controls-button:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-teal);
+  fill: var(--color-teal);
+}
+
+.sv-controls .react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+
 /* ── Edges ──────────────────────────────────────────────────── */
 
 /* Edge label text */

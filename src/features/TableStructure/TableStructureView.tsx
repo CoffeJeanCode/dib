@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { dbService } from "@/services/dbService";
 import type { TableStructure, TableInfo } from "@/types/db";
 import {
   Key, Hash, Type, Calendar, Link2, ArrowRight,
   Zap, Shield, Search, RefreshCw, AlertCircle,
   CheckCircle2, XCircle, Fingerprint, List, Database,
+  ArrowUpDown, ChevronDown,
 } from "lucide-react";
 import "./TableStructureView.css";
 
@@ -63,6 +64,8 @@ export function TableStructureView({ connectionId, table, onViewData }: TableStr
   const [error, setError]         = useState<string | null>(null);
   const [subTab, setSubTab]       = useState<SubTab>("columns");
   const [colSearch, setColSearch] = useState("");
+  const [fkSearch, setFkSearch]   = useState("");
+  const [fkSort, setFkSort]       = useState<"name" | "table" | "on_delete">("name");
 
   const load = () => {
     setLoading(true);
@@ -90,6 +93,24 @@ export function TableStructureView({ connectionId, table, onViewData }: TableStr
     c.data_type.toLowerCase().includes(colSearch.toLowerCase())
   ) ?? [];
 
+  const sortedFks = useMemo(() => {
+    if (!structure) return [];
+    let list = structure.foreign_keys.filter(fk =>
+      !fkSearch ||
+      fk.name.toLowerCase().includes(fkSearch.toLowerCase()) ||
+      fk.foreign_table.toLowerCase().includes(fkSearch.toLowerCase()) ||
+      fk.columns.some(c => c.toLowerCase().includes(fkSearch.toLowerCase()))
+    );
+    if (fkSort === "table") {
+      list = [...list].sort((a, b) => a.foreign_table.localeCompare(b.foreign_table));
+    } else if (fkSort === "on_delete") {
+      list = [...list].sort((a, b) => a.on_delete.localeCompare(b.on_delete));
+    } else {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return list;
+  }, [structure, fkSearch, fkSort]);
+
   const counts: Record<SubTab, number> = {
     columns:      structure?.columns.length ?? 0,
     indexes:      structure?.indexes.length ?? 0,
@@ -98,7 +119,7 @@ export function TableStructureView({ connectionId, table, onViewData }: TableStr
   };
 
   return (
-    <div className="sv2">
+    <div className="sv2" data-focus-host="table-structure">
       {/* ── Panel header ── */}
       <div className="sv2-header">
         <div className="sv2-header-left">
@@ -314,51 +335,92 @@ export function TableStructureView({ connectionId, table, onViewData }: TableStr
                 <span className="sv2-empty-hint">This table has no FK relations defined</span>
               </div>
             ) : (
-              <div className="sv2-fk-list">
-                {loading
-                  ? Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="sv2-fk-card sv2-fk-card--skeleton">
-                      <span className="sv2-skeleton-cell" style={{ width: "40%" }} />
-                      <span className="sv2-skeleton-cell" style={{ width: "60%" }} />
-                    </div>
-                  ))
-                  : structure!.foreign_keys.map((fk) => {
-                    const targetLabel = fk.foreign_schema && fk.foreign_schema !== "public"
-                      ? `${fk.foreign_schema}.${fk.foreign_table}`
-                      : fk.foreign_table;
-                    return (
-                      <div key={fk.name} className="sv2-fk-card">
-                        <div className="sv2-fk-card-header">
-                          <Link2 size={13} className="sv2-fk-icon" />
-                          <span className="sv2-fk-name">{fk.name}</span>
-                          <span className="sv2-badge sv2-badge--on-delete" title={`ON DELETE ${fk.on_delete}`}>
-                            {fk.on_delete}
-                          </span>
-                        </div>
-                        <div className="sv2-fk-card-body">
-                          <div className="sv2-fk-side">
-                            <span className="sv2-fk-label">This table</span>
-                            <div className="sv2-tag-list">
-                              {fk.columns.map(c => (
-                                <span key={c} className="sv2-badge sv2-badge--col">{c}</span>
-                              ))}
-                            </div>
-                          </div>
-                          <ArrowRight size={14} className="sv2-fk-arrow" />
-                          <div className="sv2-fk-side">
-                            <span className="sv2-fk-label">{targetLabel}</span>
-                            <div className="sv2-tag-list">
-                              {fk.foreign_columns.map(c => (
-                                <span key={c} className="sv2-badge sv2-badge--fk-target">{c}</span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
+              <>
+                <div className="sv2-toolbar">
+                  <div className="sv2-search-wrap">
+                    <Search size={12} className="sv2-search-icon" />
+                    <input
+                      className="sv2-search"
+                      type="text"
+                      placeholder="Filter foreign keys…"
+                      value={fkSearch}
+                      onChange={e => setFkSearch(e.target.value)}
+                      aria-label="Filter foreign keys"
+                    />
+                  </div>
+                  {fkSearch && (
+                    <span className="sv2-search-count">
+                      {sortedFks.length} / {structure?.foreign_keys.length ?? 0}
+                    </span>
+                  )}
+                  <div className="sv2-sort">
+                    <ArrowUpDown size={12} />
+                    <select
+                      className="sv2-sort-select"
+                      value={fkSort}
+                      onChange={e => setFkSort(e.target.value as typeof fkSort)}
+                      aria-label="Sort foreign keys"
+                    >
+                      <option value="name">Name</option>
+                      <option value="table">Table</option>
+                      <option value="on_delete">Action</option>
+                    </select>
+                    <ChevronDown size={10} className="sv2-sort-chevron" />
+                  </div>
+                </div>
+                <div className="sv2-fk-list">
+                  {loading
+                    ? Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="sv2-fk-card sv2-fk-card--skeleton">
+                        <span className="sv2-skeleton-cell" style={{ width: "40%" }} />
+                        <span className="sv2-skeleton-cell" style={{ width: "60%" }} />
                       </div>
-                    );
-                  })
-                }
-              </div>
+                    ))
+                    : sortedFks.length === 0 ? (
+                      <div className="sv2-empty">
+                        <p>No results found</p>
+                      </div>
+                    ) : sortedFks.map((fk) => {
+                      const targetLabel = fk.foreign_schema && fk.foreign_schema !== "public"
+                        ? `${fk.foreign_schema}.${fk.foreign_table}`
+                        : fk.foreign_table;
+                      return (
+                        <div key={fk.name} className="sv2-fk-card">
+                          <div className="sv2-fk-card-header">
+                            <Link2 size={13} className="sv2-fk-icon" />
+                            <span className="sv2-fk-name">{fk.name}</span>
+                            <span className="sv2-badge sv2-badge--on-delete" title={`ON DELETE ${fk.on_delete}`}>
+                              {fk.on_delete}
+                            </span>
+                            <span className="sv2-badge sv2-badge--on-update" title={`ON UPDATE ${fk.on_update}`}>
+                              {fk.on_update}
+                            </span>
+                          </div>
+                          <div className="sv2-fk-card-body">
+                            <div className="sv2-fk-side">
+                              <span className="sv2-fk-label">This table</span>
+                              <div className="sv2-tag-list">
+                                {fk.columns.map(c => (
+                                  <span key={c} className="sv2-badge sv2-badge--col">{c}</span>
+                                ))}
+                              </div>
+                            </div>
+                            <ArrowRight size={14} className="sv2-fk-arrow" />
+                            <div className="sv2-fk-side">
+                              <span className="sv2-fk-label">{targetLabel}</span>
+                              <div className="sv2-tag-list">
+                                {fk.foreign_columns.map(c => (
+                                  <span key={c} className="sv2-badge sv2-badge--fk-target">{c}</span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              </>
             )}
           </>
         )}

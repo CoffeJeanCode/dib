@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { useConnectionStore } from "@/store/connectionStore";
+import { FlatCheckbox } from "@/shared/ui/FlatCheckbox";
 import "@/shared/ui/dialog-shared.css";
 import "./DbActionDialog.css";
 
@@ -31,6 +32,7 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
   const [selectedDb, setSelectedDb] = useState(targetDb ?? "");
   const [databases, setDatabases] = useState<string[]>([]);
   const [dbsLoading, setDbsLoading] = useState(false);
+  const [force, setForce] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,7 +67,7 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
       } else if (action === "drop") {
         const dbName = selectedDb || name.trim();
         if (!dbName) { setError("Select a database"); setProcessing(false); return; }
-        await invoke("drop_database", { connectionId, name: dbName });
+        await invoke("drop_database", { connectionId, name: dbName, force });
       } else if (action === "rename") {
         const old = selectedDb;
         const newDb = newName.trim();
@@ -82,7 +84,7 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
     } finally {
       setProcessing(false);
     }
-  }, [action, name, selectedDb, newName, connectionId, onClose]);
+  }, [action, name, selectedDb, newName, force, connectionId, onClose]);
 
   const isDrop = action === "drop";
 
@@ -116,6 +118,11 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
                 {databases.map((db) => <option key={db} value={db}>{db}</option>)}
               </select>
             )}
+            <FlatCheckbox
+              label="Force (terminate active connections)"
+              checked={force}
+              onChange={(e) => setForce(e.target.checked)}
+            />
           </>
         )}
 

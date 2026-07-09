@@ -5,6 +5,9 @@ import type { useDataGridState } from "../DataGrid.hooks";
 export type DataGridContextValue = ReturnType<typeof useDataGridState> & {
   columns: string[];
   filters?: UseDataGridStateOptions["filters"];
+  orderBy?: UseDataGridStateOptions["orderBy"];
+  onSortChange?: UseDataGridStateOptions["onSortChange"];
+  handleSortColumn?: (colName: string, direction: "ASC" | "DESC" | null) => void;
   footerRight?: ReactNode;
 };
 

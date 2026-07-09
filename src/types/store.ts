@@ -24,6 +24,7 @@ export interface UiState {
 
   renameTarget: import("@/types/db").TableInfo | null;
   alterTarget: import("@/types/db").TableInfo | null;
+  createTarget: import("@/types/db").TableInfo | null;
   dbAction: { action: "create" | "rename" | "drop"; dbName?: string } | null;
   dangerDialog: { message: string; onConfirm: () => Promise<void> } | null;
   recentCommands: RecentCommand[];
@@ -48,6 +49,7 @@ export interface UiState {
   setBackendError: (e: { command: string; message: string } | null) => void;
   setRenameTarget: (t: import("@/types/db").TableInfo | null) => void;
   setAlterTarget: (t: import("@/types/db").TableInfo | null) => void;
+  setCreateTarget: (t: import("@/types/db").TableInfo | null) => void;
   setDbAction: (action: { action: "create" | "rename" | "drop"; dbName?: string } | null) => void;
   setDangerDialog: (d: { message: string; onConfirm: () => Promise<void> } | null) => void;
   pushToRecents: (cmd: RecentCommand) => void;

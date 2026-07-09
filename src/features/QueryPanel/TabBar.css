@@ -27,7 +27,6 @@
   margin-left: auto;
   background: none;
   border: none;
-  border-left: 1px solid var(--color-border);
   color: var(--color-text-tertiary);
   cursor: pointer;
   transition: color var(--transition-fastest), background var(--transition-fastest);

@@ -1,9 +1,11 @@
-import type { PendingChange, ColumnInfo, GridFilter, TableRelation } from "@/types/db";
+import type { PendingChange, ColumnInfo, GridFilter, TableRelation, OrderBy } from "@/types/db";
 
 export interface GridColumn {
   id: string;
   name: string;
   origIdx: number;
+  /** Display label when name is not unique (join aliases) */
+  label?: string;
 }
 
 export interface DataGridProps {
@@ -15,6 +17,8 @@ export interface DataGridProps {
   primaryKeyColumn?: string;
   columnInfos?: ColumnInfo[];
   filters?: GridFilter[];
+  orderBy?: OrderBy | null;
+  onSortChange?: (orderBy: OrderBy | null) => void;
   onPendingChanges?: (changes: PendingChange[]) => void;
   onFiltersChange?: (filters: GridFilter[]) => void;
   onSave?: (changes: PendingChange[]) => Promise<void>;
@@ -36,6 +40,8 @@ export interface UseDataGridStateOptions {
   primaryKeyColumn?: string;
   columnInfos?: ColumnInfo[];
   filters?: GridFilter[];
+  orderBy?: OrderBy | null;
+  onSortChange?: (orderBy: OrderBy | null) => void;
   activeCell: { row: number; col: number } | null;
   relations?: TableRelation[];
   disableAutoFocus?: boolean;

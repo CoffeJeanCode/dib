@@ -126,10 +126,11 @@ export const DatabaseCategoryItem = React.memo(function DatabaseCategoryItem({
       >
         <div
           className={`sidebar-db-item${isActive ? " sidebar-db-item--active" : ""}`}
+          data-tree-item
           title={schema ? `${schema}.${name}` : name}
           onClick={() => !isLoading && onItemClick(kind, item)}
           role="button"
-          tabIndex={0}
+          tabIndex={-1}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();

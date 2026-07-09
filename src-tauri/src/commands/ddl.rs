@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::db::{ColumnInfo, DdlResult, QueryError, SchemaChange};
+use crate::db::{ColumnInfo, CreateColumn, DdlResult, QueryError, SchemaChange};
 use crate::commands::connection::DbState;
 
 #[tauri::command]
@@ -17,6 +17,22 @@ pub async fn apply_schema_changes(
         severity: Some("ERROR".to_string()),
     })?.clone();
     driver.apply_schema_changes(&table_name, schema.as_deref(), &changes).await
+}
+
+#[tauri::command]
+pub async fn create_table(
+    connection_id: String,
+    table_name: String,
+    schema: Option<String>,
+    columns: Vec<CreateColumn>,
+    state: State<'_, DbState>,
+) -> Result<(), QueryError> {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
+    driver.create_table(&table_name, schema.as_deref(), &columns).await
 }
 
 #[tauri::command]

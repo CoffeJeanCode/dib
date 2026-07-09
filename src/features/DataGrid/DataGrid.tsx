@@ -1,5 +1,5 @@
-import { memo, useMemo, useCallback } from "react";
-import type { PendingChange, ColumnInfo, GridFilter, TableRelation, TableInfo } from "@/types/db";
+import { memo, useMemo, useLayoutEffect } from "react";
+import type { PendingChange, ColumnInfo, GridFilter, TableRelation, OrderBy } from "@/types/db";
 import { useDataGridState } from "./DataGrid.hooks";
 import { DataGridContext } from "./Parts/DataGridContext";
 import { Skeleton } from "@/shared/ui/Skeleton";
@@ -7,11 +7,6 @@ import { GridHeader } from "./Parts/GridHeader";
 import { GridBody } from "./Parts/GridBody";
 import { GridFooter } from "./Parts/GridFooter";
 import { FilterPopover } from "./Parts/FilterPopover";
-import { useDangerDialog } from "@/shared/hooks/useDangerDialog";
-import { useToastStore } from "@/store/toastStore";
-import { useWorkspaceStore } from "@/store/workspaceStore";
-import { useConnectionStore } from "@/store/connectionStore";
-import { Layers, Network, Wrench, PlusSquare, Edit3, Trash2 } from "lucide-react";
 import "./DataGrid.css";
 
 export interface DataGridProps {
@@ -23,6 +18,8 @@ export interface DataGridProps {
   primaryKeyColumn?: string;
   columnInfos?: ColumnInfo[];
   filters?: GridFilter[];
+  orderBy?: OrderBy | null;
+  onSortChange?: (orderBy: OrderBy | null) => void;
   onPendingChanges?: (changes: PendingChange[]) => void;
   onFiltersChange?: (filters: GridFilter[]) => void;
   onSave?: (changes: PendingChange[]) => Promise<void>;
@@ -42,10 +39,11 @@ export const DataGrid = memo(function DataGrid({
   rows,
   loading,
   tableName,
-  tableSchema,
   primaryKeyColumn,
   columnInfos,
   filters,
+  orderBy,
+  onSortChange,
   onPendingChanges,
   onFiltersChange,
   onSave,
@@ -71,6 +69,8 @@ export const DataGrid = memo(function DataGrid({
     primaryKeyColumn,
     columnInfos,
     filters,
+    orderBy,
+    onSortChange,
     activeCell: activeCellProp ?? null,
     relations,
     disableAutoFocus,
@@ -83,35 +83,28 @@ export const DataGrid = memo(function DataGrid({
     onFkNavigate,
     onSaveError,
   });
-  const connectionId = useConnectionStore((s) => s.active?.activeId ?? null);
-  const info = useToastStore((s) => s.info);
-  const error = useToastStore((s) => s.error);
-  const { handleDropTable } = useDangerDialog(connectionId, info, error);
-  const tblSchema = tableSchema !== undefined ? tableSchema : null;
-  const tableActionsEnabled = !!tableName && !!connectionId;
-
-  const handleTableAction = useCallback((action: string) => {
-    if (!tableName) return;
-    const t: TableInfo = { name: tableName, schema: tblSchema };
-    if (action === "structure") useWorkspaceStore.getState().openTableStructure(t);
-    else if (action === "erd") useWorkspaceStore.getState().openTableRelations(t);
-    else if (action === "alter") import("@/store/uiStore").then(m => m.useUiStore.getState().setAlterTarget(t));
-    else if (action === "insert") {
-      useWorkspaceStore.getState().setNavigateTo({ table: t, v: Date.now() } as any);
-      useWorkspaceStore.getState().triggerInsertRow();
-    }
-    else if (action === "rename") import("@/store/uiStore").then(m => m.useUiStore.getState().setRenameTarget(t));
-    else if (action === "drop") handleDropTable(t);
-  }, [tableName, tblSchema, handleDropTable]);
-
   const columnsState = useMemo(() => {
     return {
       ...state,
       columns: effectiveCols,
+      orderBy,
       filters,
       footerRight,
     };
-  }, [state, effectiveCols, filters, footerRight]);
+  }, [state, effectiveCols, orderBy, filters, footerRight]);
+
+  // Clamp the cell context menu inside the viewport — clientX/clientY alone
+  // overflow off-screen when the click lands near the bottom/right edge.
+  useLayoutEffect(() => {
+    const el = state.fkMenuRef.current;
+    if (!state.fkMenu || !el) return;
+    const margin = 4;
+    const rect = el.getBoundingClientRect();
+    const left = Math.min(state.fkMenu.x, window.innerWidth - rect.width - margin);
+    const top = Math.min(state.fkMenu.y, window.innerHeight - rect.height - margin);
+    el.style.left = `${Math.max(margin, left)}px`;
+    el.style.top = `${Math.max(margin, top)}px`;
+  }, [state.fkMenu, state.fkMenuRef]);
 
   if (loading) {
     return (
@@ -134,33 +127,6 @@ export const DataGrid = memo(function DataGrid({
         ref={state.gridRef}
         onKeyDown={state.handleGridKeyDown}
       >
-        {tableActionsEnabled && (
-          <div className="dg-toolbar">
-            <span className="dg-toolbar-title" title={tblSchema ? `${tblSchema}.${tableName}` : tableName}>
-              {tableName}
-            </span>
-            <div className="dg-toolbar-actions">
-              <button className="dg-toolbar-btn" title="View Structure" onClick={() => handleTableAction("structure")}>
-                <Layers size={14} /> Structure
-              </button>
-              <button className="dg-toolbar-btn" title="ERD Diagram" onClick={() => handleTableAction("erd")}>
-                <Network size={14} /> ERD
-              </button>
-              <button className="dg-toolbar-btn" title="Alter Table" onClick={() => handleTableAction("alter")}>
-                <Wrench size={14} /> Alter
-              </button>
-              <button className="dg-toolbar-btn" title="Insert Row" onClick={() => handleTableAction("insert")}>
-                <PlusSquare size={14} /> Insert
-              </button>
-              <button className="dg-toolbar-btn" title="Rename Table" onClick={() => handleTableAction("rename")}>
-                <Edit3 size={14} /> Rename
-              </button>
-              <button className="dg-toolbar-btn dg-toolbar-btn--danger" title="Drop Table" onClick={() => handleTableAction("drop")}>
-                <Trash2 size={14} /> Drop
-              </button>
-            </div>
-          </div>
-        )}
         <div className="dg-scroll" ref={state.setContainerEl} onScroll={state.onScroll}>
           <GridHeader />
           <GridBody />
@@ -173,17 +139,44 @@ export const DataGrid = memo(function DataGrid({
             style={{ left: state.fkMenu.x, top: state.fkMenu.y }}
             role="menu"
           >
-            <button
-              className="dg-fk-menu-item"
-              role="menuitem"
-              onClick={() => {
-                state.generateJoinQuery(state.fkMenu!.col);
-                state.setFkMenu(null);
-              }}
-            >
-              <span>Generate JOIN Query</span>
-              <kbd>Alt+Click</kbd>
-            </button>
+            {state.selectedCells.size > 0 && (
+              <>
+                <button
+                  className="dg-fk-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    state.copySelection();
+                    state.setFkMenu(null);
+                  }}
+                >
+                  <span>Copy</span>
+                  <kbd>Ctrl+C</kbd>
+                </button>
+                <button
+                  className="dg-fk-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    state.copySelectionWithHeaders();
+                    state.setFkMenu(null);
+                  }}
+                >
+                  <span>Copy with Headers</span>
+                </button>
+              </>
+            )}
+            {state.fkMap[state.fkMenu.col] && (
+              <button
+                className="dg-fk-menu-item"
+                role="menuitem"
+                onClick={() => {
+                  state.generateJoinQuery(state.fkMenu!.col);
+                  state.setFkMenu(null);
+                }}
+              >
+                <span>Generate JOIN Query</span>
+                <kbd>Alt+Click</kbd>
+              </button>
+            )}
           </div>
         )}
         <GridFooter />

@@ -3,6 +3,7 @@ import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWizard";
 import { DatabaseCategorySection } from "@/features/Sidebar/Parts/DatabaseCategorySection";
 import { useDatabaseCategoriesLogic, CATEGORIES } from "@/features/Sidebar/hooks/useDatabaseCategoriesLogic";
+import { useTreeKeyboardNav } from "@/shared/hooks/useTreeKeyboardNav";
 import type { TableInfo } from "@/types/db";
 
 interface DatabaseCategoriesProps {
@@ -15,6 +16,9 @@ interface DatabaseCategoriesProps {
 export function DatabaseCategories(props: DatabaseCategoriesProps) {
   const { sessionId } = props;
   const logic = useDatabaseCategoriesLogic(props);
+  const { containerRef, handleKeyDown } = useTreeKeyboardNav({
+    itemSelector: "[data-tree-item]",
+  });
 
   if (!sessionId) {
     return (
@@ -27,7 +31,12 @@ export function DatabaseCategories(props: DatabaseCategoriesProps) {
   }
 
   return (
-    <div className="sidebar-db-categories">
+    <div
+      ref={containerRef}
+      className="sidebar-db-categories"
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+    >
       {CATEGORIES.map((cat) => (
         <DatabaseCategorySection
           key={cat.key}

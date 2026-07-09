@@ -10,8 +10,15 @@ import { SkeletonRow } from "@/shared/ui/Skeleton";
 import { useTreeStateStore, useNodeExpanded } from "@/store/treeStateStore";
 import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
+import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useUiStore } from "@/store/uiStore";
+import { useToastStore } from "@/store/toastStore";
+import { dbService } from "@/services/dbService";
+import { useTreeKeyboardNav } from "@/shared/hooks/useTreeKeyboardNav";
 import { ENGINE_COLORS } from "./utils";
+import { TableContextMenu } from "./TableContextMenu";
 import type { DbTreeNode } from "@/types/db";
+import type { CatKind } from "./TableContextMenu";
 
 /**
  * Layout-agnostic lazy catalog tree (Inversion of Control).
@@ -104,6 +111,13 @@ const SCHEMA_FOLDERS: FolderDef[] = [
       { label: "Templates", fetch: "fts_templates" },
     ],
   },
+];
+
+const SQLITE_FOLDERS: FolderDef[] = [
+  { label: "Tables", fetch: "schema_tables" },
+  { label: "Views", fetch: "schema_views" },
+  { label: "Indexes", fetch: "schema_indexes" },
+  { label: "Triggers", fetch: "schema_triggers" },
 ];
 
 const TABLE_FOLDERS: FolderDef[] = [
@@ -250,10 +264,15 @@ function FolderRow({ def, parentId, depth, sessionId, onNodeClick }: FolderRowPr
         style={{ cursor: "pointer", padding: "3px 8px", paddingLeft: 8 + depth * 12 }}
         onClick={handleToggle}
         title={def.label}
+        data-tree-item
+        role="treeitem"
+        tabIndex={-1}
+        aria-expanded={def.fetch ? expanded : undefined}
       >
         <button
           className="sidebar-icon-btn"
           aria-label={expanded ? "Colapsar" : "Expandir"}
+          tabIndex={-1}
           style={{ padding: 0, width: 14, height: 14, display: "flex", alignItems: "center" }}
         >
           <ChevronRight
@@ -327,37 +346,130 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
 
   const canExpand = node.has_children && (!!folders || directType !== null);
 
+  // ── Context menu (DDL operations) ─────────────────────────────
+  const ctxKind = ["table", "view", "function", "procedure"].includes(node.type)
+    ? (node.type as CatKind) : null;
+  const pid = parentIdFor(node) ?? "";
+  const ctxSchema = pid.includes(".") ? pid.split(".")[0] : null;
+  const ctxName = pid.includes(".") ? pid.slice(pid.indexOf(".") + 1) : (node.label);
+
+  const handleDrop = useCallback(() => {
+    if (!sessionId || !ctxKind) return;
+    const label = ctxSchema ? `"${ctxSchema}"."${ctxName}"` : `"${ctxName}"`;
+    useUiStore.getState().setDangerDialog({
+      message: `Drop ${ctxKind} "${label}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        useUiStore.getState().setDangerDialog(null);
+        try {
+          if (ctxKind === "table") {
+            await dbService.dropTable(sessionId, ctxName, ctxSchema);
+          } else {
+            const verb = ctxKind === "view" ? "VIEW" : ctxKind === "function" ? "FUNCTION" : "PROCEDURE";
+            await dbService.runQuery(sessionId, `DROP ${verb} IF EXISTS ${label}`);
+          }
+          useToastStore.getState().info(`${ctxKind} "${label}" dropped`);
+          useConnectionStore.getState().triggerReload();
+        } catch (e: unknown) {
+          const msg = e && typeof e === "object" && "message" in e
+            ? String((e as { message: unknown }).message)
+            : String(e);
+          useToastStore.getState().error(msg);
+        }
+      },
+    });
+    useUiStore.getState().pushToRecents({
+      type: "ddl",
+      id: `ddl:drop:${sessionId}_${ctxName}`,
+      label: `Drop ${ctxName}`,
+      action: "drop",
+      table: { name: ctxName, schema: ctxSchema },
+    });
+  }, [sessionId, ctxKind, ctxSchema, ctxName]);
+
+  const handleTruncate = useCallback(() => {
+    if (!sessionId || !ctxKind) return;
+    const label = ctxSchema ? `"${ctxSchema}"."${ctxName}"` : `"${ctxName}"`;
+    useUiStore.getState().setDangerDialog({
+      message: `Truncate table "${label}"? ALL records will be deleted. This action cannot be undone.`,
+      onConfirm: async () => {
+        useUiStore.getState().setDangerDialog(null);
+        try {
+          await dbService.runQuery(sessionId, `TRUNCATE TABLE ${label}`);
+          useToastStore.getState().info(`Table "${label}" truncated`);
+          useConnectionStore.getState().triggerReload();
+        } catch (e: unknown) {
+          const msg = e && typeof e === "object" && "message" in e
+            ? String((e as { message: unknown }).message)
+            : String(e);
+          useToastStore.getState().error(msg);
+        }
+      },
+    });
+    useUiStore.getState().pushToRecents({
+      type: "ddl",
+      id: `ddl:truncate:${sessionId}_${ctxName}`,
+      label: `Truncate ${ctxName}`,
+      action: "truncate",
+      table: { name: ctxName, schema: ctxSchema },
+    });
+  }, [sessionId, ctxKind, ctxSchema, ctxName]);
+
+  const row = (
+    <div
+      className="sidebar-db-item"
+      style={{ cursor: "pointer", padding: "3px 8px", paddingLeft: 8 + depth * 12 }}
+      onClick={() => onNodeClick?.(node)}
+      title={node.label}
+      data-tree-item
+      role="treeitem"
+      tabIndex={-1}
+      aria-expanded={canExpand ? expanded : undefined}
+    >
+      {canExpand ? (
+        <button
+          className="sidebar-icon-btn"
+          onClick={handleToggle}
+          aria-label={expanded ? "Colapsar" : "Expandir"}
+          tabIndex={-1}
+          style={{ padding: 0, width: 14, height: 14, display: "flex", alignItems: "center" }}
+        >
+          <ChevronRight
+            size={10}
+            style={{
+              transition: "transform var(--transition-fast, 0.15s)",
+              transform: expanded ? "rotate(90deg)" : undefined,
+            }}
+          />
+        </button>
+      ) : (
+        <span className="sidebar-db-item-spacer" />
+      )}
+      {nodeIcon(node.type)}
+      <span className="sidebar-db-item-name sidebar-db-item-name--xs">
+        {node.label}
+      </span>
+    </div>
+  );
+
   return (
     <div>
-      <div
-        className="sidebar-db-item"
-        style={{ cursor: "pointer", padding: "3px 8px", paddingLeft: 8 + depth * 12 }}
-        onClick={() => onNodeClick?.(node)}
-        title={node.label}
-      >
-        {canExpand ? (
-          <button
-            className="sidebar-icon-btn"
-            onClick={handleToggle}
-            aria-label={expanded ? "Colapsar" : "Expandir"}
-            style={{ padding: 0, width: 14, height: 14, display: "flex", alignItems: "center" }}
-          >
-            <ChevronRight
-              size={10}
-              style={{
-                transition: "transform var(--transition-fast, 0.15s)",
-                transform: expanded ? "rotate(90deg)" : undefined,
-              }}
-            />
-          </button>
-        ) : (
-          <span className="sidebar-db-item-spacer" />
-        )}
-        {nodeIcon(node.type)}
-        <span className="sidebar-db-item-name sidebar-db-item-name--xs">
-          {node.label}
-        </span>
-      </div>
+      {ctxKind ? (
+        <TableContextMenu
+          item={{ name: ctxName, schema: ctxSchema, kind: ctxKind }}
+          onViewStructure={ctxKind === "table" || ctxKind === "view"
+            ? () => useWorkspaceStore.getState().openTableStructure({ name: ctxName, schema: ctxSchema })
+            : undefined}
+          onViewRelations={ctxKind === "table"
+            ? () => useWorkspaceStore.getState().openTableRelations({ name: ctxName, schema: ctxSchema })
+            : undefined}
+          onDrop={handleDrop}
+          onTruncate={ctxKind === "table" ? handleTruncate : undefined}
+        >
+          {row}
+        </TableContextMenu>
+      ) : (
+        row
+      )}
 
       {expanded && (
         <div>
@@ -402,11 +514,12 @@ function ConnectionTreeRoot({
 }) {
   const stateId = `dbtree:conn:${conn.id}`;
   const expanded = useNodeExpanded(stateId);
-  // Postgres gets the full pgAdmin-style catalog; other engines fall back
-  // to a flat schema listing (their drivers reject unknown node_types).
   const isPostgres = /postgres/i.test(conn.engine ?? "");
+  const isSqlite = /sqlite/i.test(conn.engine ?? "");
+  // Only non-folder engines (not PG, not SQLite) fetch schema list directly
+  const isFlat = !isPostgres && !isSqlite;
   const { children, loading, error } = useLazyChildren(
-    expanded && !isPostgres, conn.id, "schema_list", null,
+    expanded && isFlat, conn.id, "schema_list", null,
   );
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
@@ -421,10 +534,15 @@ function ConnectionTreeRoot({
         style={{ cursor: "pointer", padding: "3px 8px", paddingLeft: 8 }}
         onClick={handleToggle}
         title={conn.name}
+        data-tree-item
+        role="treeitem"
+        tabIndex={-1}
+        aria-expanded={expanded}
       >
         <button
           className="sidebar-icon-btn"
           aria-label={expanded ? "Colapsar" : "Expandir"}
+          tabIndex={-1}
           style={{ padding: 0, width: 14, height: 14, display: "flex", alignItems: "center", marginRight: 4 }}
         >
           <ChevronRight
@@ -457,6 +575,17 @@ function ConnectionTreeRoot({
                 onNodeClick={onNodeClick}
               />
             ))
+          ) : isSqlite ? (
+            SQLITE_FOLDERS.map((def) => (
+              <FolderRow
+                key={def.label}
+                def={def}
+                parentId={null}
+                depth={1}
+                sessionId={conn.id}
+                onNodeClick={onNodeClick}
+              />
+            ))
           ) : (
             <>
               <TreeStatus depth={1} loading={loading} error={error} empty={children?.length === 0} />
@@ -473,9 +602,20 @@ function ConnectionTreeRoot({
 
 export function DatabaseTree({ onNodeClick }: DatabaseTreeProps) {
   const { connections } = useSavedConnections();
+  const { containerRef, handleKeyDown } = useTreeKeyboardNav({
+    itemSelector: "[data-tree-item]",
+    onActivate: (el) => { el.click(); },
+  });
 
   return (
-    <div className="sidebar-db-category-items" style={{ overflowY: "auto" }}>
+      <div
+        ref={containerRef}
+        className="sidebar-db-category-items"
+        style={{ overflowY: "auto" }}
+        role="tree"
+        aria-label="Database objects"
+        onKeyDown={handleKeyDown}
+      >
       {connections.length === 0 ? (
         <div className="sidebar-item sidebar-item--empty">
           <span className="sidebar-item-text sidebar-item-text--muted">No connections</span>

@@ -72,6 +72,7 @@ export const DatabaseCategorySection = React.memo(function DatabaseCategorySecti
         <ContextMenu.Trigger asChild>
           <button
             className="sidebar-section-toggle"
+            data-tree-item
             onClick={() => useTreeStateStore.getState().toggleNode(treeKey("dbcat", stableId, icon.key), icon.key === "tables")}
           >
             <ChevronRight
