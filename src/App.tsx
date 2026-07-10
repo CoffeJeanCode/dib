@@ -20,7 +20,12 @@ import "./App.css";
 
 function App() {
   const error = useToastStore((s) => s.error);
-  const { active, connecting, passwordPrompt, selectConnection, submitPassword, cancelPassword } = useConnectionStore();
+  const active = useConnectionStore((s) => s.active);
+  const connecting = useConnectionStore((s) => s.connecting);
+  const passwordPrompt = useConnectionStore((s) => s.passwordPrompt);
+  const selectConnection = useConnectionStore((s) => s.selectConnection);
+  const submitPassword = useConnectionStore((s) => s.submitPassword);
+  const cancelPassword = useConnectionStore((s) => s.cancelPassword);
 
   // Startup auto-connect (opt-in setting): restore the last session scope —
   // workspace + its last connection, or the last global connection.

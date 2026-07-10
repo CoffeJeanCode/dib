@@ -974,7 +974,27 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => execute(item)}
+                      onClick={(e) => {
+                        if (item.kind === "table" && item.table) {
+                          if (e.altKey) {
+                            useWorkspaceStore.getState().openTableRelations(item.table);
+                            pushToRecents({
+                              type: "diagram",
+                              id: `diagram:${item.id}`,
+                              label: `Diagram: ${item.table.name}`,
+                              table: item.table,
+                            });
+                            onClose();
+                            return;
+                          }
+                          if (e.ctrlKey || e.metaKey) {
+                            useWorkspaceStore.getState().openTableStructure(item.table);
+                            onClose();
+                            return;
+                          }
+                        }
+                        execute(item);
+                      }}
                       onPointerMove={() => {
                         pointerActiveRef.current = true;
                         setSelectedIndex(i);

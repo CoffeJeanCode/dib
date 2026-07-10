@@ -177,6 +177,21 @@ fn is_select(sql: &str) -> bool {
     )
 }
 
+// ponytail: CREATE/DROP/ALTER DATABASE, VACUUM etc. error out inside a
+// transaction block. Detect them so the script runner can skip BEGIN/COMMIT
+// and autocommit each statement instead.
+fn is_non_transactional(sql: &str) -> bool {
+    let mut words = sql.split_whitespace();
+    match words.next().unwrap_or("").to_uppercase().as_str() {
+        "VACUUM" | "REINDEX" | "CLUSTER" | "DISCARD" => true,
+        "CREATE" | "DROP" | "ALTER" => matches!(
+            words.next().unwrap_or("").to_uppercase().as_str(),
+            "DATABASE" | "TABLESPACE"
+        ),
+        _ => false,
+    }
+}
+
 fn split_statements(sql: &str) -> Vec<String> {
     let mut stmts = Vec::new();
     let mut current = String::new();
@@ -334,6 +349,10 @@ async fn execute_query_inner(
     pool: &PgPool,
     stmts: &[String],
 ) -> Result<QueryResult, QueryError> {
+    if stmts.iter().any(|s| is_non_transactional(s)) {
+        return execute_query_no_tx(pool, stmts).await;
+    }
+
     let mut tx = pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
     let mut total_affected = 0u64;
 
@@ -451,6 +470,62 @@ async fn execute_query_inner(
         total_affected += result.rows_affected();
 
         tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
+
+        Ok(QueryResult {
+            columns: vec![],
+            rows: vec![],
+            rows_affected: total_affected,
+            column_metadata: vec![],
+            is_updatable: false,
+        })
+    }
+}
+
+// ponytail: no updatable-grid metadata here (table oid / pk lookup) — scripts
+// mixing CREATE DATABASE with a trailing SELECT don't need editable results.
+async fn execute_query_no_tx(
+    pool: &PgPool,
+    stmts: &[String],
+) -> Result<QueryResult, QueryError> {
+    let mut total_affected = 0u64;
+
+    for stmt in &stmts[..stmts.len() - 1] {
+        let result = sqlx::raw_sql(stmt)
+            .execute(pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        total_affected += result.rows_affected();
+    }
+
+    let last_stmt = &stmts[stmts.len() - 1];
+
+    if is_select(last_stmt) {
+        let rows = sqlx::query(last_stmt)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let columns: Vec<String> = rows
+            .first()
+            .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
+            .unwrap_or_default();
+
+        Ok(QueryResult {
+            rows: rows
+                .iter()
+                .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
+                .collect(),
+            columns,
+            rows_affected: total_affected,
+            column_metadata: vec![],
+            is_updatable: false,
+        })
+    } else {
+        let result = sqlx::raw_sql(last_stmt)
+            .execute(pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        total_affected += result.rows_affected();
 
         Ok(QueryResult {
             columns: vec![],

@@ -38,7 +38,10 @@ export function Sidebar({
 }: SidebarProps) {
   const { connections, remove } = useSavedConnections();
   
-  const { active, selectConnection, switchDatabase, disconnect } = useConnectionStore();
+  const active = useConnectionStore((s) => s.active);
+  const selectConnection = useConnectionStore((s) => s.selectConnection);
+  const switchDatabase = useConnectionStore((s) => s.switchDatabase);
+  const disconnect = useConnectionStore((s) => s.disconnect);
   const activeConnectionId = active?.savedId ?? null;
   const activeSessionId = active?.activeId ?? null;
   const connectionName = active?.name;
