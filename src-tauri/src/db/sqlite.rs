@@ -244,7 +244,7 @@ impl DatabaseDriver for SqliteDriver {
         }
         for row_changes in row_map.values() {
             let pk_val = row_changes[0].row_pk_value.as_ref().ok_or_else(|| QueryError {
-                message: "row_pk_value is required for UPDATE".into(),
+                message: "Cannot update row: primary key value is missing".into(),
                 code: None, severity: Some("ERROR".into()),
             })?;
             let set_parts: Vec<String> = row_changes.iter()
@@ -264,7 +264,7 @@ impl DatabaseDriver for SqliteDriver {
         // ── DELETEs ────────────────────────────────────────────────
         for c in changes.iter().filter(|c| c.change_type == "delete") {
             let pk_val = c.row_pk_value.as_ref().ok_or_else(|| QueryError {
-                message: "row_pk_value is required for DELETE".into(),
+                message: "Cannot delete row: primary key value is missing".into(),
                 code: None, severity: Some("ERROR".into()),
             })?;
             let sql = format!("DELETE FROM \"{}\" WHERE \"{}\" = ?", safe_table, safe_pk);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import type { ConnectionInfo, DbConfig, SavedConnection } from "@/types/db";
@@ -17,22 +17,43 @@ interface ConnectionManagerProps {
   onEditSaved?: () => void;
 }
 
+function parseConnectionUrl(url: string): { host: string; port: string; username: string; password: string; database: string } | null {
+  if (!url || !url.includes("://")) return null;
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname) return null;
+    return {
+      host: parsed.hostname,
+      port: parsed.port || "5432",
+      username: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password),
+      database: parsed.pathname.replace(/^\//, ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function ConnectionManager({ onConnected, editing, onEditSaved }: ConnectionManagerProps) {
   const { save } = useSavedConnections();
   const toast = useToastStore.getState();
   const globalConnecting = useConnectionStore((s) => s.connecting);
   const [name, setName] = useState("");
   const [dbType, setDbType] = useState("postgres");
+  const [connectionUrl, setConnectionUrl] = useState("");
   const [host, setHost] = useState("localhost");
   const [port, setPort] = useState("5432");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [savePassword, setSavePassword] = useState(true);
   const [database, setDatabase] = useState("");
+  const autoFillTimer = useRef<ReturnType<typeof setTimeout>>();
+
   // Pre-fill fields when editing an existing connection
   useEffect(() => {
     if (!editing) return;
     setName(editing.name);
+    setConnectionUrl("");
     setDbType(editing.engine);
     setHost(editing.host || "localhost");
     setPort(String(editing.port || 5432));
@@ -51,10 +72,40 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
   const [testOk, setTestOk] = useState(false);
   const [success, setSuccess] = useState<ConnectionInfo | null>(null);
 
+  const autoFillFromUrl = (url: string) => {
+    const parsed = parseConnectionUrl(url);
+    if (parsed) {
+      setHost(parsed.host);
+      setPort(parsed.port);
+      setUsername(parsed.username);
+      setPassword(parsed.password);
+      setDatabase(parsed.database);
+    }
+  };
+
+  const handleUrlChange = (value: string) => {
+    setConnectionUrl(value);
+    if (autoFillTimer.current) clearTimeout(autoFillTimer.current);
+    autoFillTimer.current = setTimeout(() => autoFillFromUrl(value), 400);
+  };
+
   const buildConfig = (): DbConfig => {
     const isSqlite = dbType === "sqlite";
+    if (connectionUrl && !isSqlite) {
+      return {
+        db_type: dbType,
+        url: connectionUrl,
+        host: null,
+        port: null,
+        database: null,
+        username: null,
+        password: null,
+        path: null,
+      };
+    }
     return {
       db_type: dbType,
+      url: null,
       host: isSqlite ? null : host,
       port: isSqlite ? null : parseInt(port, 10),
       database: isSqlite ? null : database || null,
@@ -62,6 +113,11 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
       password: isSqlite ? null : password || null,
       path: isSqlite ? database : null,
     };
+  };
+
+  const handleFieldChange = (setter: (v: string) => void) => (value: string) => {
+    setter(value);
+    if (connectionUrl) setConnectionUrl("");
   };
 
   const handleTest = async () => {
@@ -175,13 +231,21 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
 
         {dbType !== "sqlite" && (
           <>
+            <FlatInput
+              label="Connection URL"
+              id="connection-url"
+              value={connectionUrl}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder="postgresql://user:pass@localhost:5432/mydb"
+            />
+
             <div className="cm-row">
               <FlatInput
                 label="Host"
                 id="host"
                 className="cm-field--flex"
                 value={host}
-                onChange={(e) => setHost(e.target.value)}
+                onChange={(e) => handleFieldChange(setHost)(e.target.value)}
                 placeholder="localhost"
               />
               <FlatInput
@@ -190,7 +254,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
                 type="number"
                 className="cm-field--small"
                 value={port}
-                onChange={(e) => setPort(e.target.value)}
+                onChange={(e) => handleFieldChange(setPort)(e.target.value)}
                 placeholder="5432"
               />
             </div>
@@ -201,7 +265,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
                 id="username"
                 className="cm-field--flex"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => handleFieldChange(setUsername)(e.target.value)}
                 placeholder="postgres"
               />
               <div className="cm-field cm-field--flex">
@@ -209,7 +273,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
                 <PasswordInput
                   id="password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(v) => handleFieldChange(setPassword)(v)}
                   placeholder="••••••••"
                 />
               </div>
@@ -227,7 +291,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           label={dbType === "sqlite" ? "File Path" : "Database"}
           id="database"
           value={database}
-          onChange={(e) => setDatabase(e.target.value)}
+          onChange={(e) => handleFieldChange(setDatabase)(e.target.value)}
           placeholder={dbType === "sqlite" ? "./mydb.sqlite" : "mydb"}
         />
 
@@ -246,7 +310,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         {success && (
           <div className="cm-success">
             <span className="cm-success-text">
-              Connected to {success.config.database || success.config.path || success.id}
+              Connected to {success.config.url || success.config.database || success.config.path || success.id}
             </span>
           </div>
         )}
@@ -266,7 +330,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
               type="button"
               className="cm-button cm-button--ghost"
               onClick={handleTest}
-              disabled={testing || loading || !database}
+              disabled={testing || loading || !(connectionUrl || database)}
             >
               {testing ? "Testing…" : "Test Connection"}
             </button>
@@ -274,7 +338,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           <button
             type="submit"
             className="cm-button cm-button--primary"
-            disabled={loading || testing || globalConnecting || !database}
+            disabled={loading || testing || globalConnecting || !(connectionUrl || database)}
           >
             {(loading || globalConnecting) && (
               <Loader2 size={13} className="cm-spinner" />

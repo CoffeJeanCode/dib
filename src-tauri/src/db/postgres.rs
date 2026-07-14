@@ -149,19 +149,43 @@ fn pg_bind_json(args: &mut sqlx::postgres::PgArguments, val: &Value) {
 }
 
 impl PostgresDriver {
-    // Uses PgConnectOptions — passwords with special chars won't corrupt the URL.
     pub async fn from_config(config: &DbConfig) -> Result<Self, QueryError> {
         use sqlx::postgres::PgConnectOptions;
+        use sqlx::ConnectOptions;
 
-        let mut opts = PgConnectOptions::new()
-            .host(config.host.as_deref().unwrap_or("localhost"))
-            .port(config.port.unwrap_or(5432))
-            .username(config.username.as_deref().unwrap_or("postgres"))
-            .database(config.database.as_deref().unwrap_or("postgres"));
-
-        if let Some(pw) = config.password.as_deref().filter(|s| !s.is_empty()) {
-            opts = opts.password(pw);
-        }
+        let opts = if let Some(url_str) = &config.url {
+            if url_str.is_empty() {
+                return Err(QueryError { message: "Connection URL is empty".into(), code: Some("EmptyUrl".into()), severity: Some("ERROR".into()) });
+            }
+            let parsed = url::Url::parse(url_str).map_err(|e| QueryError {
+                message: format!("Invalid connection URL: {e}"),
+                code: Some("InvalidUrl".into()),
+                severity: Some("ERROR".into()),
+            })?;
+            let mut opts = PgConnectOptions::from_url(&parsed).map_err(|e| QueryError {
+                message: format!("Invalid connection parameters in URL: {e}"),
+                code: Some("InvalidConnectionOptions".into()),
+                severity: Some("ERROR".into()),
+            })?;
+            // Allow explicit overrides (e.g. switching databases, supplying password)
+            if let Some(db) = &config.database {
+                opts = opts.database(db);
+            }
+            if let Some(pw) = config.password.as_deref().filter(|s| !s.is_empty()) {
+                opts = opts.password(pw);
+            }
+            opts
+        } else {
+            let mut opts = PgConnectOptions::new()
+                .host(config.host.as_deref().unwrap_or("localhost"))
+                .port(config.port.unwrap_or(5432))
+                .username(config.username.as_deref().unwrap_or("postgres"))
+                .database(config.database.as_deref().unwrap_or("postgres"));
+            if let Some(pw) = config.password.as_deref().filter(|s| !s.is_empty()) {
+                opts = opts.password(pw);
+            }
+            opts
+        };
 
         PgPool::connect_with(opts)
             .await
@@ -316,6 +340,11 @@ fn pg_value_to_json(row: &sqlx::postgres::PgRow, i: usize) -> Value {
         // JSON/JSONB decoded directly as serde_json::Value (requires sqlx "json" feature)
         "JSON" | "JSONB" => row
             .try_get::<serde_json::Value, _>(i)
+            .unwrap_or(Value::Null),
+        "UUID" => row
+            .try_get::<uuid::Uuid, _>(i)
+            .map(|v| json!(v.to_string()))
+            .or_else(|_| row.try_get::<String, _>(i).map(|v| json!(v)))
             .unwrap_or(Value::Null),
         "DATE" => row.try_get::<chrono::NaiveDate, _>(i)
             .map(|v| json!(v.format("%Y-%m-%d").to_string()))
@@ -1582,7 +1611,7 @@ impl DatabaseDriver for PostgresDriver {
         }
         for row_changes in row_map.values() {
             let pk_val = row_changes[0].row_pk_value.as_ref().ok_or_else(|| QueryError {
-                message: "row_pk_value is required for UPDATE".into(),
+                message: "Cannot update row: primary key value is missing".into(),
                 code: None, severity: Some("ERROR".into()),
             })?;
             let set_parts: Vec<String> = row_changes.iter().enumerate()
@@ -1605,7 +1634,7 @@ impl DatabaseDriver for PostgresDriver {
         // ── DELETEs ────────────────────────────────────────────────
         for c in changes.iter().filter(|c| c.change_type == "delete") {
             let pk_val = c.row_pk_value.as_ref().ok_or_else(|| QueryError {
-                message: "row_pk_value is required for DELETE".into(),
+                message: "Cannot delete row: primary key value is missing".into(),
                 code: None, severity: Some("ERROR".into()),
             })?;
             let sql = format!("DELETE FROM \"{}\" WHERE \"{}\" = $1", safe_table, safe_pk);

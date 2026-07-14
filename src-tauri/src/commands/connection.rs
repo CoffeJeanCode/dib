@@ -160,6 +160,7 @@ pub async fn connect_saved(
     let is_sqlite = saved.engine == "sqlite";
     let config = DbConfig {
         db_type: saved.engine.clone(),
+        url: saved.url.clone(),
         host: if is_sqlite { None } else { Some(saved.host.clone()) },
         port: if is_sqlite { None } else { Some(saved.port) },
         database: if is_sqlite { None } else {
@@ -225,6 +226,7 @@ pub async fn connect_db_lazily(
 
     let config = DbConfig {
         db_type: saved.engine.clone(),
+        url: saved.url.clone(),
         host: if is_sqlite { None } else { Some(saved.host.clone()) },
         port: if is_sqlite { None } else { Some(saved.port) },
         database: if is_sqlite { None } else {

@@ -370,6 +370,16 @@ export function QueryPanel({
     async (tabId: string) => {
       const ts = tableTabStates[tabId];
       if (!ts || ts.pendingChanges.length === 0) return;
+      if (ts.primaryKeyColumn) {
+        const pkChanges = ts.pendingChanges.filter(
+          (c) => c.column === ts.primaryKeyColumn,
+        );
+        if (pkChanges.length > 0) {
+          toast.warn(
+            `Modifying primary key column "${ts.primaryKeyColumn}" in ${pkChanges.length} row(s). This may break referential integrity.`,
+          );
+        }
+      }
       setCommitting(tabId);
       try {
         await commitChanges(ts.table.name, ts.primaryKeyColumn, ts.pendingChanges);
@@ -382,7 +392,7 @@ export function QueryPanel({
         setCommitting(null);
       }
     },
-    [tableTabStates, commitChanges, updateTableTabState, markTabClean, loadTablePage],
+    [tableTabStates, commitChanges, updateTableTabState, markTabClean, loadTablePage, toast],
   );
 
   // ── Tab lifecycle ──────────────────────────────────────────────────────

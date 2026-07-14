@@ -1,5 +1,6 @@
 export interface DbConfig {
   db_type: string;
+  url: string | null;
   host: string | null;
   port: number | null;
   database: string | null;
@@ -85,6 +86,7 @@ export interface SavedConnection {
   id: string;
   name: string;
   engine: string;
+  url?: string | null;
   host: string;
   port: number;
   username: string;

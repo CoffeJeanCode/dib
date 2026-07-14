@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DbConfig {
     pub db_type: String,
+    pub url: Option<String>,
     pub host: Option<String>,
     pub port: Option<u16>,
     pub database: Option<String>,
