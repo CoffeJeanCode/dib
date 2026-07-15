@@ -517,10 +517,7 @@
   border: 1px solid var(--color-border);
 }
 
-/* ── DB entity items ────────────────────────────────────── */
-/* ── DB tree header ─────────────────────────────────────── */
-
-/* ── DB entity items ────────────────────────────────────── */
+/* ── DB tree items (shared by simple & advance views) ───── */
 .sidebar-db-item {
   display: flex;
   align-items: center;
@@ -605,6 +602,31 @@
   flex: 1;
   min-width: 0;
   margin: 0 4px;
+}
+
+.sidebar-schema-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 3px 8px 3px 24px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--color-text-secondary);
+  user-select: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 2px;
+}
+
+.sidebar-schema-toggle:hover {
+  background: var(--color-bg-hover, rgba(128,128,128,0.08));
+}
+
+.sidebar-schema-toggle .sidebar-db-item-name--xs {
+  font-weight: var(--font-weight-medium, 500);
 }
 
 .sidebar-db-item-name {

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
 import { AlertTriangle } from "lucide-react";
 import "./dialog-shared.css";
 import "./UnsavedChangesDialog.css";
@@ -13,6 +14,9 @@ interface Props {
 
 export function UnsavedChangesDialog({ entityName, entityType, onSave, onDiscard, onCancel }: Props) {
   const saveRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap({ containerRef: dialogRef });
 
   useEffect(() => {
     saveRef.current?.focus();
@@ -28,7 +32,7 @@ export function UnsavedChangesDialog({ entityName, entityType, onSave, onDiscard
 
   return (
     <div className="dialog-backdrop" onClick={onCancel}>
-      <div className="dialog ucd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+      <div ref={dialogRef} className="dialog ucd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
         <div className="ucd-header">
           <AlertTriangle size={20} />
           <span className="dialog-title">{title}</span>

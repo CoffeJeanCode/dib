@@ -35,11 +35,6 @@ export function treeKey(namespace: string, ...segments: (string | number)[]): st
   return [namespace, ...segments].join(KEY_SEP);
 }
 
-/** Prefix matching every node of a scope: treeKeyPrefix("dbtree", connId). */
-export function treeKeyPrefix(namespace: string, ...segments: (string | number)[]): string {
-  return [namespace, ...segments].join(KEY_SEP) + KEY_SEP;
-}
-
 interface TreeState {
   /** compound key -> explicit expansion state. Missing key = caller default. */
   expandedNodes: Record<string, boolean>;

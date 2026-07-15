@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
 import { Loader2 } from "lucide-react";
 import { PasswordInput } from "@/shared/ui/PasswordInput";
 import "@/shared/ui/dialog-shared.css";
@@ -14,6 +15,9 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
   const [password, setPassword] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap({ containerRef: dialogRef });
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -26,7 +30,7 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
     try {
       const success = await onSubmit(password);
       if (success === false) {
-        setTimeout(() => inputRef.current?.focus(), 50);
+        requestAnimationFrame(() => inputRef.current?.focus());
       }
     } finally {
       setIsConnecting(false);
@@ -39,7 +43,7 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
 
   return (
     <div className="dialog-backdrop" onClick={onCancel} onKeyDown={handleKeyDown}>
-      <div className="dialog pp-modal" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className="dialog pp-modal" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <span className="dialog-label">Password Required</span>
         </div>

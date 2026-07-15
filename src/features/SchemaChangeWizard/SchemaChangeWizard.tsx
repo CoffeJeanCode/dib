@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
 import { X, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
@@ -100,6 +101,9 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
   const [newName, setNewName] = useState("");
 
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap({ containerRef: dialogRef });
 
   const setAlterTarget = useUiStore((s) => s.setAlterTarget);
   const setCreateTarget = useUiStore((s) => s.setCreateTarget);
@@ -246,7 +250,7 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
-      <div className="dialog scw" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div ref={dialogRef} className="dialog scw" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="dialog-header">
           <span className="dialog-title">{mode === "create" ? "Create Table" : "Alter Table"}</span>
           <button className="dialog-close" onClick={onClose} aria-label="Close"><X /></button>

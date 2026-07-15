@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
 import { mod } from "@/shared/utils/platform";
 import "@/shared/ui/dialog-shared.css";
 import "./KeyboardCheatSheet.css";
@@ -65,6 +66,10 @@ const SECTIONS = [
 ];
 
 export function KeyboardCheatSheet({ onClose }: KeyboardCheatSheetProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap({ containerRef: dialogRef, restoreFocus: true });
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -73,7 +78,7 @@ export function KeyboardCheatSheet({ onClose }: KeyboardCheatSheetProps) {
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
-      <div className="dialog kcs" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className="dialog kcs" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <span className="dialog-title">Keyboard Shortcuts</span>
           <button className="dialog-close" onClick={onClose}>✕</button>

@@ -307,6 +307,7 @@ export function useSqlEditor({
       });
     }
     prevTabIdRef.current = tabId;
+    editorRef.current?.focus();
   }, [tabId]);
 
   useEffect(() => {
@@ -731,7 +732,9 @@ export function useSqlEditor({
       }, 0);
     }
 
-    editor.focus();
+    if (!editor.hasTextFocus()) {
+      editor.focus();
+    }
   }, []); // stable — reads from refs only
 
   const handleChange = useCallback(

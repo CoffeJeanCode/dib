@@ -8,22 +8,18 @@ import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { workspaceService } from "@/services/workspaceService";
 import { connectionService } from "@/services/connectionService";
+import { EntityBrowser } from "./EntityBrowser";
 import {
   DatabaseSelector,
-  ConnectionItem,
   WorkspaceTree,
-  DatabaseTree,
   WorkspaceList,
   QueryHistoryPanel,
 } from "./Parts";
 import type { WorkspaceTreeRef } from "./Parts/WorkspaceTree";
-import type { SavedConnection, TableInfo } from "@/types/db";
+import type { SavedConnection } from "@/types/db";
 import "./Sidebar.css";
 
-import { useUiStore } from "@/store/uiStore";
-
 type Panel = "explorer" | "connections" | "scripts" | "history" | "database" | "workspaces";
-type DbActionType = "create" | "rename" | "drop";
 
 interface SidebarProps {
   activeView: Panel;
@@ -45,17 +41,9 @@ export function Sidebar({
   const activeConnectionId = active?.savedId ?? null;
   const activeSessionId = active?.activeId ?? null;
   const connectionName = active?.name;
-  const activeDb = active?.name;
 
   const setOpenScript = useWorkspaceStore((s) => s.setOpenScript);
-  const setNavigateTo = useWorkspaceStore((s) => s.setNavigateTo);
   const onScriptOpen = useCallback((sql: string, name: string, id: string) => setOpenScript({ sql, name, id: id ?? `ext-${Date.now()}`, v: Date.now() } as any), [setOpenScript]);
-  const onTableSelect = useCallback((table: TableInfo) => setNavigateTo({ table, v: Date.now() } as any), [setNavigateTo]);
-
-  const setDbAction = useUiStore((s) => s.setDbAction);
-  const setEditingConn = useUiStore((s) => s.setEditingConn);
-  const onDbAction = useCallback((action: DbActionType, dbName?: string) => setDbAction({ action, dbName }), [setDbAction]);
-  const onEditConnection = useCallback((conn: SavedConnection) => setEditingConn(conn), [setEditingConn]);
   const { virtualTree, scriptsLoading, refreshScripts } = useSidebarScripts(activeConnectionId);
 
   const workspaceTreeRef = useRef<WorkspaceTreeRef>(null);
@@ -107,93 +95,24 @@ export function Sidebar({
         onDisconnect={disconnect}
       />
 
-      {activeView === "explorer" ? (
-        // Unified layout, tab 1/3 — instances (compact root nodes) + entities + workspace tree.
-        <nav className="sidebar-nav dg-scroll" aria-label="Explorer">
-          <div className="sidebar-section-block">
-            <SectionHeader Icon={Database} label="Instances" />
-            {connections.length === 0 ? (
-              <div className="sidebar-item sidebar-item--empty">
-                <span className="sidebar-item-text sidebar-item-text--muted">No connections</span>
-              </div>
-            ) : (
-              connections.map((conn) => (
-                  <ConnectionItem
-                    key={conn.id}
-                    conn={conn}
-                    compact
-                    showEntities
-                    isSelected={false}
-                    isActive={conn.id === activeConnectionId}
-                    navIdx={-1}
-                    sessionId={conn.id === activeConnectionId ? activeSessionId : null}
-                    activeDb={conn.id === activeConnectionId ? activeDb : undefined}
-                    onSelect={(_navIdx, connId) => selectConnection(connId)}
-                    onDbSwitch={switchDatabase}
-                    onEdit={onEditConnection}
-                    onDelete={setDeleteTarget}
-                    onNewQuery={!activeWorkspacePath && conn.id === activeConnectionId ? () => onScriptOpen("", "New Query", `new-${Date.now()}`) : undefined}
-                    onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction("create") : undefined}
-                    onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction("rename", db) : undefined}
-                    onDropDb={conn.id === activeConnectionId ? (db) => onDbAction("drop", db) : undefined}
-                    onTableSelect={onTableSelect}
-                    onScriptOpen={onScriptOpen}
-                  />
-               ))
-             )}
-           </div>
-          </nav>
-       ) : activeView === "workspaces" ? (
+      {activeView === "connections" ? (
+        <EntityBrowser
+          connectionsOnly
+          onScriptOpen={onScriptOpen}
+          onDeleteTarget={setDeleteTarget}
+        />
+      ) : activeView === "explorer" || activeView === "database" ? (
+        <EntityBrowser
+          onScriptOpen={onScriptOpen}
+          onDeleteTarget={setDeleteTarget}
+        />
+      ) : activeView === "workspaces" ? (
         <nav className="sidebar-nav dg-scroll" aria-label="Workspaces">
           <WorkspaceList onConnectionSelect={selectConnection} />
         </nav>
       ) : activeView === "history" ? (
-        // Unified tab 3/3, and split tab 4/4 — same panel, both layouts.
         <nav className="sidebar-nav dg-scroll" aria-label="Query history">
           <QueryHistoryPanel activeConnectionId={activeConnectionId} onScriptOpen={onScriptOpen} />
-        </nav>
-      ) : activeView === "connections" ? (
-        // Home layout — Standalone instances, isolated.
-        <nav className="sidebar-nav dg-scroll" aria-label="Instances">
-          <div className="sidebar-section-block">
-            <SectionHeader Icon={Database} label="Standalone" />
-            {connections.length === 0 ? (
-              <div className="sidebar-item sidebar-item--empty">
-                <span className="sidebar-item-text sidebar-item-text--muted">No connections</span>
-              </div>
-            ) : (
-              connections.map((conn) => (
-                <ConnectionItem
-                  key={conn.id}
-                  conn={conn}
-                  isSelected={false}
-                  isActive={conn.id === activeConnectionId}
-                  navIdx={-1}
-                  sessionId={conn.id === activeConnectionId ? activeSessionId : null}
-                  activeDb={conn.id === activeConnectionId ? activeDb : undefined}
-                  onSelect={(_navIdx, connId) => selectConnection(connId)}
-                  onDbSwitch={switchDatabase}
-                  onEdit={onEditConnection}
-                   onDelete={setDeleteTarget}
-                   onNewQuery={conn.id === activeConnectionId ? () => onScriptOpen("", "New Query", `new-${Date.now()}`) : undefined}
-                   onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction("create") : undefined}
-                   onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction("rename", db) : undefined}
-                   onDropDb={conn.id === activeConnectionId ? (db) => onDbAction("drop", db) : undefined}
-                 />
-               ))
-             )}
-           </div>
-         </nav>
-       ) : activeView === "database" ? (
-        // Split layout, tab 2/4 — Entities (tables/views/functions/procedures/triggers), isolated.
-        <nav className="sidebar-nav dg-scroll" aria-label="Entities">
-          <DatabaseTree
-            onNodeClick={(node) => {
-              if (node.type === "table") {
-                setNavigateTo({ table: { name: node.label, schema: null }, v: Date.now() } as any);
-              }
-            }}
-          />
         </nav>
       ) : (
         <nav className="sidebar-nav dg-scroll" aria-label="Scripts">

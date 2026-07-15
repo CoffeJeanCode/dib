@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
 import "./dialog-shared.css";
 import "./DangerConfirmDialog.css";
 
@@ -10,9 +11,12 @@ interface Props {
 }
 
 export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfirm, onCancel }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useFocusTrap({ containerRef: dialogRef });
 
   useEffect(() => {
     cancelRef.current?.focus();
@@ -39,7 +43,7 @@ export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfir
 
   return (
     <div className="dialog-backdrop" onClick={loading ? undefined : onCancel}>
-      <div className="dialog dialog--danger dcd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+      <div ref={dialogRef} className="dialog dialog--danger dcd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
         <p className="dialog-message">{message}</p>
         {error && <p className="dialog-error">{error}</p>}
         <div className="dialog-actions">

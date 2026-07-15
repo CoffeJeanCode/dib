@@ -16,7 +16,7 @@ export interface FsNode {
 }
 
 export type DbConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
-export type WorkspaceLayout = "unified" | "split";
+export type WorkspaceLayout = "simple" | "advance";
 
 export interface Workspace {
   id: string;

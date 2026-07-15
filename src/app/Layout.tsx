@@ -13,7 +13,7 @@ import "./Layout.css";
 const SIDEBAR_MIN = 160;
 const SIDEBAR_SNAP = 140;
 
-// "explorer" only exists in unified layout; the other 4 only exist in split layout.
+// "explorer" only exists in simple layout; the other 4 only exist in advance layout.
 type Panel = "explorer" | "connections" | "scripts" | "history" | "database" | "workspaces";
 
 // Home (no active connection) — Instances and Workspaces.
@@ -22,14 +22,14 @@ const HOME_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = 
   { id: "workspaces", icon: <FolderOpen size={20} />, title: "Workspaces" },
 ];
 
-const UNIFIED_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
+const SIMPLE_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
   { id: "workspaces", icon: <FolderOpen size={20} />, title: "Workspaces" },
   { id: "explorer", icon: <Compass size={20} />,   title: "Explorer" },
   { id: "scripts",  icon: <FileCode2 size={20} />, title: "Scripts" },
   { id: "history",  icon: <Clock size={20} />,      title: "History" },
 ];
 
-const SPLIT_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
+const ADVANCE_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
   { id: "workspaces", icon: <FolderOpen size={20} />, title: "Workspaces" },
   { id: "connections", icon: <Database size={20} />,    title: "Instances" },
   { id: "database",    icon: <LayoutGrid size={20} />,  title: "Entities" },
@@ -49,14 +49,14 @@ export function Layout({ children, onSettingsOpen }: LayoutProps) {
   // No active connection AND no active workspace = Home (instance selection screen)
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const isHome = !activeConnectionId && !activeWorkspaceId;
-  const PANELS = isHome ? HOME_PANELS : (workspaceLayout === "unified" ? UNIFIED_PANELS : SPLIT_PANELS);
+  const PANELS = isHome ? HOME_PANELS : (workspaceLayout === "simple" ? SIMPLE_PANELS : ADVANCE_PANELS);
   const [activePanel, setActivePanel] = useState<Panel>(() =>
-    isHome ? "connections" : (workspaceLayout === "unified" ? "explorer" : "database"),
+    isHome ? "connections" : (workspaceLayout === "simple" ? "explorer" : "database"),
   );
 
   useEffect(() => {
     if (activeConnectionId) {
-      setActivePanel(workspaceLayout === "unified" ? "explorer" : "database");
+      setActivePanel(workspaceLayout === "simple" ? "explorer" : "database");
       if (!state.is_sidebar_open) updateState({ is_sidebar_open: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -65,9 +65,9 @@ export function Layout({ children, onSettingsOpen }: LayoutProps) {
   // Normalize the active tab whenever Home/workspace status or the layout
   // preference changes — a tab valid in one context may not exist in another.
   useEffect(() => {
-    const validIds = (isHome ? HOME_PANELS : (workspaceLayout === "unified" ? UNIFIED_PANELS : SPLIT_PANELS)).map((p) => p.id);
+    const validIds = (isHome ? HOME_PANELS : (workspaceLayout === "simple" ? SIMPLE_PANELS : ADVANCE_PANELS)).map((p) => p.id);
     if (validIds.includes(activePanel)) return;
-    setActivePanel(isHome ? "connections" : (workspaceLayout === "unified" ? "explorer" : "database"));
+    setActivePanel(isHome ? "connections" : (workspaceLayout === "simple" ? "explorer" : "database"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceLayout, isHome]);
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
 import "./dialog-shared.css";
@@ -17,6 +18,9 @@ export function RenameDialog({ connectionId, entityType, entityName, schema, onC
   const [renaming, setRenaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap({ containerRef: dialogRef });
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -61,7 +65,7 @@ export function RenameDialog({ connectionId, entityType, entityName, schema, onC
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
-      <div className="dialog rd" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div ref={dialogRef} className="dialog rd" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <span className="dialog-title">Rename {entityType}</span>
         <div className="dialog-entity">{displayLabel}</div>
         <input

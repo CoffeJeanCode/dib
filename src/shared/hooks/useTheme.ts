@@ -15,10 +15,6 @@ export function setTheme(t: "dark" | "light") {
   useUiStore.getState().setTheme(t);
 }
 
-export function clearThemeOverride() {
-  localStorage.removeItem(KEY);
-}
-
 export function useTheme() {
   const theme = useUiStore((s) => s.theme);
   const storeSetTheme = useUiStore((s) => s.setTheme);

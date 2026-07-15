@@ -181,8 +181,9 @@ export function useDataGridState({
     null,
   );
 
-  // Save indicator
+  // Save indicator + version (triggers auto-focus after save even when row count unchanged)
   const [saveIndicator, setSaveIndicator] = useState(false);
+  const [saveVersion, setSaveVersion] = useState(0);
 
   // Filter popover
   const [filterPopover, setFilterPopover] = useState<{ col: string; x: number; y: number } | null>(
@@ -378,7 +379,7 @@ export function useDataGridState({
         gridRef.current?.focus({ preventScroll: true });
       });
     });
-  }, [disableAutoFocus, sortedRows.length]);
+  }, [disableAutoFocus, sortedRows.length, saveVersion]);
 
   useEffect(() => {
     onPendingChangesRef.current?.(Array.from(editState.changes.values()));
@@ -756,6 +757,7 @@ export function useDataGridState({
       .current(changes)
       .then(() => {
         preserveOrderRef.current = true;
+        setSaveVersion(v => v + 1);
         setSaveIndicator(true);
         setTimeout(() => setSaveIndicator(false), 2000);
       })

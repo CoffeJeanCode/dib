@@ -385,11 +385,16 @@ export function QueryPanel({
         await commitChanges(ts.table.name, ts.primaryKeyColumn, ts.pendingChanges);
         updateTableTabState(tabId, { pendingChanges: [] });
         markTabClean(tabId);
-        loadTablePage(tabId, ts.table, ts.offset, ts.pageSize, ts.filters, ts.orderBy);
+        await loadTablePage(tabId, ts.table, ts.offset, ts.pageSize, ts.filters, ts.orderBy);
       } catch (e) {
         updateTableTabState(tabId, { error: fmtErr(e) });
       } finally {
         setCommitting(null);
+        requestAnimationFrame(() => {
+          const main = document.getElementById("dib-main-panel");
+          const grid = main?.querySelector<HTMLElement>(".dg-wrap");
+          grid?.focus({ preventScroll: true });
+        });
       }
     },
     [tableTabStates, commitChanges, updateTableTabState, markTabClean, loadTablePage, toast],
@@ -401,10 +406,8 @@ export function QueryPanel({
       const tabId = scriptId ?? crypto.randomUUID();
       setTabs((prev) => {
         if (prev.some((t) => t.id === tabId)) {
-          setActiveTabId(tabId);
           return prev;
         }
-        // scriptId provided → tab is already saved; null → draft
         const newTab: TabData = {
           id: tabId,
           type: "script",
@@ -414,9 +417,9 @@ export function QueryPanel({
           closeable: true,
         };
         registerTabSql(tabId, sql);
-        setActiveTabId(tabId);
         return [...prev, newTab];
       });
+      setActiveTabId(tabId);
     },
     [registerTabSql],
   );

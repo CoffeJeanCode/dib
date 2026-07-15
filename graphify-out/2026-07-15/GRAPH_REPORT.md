@@ -1,16 +1,16 @@
-# Graph Report - dib  (2026-07-15)
+# Graph Report - dib  (2026-07-09)
 
 ## Corpus Check
-- 169 files · ~143,513 words
+- 166 files · ~127,658 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2543 nodes · 5991 edges · 168 communities (125 shown, 43 thin omitted)
-- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 546 edges (avg confidence: 0.52)
+- 1648 nodes · 3326 edges · 126 communities (98 shown, 28 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 12 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `19904300`
+- Built from commit: `669b5c99`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,12 +23,10 @@
 - [[_COMMUNITY_Community 5|Community 5]]
 - [[_COMMUNITY_Community 6|Community 6]]
 - [[_COMMUNITY_Community 7|Community 7]]
-- [[_COMMUNITY_x0|x0]]
 - [[_COMMUNITY_Community 9|Community 9]]
 - [[_COMMUNITY_Community 10|Community 10]]
 - [[_COMMUNITY_Community 11|Community 11]]
 - [[_COMMUNITY_Community 12|Community 12]]
-- [[_COMMUNITY_g0|g0]]
 - [[_COMMUNITY_Community 14|Community 14]]
 - [[_COMMUNITY_Community 15|Community 15]]
 - [[_COMMUNITY_Community 16|Community 16]]
@@ -40,18 +38,14 @@
 - [[_COMMUNITY_Community 22|Community 22]]
 - [[_COMMUNITY_Community 23|Community 23]]
 - [[_COMMUNITY_Community 24|Community 24]]
-- [[_COMMUNITY_Bb|Bb]]
-- [[_COMMUNITY_ne|ne]]
 - [[_COMMUNITY_Community 27|Community 27]]
 - [[_COMMUNITY_Community 28|Community 28]]
 - [[_COMMUNITY_Community 29|Community 29]]
 - [[_COMMUNITY_Community 30|Community 30]]
 - [[_COMMUNITY_Community 31|Community 31]]
 - [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Xt|Xt]]
 - [[_COMMUNITY_Community 34|Community 34]]
 - [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Ac|Ac]]
 - [[_COMMUNITY_Community 37|Community 37]]
 - [[_COMMUNITY_Community 38|Community 38]]
 - [[_COMMUNITY_Community 39|Community 39]]
@@ -130,7 +124,6 @@
 - [[_COMMUNITY_EmptyWorkspaceState.tsx|EmptyWorkspaceState.tsx]]
 - [[_COMMUNITY_Community 115|Community 115]]
 - [[_COMMUNITY_Community 116|Community 116]]
-- [[_COMMUNITY_r|r]]
 - [[_COMMUNITY_filesrccomponentsEmptyWorkspaceState.tsx@srccomponentsEmptyWorkspaceState.tsx|file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx]]
 - [[_COMMUNITY_Community 119|Community 119]]
 - [[_COMMUNITY_Capability|Capability]]
@@ -138,71 +131,38 @@
 - [[_COMMUNITY_useTreeKeyboardNav|useTreeKeyboardNav]]
 - [[_COMMUNITY_SettingsPanel.tsx|SettingsPanel.tsx]]
 - [[_COMMUNITY_useWorkspaceStore|useWorkspaceStore]]
-- [[_COMMUNITY_vc|vc]]
 - [[_COMMUNITY_WorkspaceTree.tsx|WorkspaceTree.tsx]]
 - [[_COMMUNITY_filesrccomponentsLayout.tsx@srccomponentsLayout.tsx|file:src/components/Layout.tsx@src/components/Layout.tsx]]
 - [[_COMMUNITY_SchemaChangeWizard.tsx|SchemaChangeWizard.tsx]]
-- [[_COMMUNITY_Da|Da]]
-- [[_COMMUNITY_z3|z3]]
-- [[_COMMUNITY_Zo|Zo]]
-- [[_COMMUNITY_fv|fv]]
-- [[_COMMUNITY_db.rs|db.rs]]
-- [[_COMMUNITY_Ka|Ka]]
-- [[_COMMUNITY_Sa|Sa]]
-- [[_COMMUNITY_Dc|Dc]]
-- [[_COMMUNITY_U0|U0]]
-- [[_COMMUNITY_Bo|Bo]]
-- [[_COMMUNITY_Sy|Sy]]
-- [[_COMMUNITY_qg|qg]]
-- [[_COMMUNITY_Ri|Ri]]
-- [[_COMMUNITY_jk|jk]]
-- [[_COMMUNITY_filesrccomponentsEmptyWorkspaceState.tsx@srccomponentsEmptyWorkspaceState.tsx|file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx]]
-- [[_COMMUNITY_Capability|Capability]]
-- [[_COMMUNITY_Capability|Capability]]
-- [[_COMMUNITY_la|la]]
-- [[_COMMUNITY_p2|p2]]
-- [[_COMMUNITY_rj|rj]]
-- [[_COMMUNITY_hw|hw]]
-- [[_COMMUNITY_eS|eS]]
-- [[_COMMUNITY_fE|fE]]
-- [[_COMMUNITY_fj|fj]]
-- [[_COMMUNITY_fw|fw]]
-- [[_COMMUNITY_Hl|Hl]]
-- [[_COMMUNITY_hv|hv]]
-- [[_COMMUNITY_j1|j1]]
-- [[_COMMUNITY_lM|lM]]
-- [[_COMMUNITY_mj|mj]]
-- [[_COMMUNITY_o3|o3]]
-- [[_COMMUNITY_tp|tp]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `r()` - 127 edges
-2. `n()` - 126 edges
-3. `t()` - 124 edges
-4. `s()` - 103 edges
-5. `x0()` - 93 edges
-6. `ae()` - 86 edges
-7. `ne()` - 48 edges
-8. `DbState` - 44 edges
-9. `useWorkspaceStore` - 42 edges
-10. `AppDb` - 41 edges
+1. `DbState` - 44 edges
+2. `useWorkspaceStore` - 42 edges
+3. `AppDb` - 41 edges
+4. `useConnectionStore` - 38 edges
+5. `TableInfo` - 31 edges
+6. `PostgresDriver` - 28 edges
+7. `useUiStore` - 24 edges
+8. `ColumnInfo` - 22 edges
+9. `SqliteDriver` - 19 edges
+10. `useDataGridState()` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `fmtTime()` --indirect_call--> `n()`  [INFERRED]
-  src/features/Sidebar/Parts/SavedScriptsPanel.tsx → dist-root-owned/assets/index-sGUI_7J-.js
-- `useDataGridState()` --indirect_call--> `r()`  [INFERRED]
-  src/features/DataGrid/DataGrid.hooks.ts → dist-root-owned/assets/index-sGUI_7J-.js
-- `QueryPanel()` --indirect_call--> `r()`  [INFERRED]
-  src/features/QueryPanel/QueryPanel.tsx → dist-root-owned/assets/index-sGUI_7J-.js
-- `safeInvoke()` --indirect_call--> `r()`  [INFERRED]
-  src/shared/utils/ipc.ts → dist-root-owned/assets/index-sGUI_7J-.js
-- `t()` --indirect_call--> `k()`  [INFERRED]
-  dist-root-owned/assets/index-sGUI_7J-.js → src/features/QueryPanel/EmptyWorkspaceState.tsx
+- `useSqlEditor()` --indirect_call--> `k()`  [INFERRED]
+  src/shared/hooks/useSqlEditor.ts → src/features/QueryPanel/EmptyWorkspaceState.tsx
+- `SchemaVisualizerProps` --references--> `TableInfo`  [EXTRACTED]
+  src/features/SchemaVisualizer/SchemaVisualizer.tsx → src/types/db.ts
+- `TableActionsMenuProps` --references--> `TableInfo`  [EXTRACTED]
+  src/shared/ui/TableActionsMenu.tsx → src/types/db.ts
+- `generate_mock_data()` --references--> `DbState`  [EXTRACTED]
+  src-tauri/src/commands/mock.rs → src-tauri/src/commands/connection.rs
+- `save_query_history()` --references--> `DbState`  [EXTRACTED]
+  src-tauri/src/commands/workspace.rs → src-tauri/src/commands/connection.rs
 
 ## Import Cycles
 - None detected.
 
-## Communities (168 total, 43 thin omitted)
+## Communities (126 total, 28 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.04
@@ -210,35 +170,31 @@ Nodes (45): file:src-tauri/src/commands/db.rs@src-tauri/src/commands/db.rs, file
 
 ### Community 1 - "Community 1"
 Cohesion: 0.04
-Nodes (46): dependencies, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, lucide-react, monaco-editor, @monaco-editor/react, @radix-ui/react-context-menu (+38 more)
+Nodes (45): dependencies, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, glob, lucide-react, @monaco-editor/react, purgecss (+37 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.17
-Nodes (16): DataGridProps, DataGridProps, UseDataGridStateOptions, FAKER_TYPES, Props, CommitFooter(), CommitFooterProps, TableTabState (+8 more)
+Cohesion: 0.12
+Nodes (28): DataGridProps, DataGridProps, UseDataGridStateOptions, CommitFooter(), CommitFooterProps, TableTabState, ColumnList, ColumnListProps (+20 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.11
 Nodes (20): Connection, Error, Mutex, AppDb, InternalScript, QueryHistoryEntry, AppHandle, Option (+12 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.05
-Nodes (93): Box, ConnectionInfo, DashMap, RwLock, assert_connection_in_active_workspace(), connect_db_lazily(), connect_saved(), connect_to_db() (+85 more)
+Cohesion: 0.06
+Nodes (84): Box, ConnectionInfo, DashMap, RwLock, assert_connection_in_active_workspace(), connect_db_lazily(), connect_saved(), connect_to_db() (+76 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.02
-Nodes (62): $0, A0, ak, Al, b3, bk, bx, ck (+54 more)
+Cohesion: 0.67
+Nodes (3): Value, anyOf, description
 
 ### Community 6 - "Community 6"
 Cohesion: 0.09
 Nodes (29): SqliteArguments, SqlitePool, SqliteRow, build_where_sqlite(), is_select(), ColumnInfo, CreateColumn, DbTreeNode (+21 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.05
-Nodes (96): _(), a_(), Aa(), ag(), ah(), ai, Ar, aT() (+88 more)
-
-### Community 8 - "x0"
-Cohesion: 0.05
-Nodes (5): ae(), nC, w0(), wC, x0()
+Cohesion: 0.67
+Nodes (3): Value, anyOf, description
 
 ### Community 9 - "Community 9"
 Cohesion: 0.09
@@ -246,7 +202,7 @@ Nodes (22): file:src-tauri/src/db/driver.rs@src-tauri/src/db/driver.rs, function
 
 ### Community 10 - "Community 10"
 Cohesion: 0.08
-Nodes (42): AtomicI32, ExplainNode, PgArguments, PgPool, PgRow, build_where_pg(), decode_fk_action(), execute_query_inner() (+34 more)
+Nodes (40): AtomicI32, ExplainNode, PgArguments, PgPool, PgRow, build_where_pg(), decode_fk_action(), execute_query_inner() (+32 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.07
@@ -255,10 +211,6 @@ Nodes (29): compilerOptions, allowImportingTsExtensions, baseUrl, forceConsisten
 ### Community 12 - "Community 12"
 Cohesion: 0.07
 Nodes (23): PinnedItem, PinnedSection(), PinnedSectionProps, fmtSize(), fmtTime(), SavedScriptsPanel(), SavedScriptsPanelProps, ScriptsContextMenu() (+15 more)
-
-### Community 13 - "g0"
-Cohesion: 0.05
-Nodes (59): b0(), bg(), bN(), bu(), c1(), Ci(), d0(), e0() (+51 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.28
@@ -281,8 +233,8 @@ Cohesion: 0.11
 Nodes (18): file:src/types/db.ts@src/types/db.ts, interface:ColumnInfo@src/types/db.ts, interface:ConnectionInfo@src/types/db.ts, interface:DbConfig@src/types/db.ts, interface:GridFilter@src/types/db.ts, interface:InternalScript@src/types/db.ts, interface:PagedResult@src/types/db.ts, interface:PendingChange@src/types/db.ts (+10 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.07
-Nodes (28): ConnectionManager(), parseConnectionUrl(), SystemInfo, SystemStatusBar(), persistenceService, DEFAULT_STATE, UiState, Dropzone() (+20 more)
+Cohesion: 0.21
+Nodes (13): MainContent(), Props, ConnectionManagerProps, FlatSelect, FlatSelectProps, ActiveConn, ConnectionState, WorkspaceState (+5 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.12
@@ -297,84 +249,68 @@ Cohesion: 0.12
 Nodes (16): file:src-tauri/src/db/sqlite.rs@src-tauri/src/db/sqlite.rs, function:apply_changes@src-tauri/src/db/sqlite.rs, function:build_where_sqlite@src-tauri/src/db/sqlite.rs, function:connect@src-tauri/src/db/sqlite.rs, function:driver_name@src-tauri/src/db/sqlite.rs, function:execute_query@src-tauri/src/db/sqlite.rs, function:fetch_page@src-tauri/src/db/sqlite.rs, function:get_table_relations@src-tauri/src/db/sqlite.rs (+8 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.12
-Nodes (26): CATEGORIES, CatKey, DDL_TEMPLATES, fmtErr(), useDatabaseCategoriesLogic(), DatabaseCategories(), DatabaseCategoriesProps, DatabaseCategoryItem (+18 more)
+Cohesion: 0.07
+Nodes (48): CATEGORIES, CatKey, DDL_TEMPLATES, fmtErr(), useDatabaseCategoriesLogic(), DatabaseCategoryItem, DatabaseCategoryItemProps, IconType (+40 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.13
 Nodes (15): file:src/components/DataGrid.tsx@src/components/DataGrid.tsx, file:src/components/SqlEditor.tsx@src/components/SqlEditor.tsx, function:DataGrid@src/components/DataGrid.tsx, function:SqlEditor@src/components/SqlEditor.tsx, function:buildRangeSet@src/components/DataGrid.tsx, function:cell@src/components/DataGrid.tsx, function:cellId@src/components/DataGrid.tsx, function:defineDibThemes@src/components/SqlEditor.tsx (+7 more)
 
-### Community 25 - "Bb"
-Cohesion: 0.06
-Nodes (56): ap(), aS(), Ay(), Bb(), bp(), Bs(), cf(), Ch() (+48 more)
-
-### Community 26 - "ne"
-Cohesion: 0.05
-Nodes (51): af(), bE(), bf(), By(), C0(), cp(), cS(), Dl (+43 more)
-
 ### Community 27 - "Community 27"
-Cohesion: 0.05
-Nodes (57): CommandAction, CommandPalette(), CommandPaletteProps, DbObjectSubtype, DDL_MODE_META, DdlMode, generateOrmAlias(), getPaletteItemHint() (+49 more)
+Cohesion: 0.10
+Nodes (22): CommandAction, CommandPalette(), CommandPaletteProps, DbObjectSubtype, DDL_MODE_META, DdlMode, generateOrmAlias(), getPaletteItemHint() (+14 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.14
 Nodes (14): file:src/components/ContextMenu.tsx@src/components/ContextMenu.tsx, file:src/components/Sidebar.tsx@src/components/Sidebar.tsx, file:src/hooks/useContextMenu.ts@src/hooks/useContextMenu.ts, function:ContextMenu@src/components/ContextMenu.tsx, function:IconEdit@src/components/ContextMenu.tsx, function:IconTrash@src/components/ContextMenu.tsx, function:PostgresIcon@src/components/Sidebar.tsx, function:Sidebar@src/components/Sidebar.tsx (+6 more)
 
 ### Community 29 - "Community 29"
-Cohesion: 0.15
-Nodes (13): file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx, file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx, function:CommitFooter@src/components/CommitFooter.tsx, function:QueryPanel@src/components/QueryPanel.tsx, function:colIcon@src/components/QueryPanel.tsx, function:defaultTableTabState@src/components/QueryPanel.tsx, function:fmtErr@src/components/QueryPanel.tsx, function:genSelect@src/components/QueryPanel.tsx (+5 more)
+Cohesion: 0.12
+Nodes (17): file:src/components/CommitFooter.tsx@src/components/CommitFooter.tsx, file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx, file:src/components/QueryPanel.tsx@src/components/QueryPanel.tsx, function:CommitFooter@src/components/CommitFooter.tsx, function:EmptyWorkspaceState@src/components/EmptyWorkspaceState.tsx, function:Keys@src/components/EmptyWorkspaceState.tsx, function:QueryPanel@src/components/QueryPanel.tsx, function:colIcon@src/components/QueryPanel.tsx (+9 more)
 
 ### Community 30 - "Community 30"
 Cohesion: 0.25
 Nodes (14): SavedConnection, delete_connection(), get_data_path(), get_saved_connections(), load_ui_state(), AppHandle, Option, PathBuf (+6 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.19
-Nodes (26): DEFAULT_COL_W_EXPORT, EditState, makeEditState(), Snapshot, useDataGridState(), ARROW_KEYS, CellCoord, focusFirstCell() (+18 more)
+Cohesion: 0.10
+Nodes (43): DEFAULT_COL_W_EXPORT, DataGrid, EditState, makeEditState(), Snapshot, useDataGridState(), ARROW_KEYS, CellCoord (+35 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.13
 Nodes (15): definitions, Identifier, Number, PermissionEntry, Target, Value, oneOf, anyOf (+7 more)
 
-### Community 33 - "Xt"
-Cohesion: 0.08
-Nodes (17): aN(), cN(), dd(), dv, ev(), ff(), If(), Kp() (+9 more)
-
 ### Community 34 - "Community 34"
-Cohesion: 0.18
-Nodes (11): properties, description, type, default, description, type, identifier, local (+3 more)
+Cohesion: 0.14
+Nodes (14): description, properties, required, type, Capability, type, default, description (+6 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.18
-Nodes (11): properties, description, type, default, description, type, identifier, local (+3 more)
-
-### Community 36 - "Ac"
-Cohesion: 0.08
-Nodes (35): a1(), Ac(), Au(), Cl(), co(), cy(), d1(), dy() (+27 more)
+Cohesion: 0.14
+Nodes (14): description, properties, required, type, Capability, type, default, description (+6 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.20
 Nodes (10): file:src/components/Tab.tsx@src/components/Tab.tsx, file:src/components/TabBar.tsx@src/components/TabBar.tsx, function:SortableTab@src/components/TabBar.tsx, function:Tab@src/components/Tab.tsx, function:TabBar@src/components/TabBar.tsx, interface:TabBarProps@src/components/TabBar.tsx, interface:TabData@src/components/Tab.tsx, interface:TabPayload@src/components/Tab.tsx (+2 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.11
-Nodes (30): ConnectionManagerProps, InstanceSelectorDropdown(), InstanceSelectorDropdownProps, ConnectionItem(), ConnectionItemProps, ConnectionStatusDot(), ConnectionStatusDotProps, STATUS_CLASS (+22 more)
+Cohesion: 0.15
+Nodes (20): InstanceSelectorDropdown(), ConnectionItem(), ConnectionStatusDot(), ConnectionStatusDotProps, STATUS_CLASS, DatabaseCategories(), DatabaseSelector(), DropdownItem (+12 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.13
-Nodes (15): definitions, Identifier, Number, PermissionEntry, Target, Value, oneOf, anyOf (+7 more)
+Cohesion: 0.15
+Nodes (13): definitions, Identifier, Number, PermissionEntry, Target, description, oneOf, anyOf (+5 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.13
-Nodes (15): definitions, Identifier, Number, PermissionEntry, Target, Value, oneOf, anyOf (+7 more)
+Cohesion: 0.15
+Nodes (13): definitions, Identifier, Number, PermissionEntry, Target, description, oneOf, anyOf (+5 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.10
-Nodes (19): JsonPanel(), ROW_LIMITS, rowsToObjects(), JsonViewer(), Props, MonacoEditor(), MonacoEditorProps, defineDibThemes() (+11 more)
+Cohesion: 0.12
+Nodes (19): JsonViewer(), Props, MonacoEditor(), MonacoEditorProps, k(), SqlEditor(), SqlEditorProps, defineDibThemes() (+11 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.09
-Nodes (26): Action, ACTION_LABEL, ACTION_TITLE, DbActionDialog(), DbActionDialogProps, GlobalModals(), GlobalModalsProps, reopenPaletteOnDismiss() (+18 more)
+Cohesion: 0.12
+Nodes (17): KeyboardCheatSheet(), KeyboardCheatSheetProps, SECTIONS, EmptyWorkspaceState(), Shortcut, SHORTCUTS, ICON_MAP, Tab() (+9 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.18
@@ -429,20 +365,20 @@ Cohesion: 0.40
 Nodes (5): file:src-tauri/src/lib.rs@src-tauri/src/lib.rs, function:run@src-tauri/src/lib.rs, module:commands@src-tauri/src/lib.rs, module:db@src-tauri/src/lib.rs, module:storage@src-tauri/src/lib.rs
 
 ### Community 56 - "Community 56"
-Cohesion: 0.07
-Nodes (25): bm(), dg(), e3(), eC(), eg(), Fc(), Hp(), jp (+17 more)
+Cohesion: 0.13
+Nodes (13): FAKER_TYPES, MockGenerator(), Props, QueryPanelProps, ConnectionItemProps, DatabaseCategoriesProps, SUB_ICONS, SUB_LABELS (+5 more)
 
 ### Community 57 - "TableActionsMenu.tsx"
-Cohesion: 0.10
-Nodes (23): childNodeType(), ConnectionTreeRoot(), DATABASE_FOLDERS, DatabaseTreeProps, FolderDef, FolderRow(), FolderRowProps, NODE_FOLDERS (+15 more)
+Cohesion: 0.16
+Nodes (16): ENGINE_COLORS, HomeViewProps, WorkspaceList(), WorkspaceListProps, DangerConfirmDialog(), Props, Skeleton(), SkeletonCard() (+8 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.50
 Nodes (4): file:src-tauri/src/db/mod.rs@src-tauri/src/db/mod.rs, module:driver@src-tauri/src/db/mod.rs, module:postgres@src-tauri/src/db/mod.rs, module:sqlite@src-tauri/src/db/mod.rs
 
 ### Community 59 - "useKeybindings.ts"
-Cohesion: 0.10
-Nodes (25): am(), CC(), du(), e_(), em, f3(), fp(), gk (+17 more)
+Cohesion: 0.14
+Nodes (17): defaultTableTabState(), fmtErr(), persistScopeTabCache(), QueryPanel(), ScopeSnapshot, scopeTabCache, tableTabId(), ArrowMenuNavOptions (+9 more)
 
 ### Community 60 - "Community 60"
 Cohesion: 0.25
@@ -457,8 +393,8 @@ Cohesion: 0.25
 Nodes (8): description, properties, required, type, CapabilityRemote, urls, description, type
 
 ### Community 63 - "DbActionDialog.tsx"
-Cohesion: 0.10
-Nodes (26): Ab(), db(), f1(), Fy(), hb(), Hi(), hy(), Ig() (+18 more)
+Cohesion: 0.25
+Nodes (7): Action, ACTION_LABEL, ACTION_TITLE, DbActionDialog(), DbActionDialogProps, FlatCheckbox, FlatCheckboxProps
 
 ### Community 64 - "Community 64"
 Cohesion: 0.14
@@ -505,8 +441,8 @@ Cohesion: 0.14
 Nodes (13): ContextMenuContentProps, ContextMenuItemProps, ContextMenuLabelProps, ContextMenuProps, ContextMenuSeparatorProps, ContextMenuSubContentProps, ContextMenuSubProps, ContextMenuSubTriggerProps (+5 more)
 
 ### Community 104 - "Community 104"
-Cohesion: 0.16
-Nodes (17): DataGrid, GridColumn, cellStr(), makeKey(), operatorsForType(), DataGridContext, DataGridContextValue, useDataGridContext() (+9 more)
+Cohesion: 0.15
+Nodes (18): App(), Layout(), GlobalModals(), GlobalModalsProps, reopenPaletteOnDismiss(), DDL_TEMPLATE, PasswordPrompt(), PasswordPromptProps (+10 more)
 
 ### Community 105 - "Community 105"
 Cohesion: 0.50
@@ -517,8 +453,8 @@ Cohesion: 0.50
 Nodes (4): default, description, type, description
 
 ### Community 107 - "JsonPanel.tsx"
-Cohesion: 0.10
-Nodes (23): _2(), Cg(), dR(), eu(), ex(), f2(), jE(), jj() (+15 more)
+Cohesion: 0.36
+Nodes (9): ColumnMapping, fake_value(), generate_mock_data(), MockResult, QueryError, Result, State, String (+1 more)
 
 ### Community 108 - "Community 108"
 Cohesion: 0.50
@@ -533,8 +469,8 @@ Cohesion: 0.18
 Nodes (10): Auditoría Competitiva y Gap Analysis — DIB v0.1.0, Critical Gaps (Deuda de Producto), Gap 1: SSH Tunneling — CRÍTICO (Sprint 1), Gap 2: Exportación de Datos (CSV/JSON/Excel) — CRÍTICO (Sprint 1), Matriz de Funcionalidades, Resumen Estratégico, Unique Selling Propositions (USPs), USP 1: Arquitectura Tauri (Rust nativo) + Virtual Scrolling (+2 more)
 
 ### Community 112 - "Community 112"
-Cohesion: 0.11
-Nodes (20): bh(), bv(), cR(), ew(), Fh(), gb(), Gd(), jM() (+12 more)
+Cohesion: 0.36
+Nodes (8): _BLOCKED, _initListener(), _isMonaco(), _isPlainInput(), _key(), _reg, ShortcutDef, useKeybindings()
 
 ### Community 113 - "Community 113"
 Cohesion: 0.67
@@ -551,10 +487,6 @@ Nodes (3): ShellScopeEntryAllowedArg, anyOf, description
 ### Community 116 - "Community 116"
 Cohesion: 0.67
 Nodes (3): ShellScopeEntryAllowedArgs, anyOf, description
-
-### Community 117 - "r"
-Cohesion: 0.13
-Nodes (18): a2(), ax(), bT(), c2(), i2(), iE(), im(), j_() (+10 more)
 
 ### Community 118 - "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx"
 Cohesion: 0.50
@@ -574,119 +506,47 @@ Nodes (3): ShellScopeEntryAllowedArg, anyOf, description
 
 ### Community 126 - "useTreeKeyboardNav"
 Cohesion: 0.14
-Nodes (15): bw(), clamp(), fl(), formatHsl(), gj(), jv(), mm(), pm() (+7 more)
+Nodes (15): ConnectionManager(), HomeView(), InstanceSelectorDropdownProps, DatabaseSelectorProps, DatabaseTree(), DbActionType, Panel, SidebarProps (+7 more)
 
 ### Community 127 - "SettingsPanel.tsx"
 Cohesion: 0.10
-Nodes (30): ADVANCE_PANELS, HOME_PANELS, Layout(), LayoutProps, Panel, SIMPLE_PANELS, appWindow, Titlebar() (+22 more)
+Nodes (22): appWindow, Titlebar(), LAYOUT_OPTIONS, SettingsPanel(), SettingsPanelProps, persistenceService, getTheme(), setTheme() (+14 more)
 
 ### Community 128 - "useWorkspaceStore"
-Cohesion: 0.16
-Nodes (14): av(), D2(), eN(), _f, iv(), l2(), ln(), lv() (+6 more)
-
-### Community 129 - "vc"
-Cohesion: 0.17
-Nodes (12): A3(), Ad(), Bi(), Gx(), j3, Kx(), t3, u3 (+4 more)
+Cohesion: 0.18
+Nodes (13): HOME_PANELS, LayoutProps, Panel, SPLIT_PANELS, UNIFIED_PANELS, JsonPanel(), ROW_LIMITS, rowsToObjects() (+5 more)
 
 ### Community 130 - "WorkspaceTree.tsx"
-Cohesion: 0.08
-Nodes (43): App(), MainContent(), Props, DDL_TEMPLATE, ENGINE_COLORS, HomeView(), HomeViewProps, DatabaseTree() (+35 more)
+Cohesion: 0.13
+Nodes (16): SystemInfo, SystemStatusBar(), getFileIcon(), TreeItem(), TreeItemProps, WorkspaceTree, WorkspaceTreeProps, WorkspaceTreeRef (+8 more)
 
 ### Community 131 - "file:src/components/Layout.tsx@src/components/Layout.tsx"
 Cohesion: 0.22
 Nodes (9): file:src/components/Layout.tsx@src/components/Layout.tsx, file:src/components/SettingsPanel.tsx@src/components/SettingsPanel.tsx, file:src/hooks/useUiState.ts@src/hooks/useUiState.ts, function:Layout@src/components/Layout.tsx, function:SettingsPanel@src/components/SettingsPanel.tsx, function:useUiState@src/hooks/useUiState.ts, interface:LayoutProps@src/components/Layout.tsx, interface:SettingsPanelProps@src/components/SettingsPanel.tsx (+1 more)
 
 ### Community 132 - "SchemaChangeWizard.tsx"
-Cohesion: 0.09
-Nodes (30): ChangeKind, COMMON_TYPES, generateAlterSql(), generateCreateSql(), KIND_OPTIONS, SchemaChangeWizard(), SchemaChangeWizardProps, SqlEditorProps (+22 more)
-
-### Community 133 - "Da"
-Cohesion: 0.20
-Nodes (12): d_(), Da(), Gf(), Li(), nT(), Ot(), Rh(), sn() (+4 more)
-
-### Community 134 - "z3"
 Cohesion: 0.24
-Nodes (10): $3(), aw(), Cd(), lw(), mx(), nx(), sg(), ww() (+2 more)
-
-### Community 135 - "Zo"
-Cohesion: 0.22
-Nodes (3): bR(), copy(), Zo()
-
-### Community 136 - "fv"
-Cohesion: 0.25
-Nodes (7): cv(), fN(), fv(), [gn](), qN(), rv(), zf
-
-### Community 137 - "db.rs"
-Cohesion: 0.25
-Nodes (8): displayable(), dm(), fm(), rgb(), uv, wj(), xj(), yj()
-
-### Community 138 - "Ka"
-Cohesion: 0.38
-Nodes (7): Ka(), Nl(), oS(), pa(), Vd(), xk, Ya()
-
-### Community 139 - "Sa"
-Cohesion: 0.33
-Nodes (6): bA(), e2(), kv(), n2(), r2(), Sa()
-
-### Community 140 - "Dc"
-Cohesion: 0.33
-Nodes (6): Dc(), Fs(), Jo(), Lr(), rg, us()
-
-### Community 143 - "Sy"
-Cohesion: 0.50
-Nodes (4): cb(), Hh(), Sy(), v1()
-
-### Community 144 - "qg"
-Cohesion: 0.50
-Nodes (4): Hg(), qg(), Ug(), Wg()
-
-### Community 145 - "Ri"
-Cohesion: 0.50
-Nodes (4): hn, Ri(), vN(), yN()
-
-### Community 147 - "file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx"
-Cohesion: 0.50
-Nodes (4): file:src/components/EmptyWorkspaceState.tsx@src/components/EmptyWorkspaceState.tsx, function:EmptyWorkspaceState@src/components/EmptyWorkspaceState.tsx, function:Keys@src/components/EmptyWorkspaceState.tsx, interface:Shortcut@src/components/EmptyWorkspaceState.tsx
-
-### Community 148 - "Capability"
-Cohesion: 0.50
-Nodes (4): description, required, type, Capability
-
-### Community 149 - "Capability"
-Cohesion: 0.50
-Nodes (4): description, required, type, Capability
-
-### Community 150 - "la"
-Cohesion: 0.67
-Nodes (3): cA, fu(), la()
-
-### Community 151 - "p2"
-Cohesion: 0.67
-Nodes (3): h2(), m2(), p2()
-
-### Community 152 - "rj"
-Cohesion: 0.67
-Nodes (3): rj(), tj(), zv()
+Nodes (10): ChangeKind, COMMON_TYPES, generateAlterSql(), generateCreateSql(), KIND_OPTIONS, SchemaChangeWizard(), SchemaChangeWizardProps, dbService (+2 more)
 
 ## Knowledge Gaps
-- **481 isolated node(s):** `$schema`, `plugin`, `@opencode-ai/plugin`, `gS`, `yS` (+476 more)
+- **413 isolated node(s):** `$schema`, `plugin`, `@opencode-ai/plugin`, `name`, `private` (+408 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **43 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **28 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `r()` connect `r` to `useWorkspaceStore`, `vc`, `Community 5`, `z3`, `Community 7`, `Zo`, `Da`, `fv`, `Sa`, `Dc`, `g0`, `Ka`, `Ri`, `Community 19`, `Bb`, `ne`, `Community 27`, `Community 31`, `Xt`, `o3`, `Ac`, `tp`, `.constructor`, `Community 56`, `useKeybindings.ts`, `DbActionDialog.tsx`, `JsonPanel.tsx`, `Community 112`, `useTreeKeyboardNav`?**
-  _High betweenness centrality (0.060) - this node is a cross-community bridge._
-- **Why does `safeInvoke()` connect `Community 19` to `WorkspaceTree.tsx`, `SchemaChangeWizard.tsx`, `Community 38`, `Community 42`, `Community 12`, `EmptyWorkspaceState.tsx`, `r`, `Community 23`, `TableActionsMenu.tsx`, `Community 27`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Why does `t()` connect `useKeybindings.ts` to `useWorkspaceStore`, `vc`, `Community 5`, `z3`, `Community 7`, `fv`, `Da`, `db.rs`, `Sa`, `Dc`, `g0`, `Ka`, `x0`, `Zo`, `Community 19`, `Community 23`, `Bb`, `ne`, `Community 27`, `Xt`, `Ac`, `tp`, `Community 41`, `Community 56`, `DbActionDialog.tsx`, `JsonPanel.tsx`, `Community 112`, `r`, `useTreeKeyboardNav`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Are the 83 inferred relationships involving `r()` (e.g. with `_()` and `Ac()`) actually correct?**
-  _`r()` has 83 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 78 inferred relationships involving `n()` (e.g. with `_()` and `Ac()`) actually correct?**
-  _`n()` has 78 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 65 inferred relationships involving `t()` (e.g. with `_()` and `av()`) actually correct?**
-  _`t()` has 65 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 71 inferred relationships involving `s()` (e.g. with `_()` and `_2()`) actually correct?**
-  _`s()` has 71 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `DbState` connect `Community 4` to `Community 64`, `JsonPanel.tsx`?**
+  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+- **Why does `save_query_history()` connect `Community 64` to `Community 4`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `AppDb` connect `Community 3` to `Community 64`, `Community 4`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **What connects `$schema`, `plugin`, `@opencode-ai/plugin` to the rest of the system?**
+  _414 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Community 0` be split into smaller, more focused modules?**
+  _Cohesion score 0.044444444444444446 - nodes in this community are weakly interconnected._
+- **Should `Community 1` be split into smaller, more focused modules?**
+  _Cohesion score 0.043478260869565216 - nodes in this community are weakly interconnected._
+- **Should `Community 2` be split into smaller, more focused modules?**
+  _Cohesion score 0.12436974789915967 - nodes in this community are weakly interconnected._

@@ -1,6 +1,5 @@
 export { Sidebar } from "./Sidebar";
 export {
-  SidebarHeader,
   DatabaseSelector,
   ConnectionItem,
   QueryHistoryPanel,

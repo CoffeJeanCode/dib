@@ -36,7 +36,7 @@ export function WorkspaceList({ onConnectionSelect }: WorkspaceListProps) {
   useEffect(() => { loadWorkspaces(); }, [loadWorkspaces]);
 
   useEffect(() => {
-    if (editingId) setTimeout(() => editInputRef.current?.focus(), 0);
+    if (editingId) requestAnimationFrame(() => editInputRef.current?.focus());
   }, [editingId]);
 
   const cancelEdit = useCallback(() => {

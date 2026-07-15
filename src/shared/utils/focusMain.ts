@@ -6,9 +6,15 @@ export const FOCUS_SELECTORS: Record<string, string> = {
   mock_generator: "[data-focus-host='mock-generator']",
 } as const;
 
-export function focusWithRetry(selector: string, maxRetries = 6): void {
+export function focusWithRetry(
+  selector: string,
+  maxRetries = 6,
+  signal?: AbortSignal,
+): void {
+  if (signal?.aborted) return;
   let attempts = 0;
   function tryFocus() {
+    if (signal?.aborted) return;
     attempts++;
     const el = document.querySelector<HTMLElement>(selector);
     if (el) { el.focus({ preventScroll: true }); return; }

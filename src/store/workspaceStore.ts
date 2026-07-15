@@ -217,14 +217,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 }));
 
-// Selector: returns tree + scripts combined (unified) or as separate panels (split),
+// Selector: returns tree + scripts combined (simple) or as separate panels (advance),
 // per the user's workspaceLayout preference (now sourced from useSettingsStore).
 export function selectWorkspacePanels(s: WorkspaceState, layout: WorkspaceLayout) {
-  if (layout === "split") {
-    return { mode: "split" as const, tree: s.workspaceTree, scripts: s.internalScripts };
+  if (layout === "advance") {
+    return { mode: "advance" as const, tree: s.workspaceTree, scripts: s.internalScripts };
   }
   return {
-    mode: "unified" as const,
+    mode: "simple" as const,
     items: [
       ...(s.workspaceTree?.children ?? []),
       ...s.internalScripts.map((sc) => ({ name: sc.title, path: sc.id, isDir: false, isScript: true as const })),

@@ -572,8 +572,6 @@ impl DatabaseDriver for PostgresDriver {
         sqlx::query(
             "SELECT schemaname, tablename \
              FROM pg_catalog.pg_tables \
-             WHERE schemaname != 'information_schema' \
-               AND schemaname != 'pg_catalog' \
              ORDER BY schemaname, tablename",
         )
         .fetch_all(&self.pool)
@@ -595,7 +593,6 @@ impl DatabaseDriver for PostgresDriver {
         let views = sqlx::query(
             "SELECT schemaname, viewname \
              FROM pg_catalog.pg_views \
-             WHERE schemaname NOT IN ('pg_catalog', 'information_schema') \
              ORDER BY schemaname, viewname",
         )
         .fetch_all(&self.pool)
@@ -611,7 +608,6 @@ impl DatabaseDriver for PostgresDriver {
         let routines = sqlx::query(
             "SELECT routine_schema, routine_name, routine_type \
              FROM information_schema.routines \
-             WHERE routine_schema NOT IN ('pg_catalog', 'information_schema') \
              ORDER BY routine_name",
         )
         .fetch_all(&self.pool)
@@ -640,7 +636,6 @@ impl DatabaseDriver for PostgresDriver {
              JOIN pg_class c ON c.oid = t.tgrelid \
              JOIN pg_namespace n ON n.oid = c.relnamespace \
              WHERE NOT t.tgisinternal \
-               AND n.nspname NOT IN ('pg_catalog', 'information_schema') \
              ORDER BY n.nspname, t.tgname",
         )
         .fetch_all(&self.pool)
