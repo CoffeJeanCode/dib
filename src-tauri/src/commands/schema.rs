@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::db::{ColumnInfo, DbTreeNode, QueryError, SchemaObjects, TableRelation, TableStructure};
+use crate::db::{ColumnInfo, DbTreeNode, QueryError, SchemaObjects, TableColumns, TableRef, TableRelation, TableStructure};
 use crate::commands::connection::DbState;
 
 /// Lazy catalog node fetcher. The frontend calls this when a tree node is
@@ -69,6 +69,24 @@ pub async fn fetch_table_schema(
     })?.clone();
 
     driver.get_table_schema(&table_name, schema.as_deref()).await
+}
+
+/// Columns for many tables in one call. Replaces the per-table fan-out the
+/// frontend used to do, which put N concurrent queries behind a 10-connection
+/// pool whenever the schema visualizer opened.
+#[tauri::command]
+pub async fn fetch_table_schemas(
+    connection_id: String,
+    tables: Vec<TableRef>,
+    state: State<'_, DbState>,
+) -> Result<Vec<TableColumns>, QueryError> {
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
+
+    driver.get_table_schemas(&tables).await
 }
 
 #[tauri::command]

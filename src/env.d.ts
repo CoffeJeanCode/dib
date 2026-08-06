@@ -7,6 +7,10 @@ declare module "@tauri-apps/plugin-dialog" {
     defaultPath?: string;
   }
   export function open(options?: OpenDialogOptions): Promise<string | string[] | null>;
+  export function ask(
+    message: string,
+    options?: string | { title?: string; kind?: "info" | "warning" | "error" },
+  ): Promise<boolean>;
 }
 
 declare module "@radix-ui/react-context-menu" {

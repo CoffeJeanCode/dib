@@ -1,9 +1,13 @@
 import { safeInvoke } from "@/shared/utils/ipc";
-import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects, CreateColumn } from "@/types/db";
+import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableColumns, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects, CreateColumn } from "@/types/db";
 
 export const dbService = {
   fetchTableSchema: (connectionId: string, tableName: string, schema: string | null) =>
     safeInvoke<ColumnInfo[]>("fetch_table_schema", { connectionId, tableName, schema }),
+
+  /** Batched columns — one round trip for many tables. */
+  fetchTableSchemas: (connectionId: string, tables: Array<{ name: string; schema: string | null }>) =>
+    safeInvoke<TableColumns[]>("fetch_table_schemas", { connectionId, tables }),
 
   fetchTableData: (
     connectionId: string,

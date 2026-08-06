@@ -749,6 +749,36 @@
   flex-shrink: 0;
 }
 
+/* Files panel header doubles as the workspace switcher. */
+.sidebar-section-header-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 2px var(--space-1);
+  margin-left: calc(var(--space-1) * -1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  transition: background var(--transition-fastest), color var(--transition-fastest);
+}
+
+.sidebar-section-header-toggle:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-teal);
+}
+
+.sidebar-section-header-toggle > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sidebar-section-header-action {
   margin-left: auto;
   background: none;

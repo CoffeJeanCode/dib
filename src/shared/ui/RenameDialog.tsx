@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
 import "./dialog-shared.css";
@@ -20,17 +20,11 @@ export function RenameDialog({ connectionId, entityType, entityName, schema, onC
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useFocusTrap({ containerRef: dialogRef });
+  useDialogFocus({ containerRef: dialogRef, onClose, closeOnBackdropClick: false });
 
   useEffect(() => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  }, [onClose]);
+    requestAnimationFrame(() => inputRef.current?.select());
+  }, []);
 
   const handleRename = useCallback(async () => {
     const trimmed = newName.trim();

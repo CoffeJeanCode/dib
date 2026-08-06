@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Database, Folder, RefreshCw, FilePlus, FolderPlus } from "lucide-react";
+import { Database, Folder, RefreshCw, FilePlus, FolderPlus, ChevronDown } from "lucide-react";
 import { DangerConfirmDialog } from "@/shared/ui/DangerConfirmDialog";
 import { SystemStatusBar } from "@/features/Sidebar/Parts/SystemStatusBar";
 import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
@@ -19,7 +19,7 @@ import type { WorkspaceTreeRef } from "./Parts/WorkspaceTree";
 import type { SavedConnection } from "@/types/db";
 import "./Sidebar.css";
 
-type Panel = "explorer" | "connections" | "scripts" | "history" | "database" | "workspaces";
+type Panel = "explorer" | "files" | "history";
 
 interface SidebarProps {
   activeView: Panel;
@@ -54,6 +54,14 @@ export function Sidebar({
   const workspaceTree = useWorkspaceStore((s) => s.workspaceTree);
   const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath);
 
+  // The Files panel header doubles as the workspace switcher: no workspace
+  // open means the picker is what you need, so it opens on that.
+  const [showWorkspaces, setShowWorkspaces] = useState(!activeWorkspacePath);
+  useEffect(() => { if (activeWorkspacePath) setShowWorkspaces(false); }, [activeWorkspacePath]);
+  const workspaceLabel = activeWorkspacePath
+    ? (activeWorkspacePath.split(/[/\\]/).filter(Boolean).pop() ?? "Workspace")
+    : "Scripts";
+
   useEffect(() => {
     if (undoStack.length === 0) return;
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
@@ -79,6 +87,7 @@ export function Sidebar({
     <aside
       className="sidebar"
       id="dib-sidebar-nav"
+      tabIndex={-1}
       style={width ? { "--sidebar-width": `${width}px` } as React.CSSProperties : undefined}
     >
       {onResizeStart && (
@@ -95,40 +104,38 @@ export function Sidebar({
         onDisconnect={disconnect}
       />
 
-      {activeView === "connections" ? (
-        <EntityBrowser
-          connectionsOnly
-          onScriptOpen={onScriptOpen}
-          onDeleteTarget={setDeleteTarget}
-        />
-      ) : activeView === "explorer" || activeView === "database" ? (
+      {activeView === "explorer" ? (
         <EntityBrowser
           onScriptOpen={onScriptOpen}
           onDeleteTarget={setDeleteTarget}
         />
-      ) : activeView === "workspaces" ? (
-        <nav className="sidebar-nav dg-scroll" aria-label="Workspaces">
-          <WorkspaceList onConnectionSelect={selectConnection} />
-        </nav>
       ) : activeView === "history" ? (
         <nav className="sidebar-nav dg-scroll" aria-label="Query history">
           <QueryHistoryPanel activeConnectionId={activeConnectionId} onScriptOpen={onScriptOpen} />
         </nav>
       ) : (
-        <nav className="sidebar-nav dg-scroll" aria-label="Scripts">
+        <nav className="sidebar-nav dg-scroll" aria-label="Files">
           <div className="sidebar-section-block" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-            <SectionHeader 
-              Icon={activeWorkspacePath ? Folder : Database} 
-              label={activeWorkspacePath ? "Workspace" : "Scripts"} 
-              onRefresh={activeWorkspacePath ? () => useWorkspaceStore.getState().loadWorkspaceTree(activeWorkspacePath, useWorkspaceStore.getState().activeWorkspaceId) : undefined} 
+            <SectionHeader
+              Icon={activeWorkspacePath ? Folder : Database}
+              label={workspaceLabel}
+              expanded={showWorkspaces}
+              onToggle={() => setShowWorkspaces((v) => !v)}
+              onRefresh={!showWorkspaces && activeWorkspacePath ? () => useWorkspaceStore.getState().loadWorkspaceTree(activeWorkspacePath, useWorkspaceStore.getState().activeWorkspaceId) : undefined}
               actions={
-                <>
-                  <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFile(); }} title="New File"><FilePlus /></button>
-                  <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFolder(); }} title="New Folder"><FolderPlus /></button>
-                </>
+                // The tree is unmounted while the picker is open — its actions
+                // would be silent no-ops, so don't offer them.
+                showWorkspaces ? null : (
+                  <>
+                    <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFile(); }} title="New File"><FilePlus /></button>
+                    <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFolder(); }} title="New Folder"><FolderPlus /></button>
+                  </>
+                )
               }
             />
-            {(activeWorkspacePath ? workspaceTree : virtualTree) ? (
+            {showWorkspaces ? (
+              <WorkspaceList onConnectionSelect={selectConnection} />
+            ) : (activeWorkspacePath ? workspaceTree : virtualTree) ? (
               <WorkspaceTree 
                 ref={workspaceTreeRef}
                 tree={(activeWorkspacePath ? workspaceTree : virtualTree)!} 
@@ -175,11 +182,41 @@ export function Sidebar({
   );
 }
 
-function SectionHeader({ Icon, label, onRefresh, actions }: { Icon: React.ComponentType<{ size?: number | string }>; label: string; onRefresh?: () => void; actions?: React.ReactNode }) {
+function SectionHeader({ Icon, label, onRefresh, actions, expanded, onToggle }: {
+  Icon: React.ComponentType<{ size?: number | string }>;
+  label: string;
+  onRefresh?: () => void;
+  actions?: React.ReactNode;
+  /** When provided, the label becomes a button that swaps in the workspace picker. */
+  expanded?: boolean;
+  onToggle?: () => void;
+}) {
   return (
     <div className="sidebar-section-header">
-      <Icon size={13} />
-      <span>{label}</span>
+      {onToggle ? (
+        <button
+          className="sidebar-section-header-toggle"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          title="Switch workspace"
+        >
+          <Icon size={13} />
+          <span>{label}</span>
+          <ChevronDown
+            size={11}
+            aria-hidden
+            style={{
+              transition: "transform var(--transition-fast, 0.15s)",
+              transform: expanded ? "rotate(180deg)" : undefined,
+            }}
+          />
+        </button>
+      ) : (
+        <>
+          <Icon size={13} />
+          <span>{label}</span>
+        </>
+      )}
       <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
         {actions}
         {onRefresh && (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { useConnectionStore } from "@/store/connectionStore";
 import { FlatCheckbox } from "@/shared/ui/FlatCheckbox";
@@ -39,7 +39,7 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useFocusTrap({ containerRef: dialogRef });
+  useDialogFocus({ containerRef: dialogRef, onClose, closeOnBackdropClick: false });
 
   useEffect(() => {
     if (action === "drop" || action === "rename") {
@@ -50,15 +50,6 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
         .finally(() => setDbsLoading(false));
     }
   }, [action, connectionId]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  }, [onClose]);
 
   const handleSubmit = useCallback(async () => {
     setProcessing(true);

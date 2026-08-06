@@ -35,7 +35,6 @@ import { useUiStore } from "@/store/uiStore";
 import "@/shared/ui/dialog-shared.css";
 import "@/shared/ui/menu-shared.css";
 import "./CommandPalette.css";
-import { focusWithRetry } from "@/shared/utils/focusMain";
 
 export function generateOrmAlias(tableName: string): string {
   return tableName
@@ -856,13 +855,20 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
       window.removeEventListener("keydown", handler);
       // Restore focus to the element that was focused before the palette opened.
       // Skip if a modal was triggered from the palette (danger dialog, rename, etc.)
+      // Skip too when the action opened a script/table tab (openScript/navigateTo
+      // still pending in the store at cleanup time) — the tab-activation focus
+      // in QueryPanel owns focus then, and restoring here would steal it back.
       const s = useUiStore.getState();
-      if (!s.alterTarget && !s.renameTarget && !s.dbAction && !s.dangerDialog) {
+      const ws = useWorkspaceStore.getState();
+      const navigated = ws.openScript || ws.navigateTo;
+      if (!navigated && !s.alterTarget && !s.renameTarget && !s.dbAction && !s.dangerDialog) {
         const prev = previousFocusRef.current;
         if (prev && document.contains(prev)) {
           prev.focus({ preventScroll: true });
         } else {
-          focusWithRetry("#dib-main-panel", 3);
+          // Direct focus, not focusWithRetry: a retry call would cancel a
+          // pending editor-focus request via the generation counter.
+          document.getElementById("dib-main-panel")?.focus();
         }
       }
     };

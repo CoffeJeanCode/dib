@@ -136,6 +136,23 @@
   flex: 1;
 }
 
+.scw-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.scw-checkbox-label input {
+  flex: none;
+  min-width: 0;
+  padding: 0;
+}
+
 /* ── Add button ────────────────────────────────────────── */
 .scw-btn--add {
   display: inline-flex;

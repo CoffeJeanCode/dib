@@ -23,7 +23,7 @@ async-trait = "0.1"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "postgres", "chrono", "json", "rust_decimal", "uuid"] }
 rust_decimal = "1"
 chrono = { version = "0.4", features = ["serde"] }
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "macros"] }
 dashmap = "6"
 rusqlite = { version = "0.32", features = ["bundled"] }
 url = "2"
@@ -32,6 +32,8 @@ rfd = "0.14"
 fake = { version = "2", features = ["derive"] }
 rand = "0.8"
 tauri-plugin-dialog = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 
 [profile.release]
 panic = "abort"

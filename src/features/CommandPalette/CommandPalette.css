@@ -427,7 +427,10 @@
   background: transparent;
   color: var(--color-text-tertiary);
   cursor: pointer;
-  transition: all var(--transition-fastest);
+  /* Named properties, not `all` — `all` also transitions width/height/padding,
+     so any layout-affecting change animates and forces reflow per frame. */
+  transition: background var(--transition-fastest), color var(--transition-fastest),
+    border-color var(--transition-fastest);
   padding: 0;
 }
 

@@ -116,6 +116,9 @@ function nodeIcon(type: string) {
     : <Icon size={11} className="sidebar-db-item-icon--muted" />;
 }
 
+/** Node types that open as a data tab, so they can carry the active highlight. */
+const RELATION_TYPES = new Set(["table", "view", "matview", "foreign_table"]);
+
 /** Map a folder's fetch type to a node type so FolderRow gets the right icon/color. */
 function fetchNodeType(fetch: string): string {
   switch (fetch) {
@@ -459,6 +462,7 @@ interface TreeNodeRowProps {
 function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) {
   const stateId = `dbtree:${sessionId}:${node.id}`;
   const expanded = useNodeExpanded(stateId);
+  const storeActiveTable = useWorkspaceStore((s) => s.activeTable);
   const folders = NODE_FOLDERS[node.type];
   const directType = folders ? null : childNodeType(node);
   const { children, loading, error, retry } = useLazyChildren(
@@ -476,6 +480,13 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
   const ctxKind = ["table", "view", "function", "procedure"].includes(node.type)
     ? (node.type as CatKind) : null;
   const tableInfo = tableInfoFromNode(node);
+
+  // Mirror the simple-mode highlight (DatabaseCategoryItem) so the open table
+  // is marked in the advance tree too.
+  const isActiveTable =
+    RELATION_TYPES.has(node.type) &&
+    storeActiveTable?.name === tableInfo.name &&
+    storeActiveTable?.schema === tableInfo.schema;
 
   const handleDrop = useCallback(() => {
     if (!sessionId || !ctxKind) return;
@@ -542,7 +553,7 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
 
   const row = (
     <div
-      className="sidebar-db-item"
+      className={`sidebar-db-item${isActiveTable ? " sidebar-db-item--active" : ""}`}
       style={{ cursor: "pointer", padding: "3px 8px", paddingLeft: 8 + depth * 12 }}
       onClick={() => onNodeClick?.(node)}
       title={node.label}
@@ -550,6 +561,7 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
       data-depth={depth}
       role="treeitem"
       tabIndex={-1}
+      aria-current={isActiveTable || undefined}
       aria-expanded={canExpand ? expanded : undefined}
     >
       {canExpand ? (

@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
+import { useState, useRef } from "react";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import { Loader2 } from "lucide-react";
 import { PasswordInput } from "@/shared/ui/PasswordInput";
 import "@/shared/ui/dialog-shared.css";
@@ -17,11 +17,7 @@ export function PasswordPrompt({ connectionName, onSubmit, onCancel }: PasswordP
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useFocusTrap({ containerRef: dialogRef });
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useDialogFocus({ containerRef: dialogRef, onClose: onCancel, closeOnBackdropClick: false });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -13,8 +13,11 @@ const SECTIONS = [
     title: "Global Navigation",
     rows: [
       ["Ctrl+P / Ctrl+K", "Open Command Palette"],
-      ["Ctrl+1", "Focus sidebar"],
-      ["Ctrl+2", "Focus main panel"],
+      ["Ctrl+1", "Sidebar: Explorer (again to collapse)"],
+      ["Ctrl+2", "Sidebar: Files"],
+      ["Ctrl+3", "Sidebar: History"],
+      ["Ctrl+B", "Toggle sidebar"],
+      ["Ctrl+0", "Focus main panel"],
       ["Ctrl+R", "Reload active data"],
       ["Ctrl+Shift+R", "Reload app"],
     ],
@@ -52,6 +55,9 @@ const SECTIONS = [
       ["Ctrl+A", "Select all"],
       ["Ctrl+C", "Copy selection (TSV)"],
       ["Ctrl+Click (FK)", "Navigate to parent table"],
+      ["Hover (FK)", "Peek the referenced row"],
+      ["Alt+P", "Peek the FK in the active cell"],
+      ["Right-click header", "Column distribution profile"],
     ],
   },
   {
@@ -67,13 +73,29 @@ const SECTIONS = [
 
 export function KeyboardCheatSheet({ onClose }: KeyboardCheatSheetProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
 
   useFocusTrap({ containerRef: dialogRef, restoreFocus: true });
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    previousFocusRef.current = document.activeElement;
+    
+    const handler = (e: KeyboardEvent) => { 
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => {
+      window.removeEventListener("keydown", handler, { capture: true });
+      
+      // Restore focus when dialog closes
+      if (previousFocusRef.current instanceof HTMLElement && document.contains(previousFocusRef.current)) {
+        previousFocusRef.current.focus({ preventScroll: true });
+      }
+    };
   }, [onClose]);
 
   return (

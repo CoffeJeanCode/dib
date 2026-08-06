@@ -15,7 +15,7 @@ interface SortableHeaderCellProps {
 }
 
 const SortableHeaderCell = memo(function SortableHeaderCell({ col, ci, reorderingRef }: SortableHeaderCellProps) {
-  const { colInfoMap, fkMap, filters, orderBy, openFilterPopover, handleResizeStart, autoFitColumn, selectColumnRange } = useDataGridContext();
+  const { colInfoMap, fkMap, filters, orderBy, openFilterPopover, handleResizeStart, autoFitColumn, selectColumnRange, handleHeaderContextMenu } = useDataGridContext();
   const info = colInfoMap[col.name];
   const activeFilter = filters?.find((f) => f.column === col.name);
   const sortDir = orderBy?.column === col.name ? orderBy.direction : null;
@@ -39,6 +39,7 @@ const SortableHeaderCell = memo(function SortableHeaderCell({ col, ci, reorderin
       role="columnheader"
       style={style}
       title={info ? `${col.label ?? col.name} (${info.data_type})` : (col.label ?? col.name)}
+      onContextMenu={(e) => handleHeaderContextMenu?.(col.name, e)}
     >
       <div
         className="dg-th-content"

@@ -110,6 +110,13 @@ export interface OrderBy {
   direction: SortDirection;
 }
 
+/** One entry of a batched `fetch_table_schemas` response. */
+export interface TableColumns {
+  name: string;
+  schema: string | null;
+  columns: ColumnInfo[];
+}
+
 export interface TableRelation {
   source_table: string;
   source_column: string;

@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
+import { useRef } from "react";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import { AlertTriangle } from "lucide-react";
 import "./dialog-shared.css";
 import "./UnsavedChangesDialog.css";
@@ -13,17 +13,14 @@ interface Props {
 }
 
 export function UnsavedChangesDialog({ entityName, entityType, onSave, onDiscard, onCancel }: Props) {
-  const saveRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useFocusTrap({ containerRef: dialogRef });
-
-  useEffect(() => {
-    saveRef.current?.focus();
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onCancel]);
+  useDialogFocus({
+    containerRef: dialogRef,
+    onClose: onCancel,
+    initialFocusSelector: "[data-dialog-initial-focus]",
+    closeOnBackdropClick: false,
+  });
 
   const title = entityType === "script" ? "Unsaved Script" : "Unsaved Changes";
   const message = entityType === "script"
@@ -45,7 +42,7 @@ export function UnsavedChangesDialog({ entityName, entityType, onSave, onDiscard
           <button className="dialog-btn dialog-btn--danger" onClick={onDiscard}>
             Discard Changes
           </button>
-          <button ref={saveRef} className="dialog-btn dialog-btn--primary" onClick={onSave}>
+          <button data-dialog-initial-focus className="dialog-btn dialog-btn--primary" onClick={onSave}>
             Save
           </button>
         </div>

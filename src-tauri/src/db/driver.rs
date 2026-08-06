@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::db::types::{
     ChangeRow, ColumnInfo, CreateColumn, DbConfig, DbTreeNode, DdlResult, ExplainPlan,
     GridFilter, OrderBy, PagedResult, QueryError, QueryResult,
-    SchemaChange, SchemaObjects, TableInfo, TableRelation, TableStructure,
+    SchemaChange, SchemaObjects, TableColumns, TableInfo, TableRef, TableRelation, TableStructure,
 };
 
 #[async_trait]
@@ -26,6 +26,20 @@ pub trait DatabaseDriver: Send + Sync {
         table_name: &str,
         schema: Option<&str>,
     ) -> Result<Vec<ColumnInfo>, QueryError>;
+    /// Columns for many tables at once. The default walks `get_table_schema`,
+    /// which is fine for a local SQLite file; Postgres overrides it so opening
+    /// the schema visualizer is two queries instead of one per table.
+    async fn get_table_schemas(
+        &self,
+        tables: &[TableRef],
+    ) -> Result<Vec<TableColumns>, QueryError> {
+        let mut out = Vec::with_capacity(tables.len());
+        for t in tables {
+            let columns = self.get_table_schema(&t.name, t.schema.as_deref()).await?;
+            out.push(TableColumns { schema: t.schema.clone(), name: t.name.clone(), columns });
+        }
+        Ok(out)
+    }
     async fn execute_query(&self, sql: &str) -> Result<QueryResult, QueryError>;
     async fn apply_changes(
         &self,

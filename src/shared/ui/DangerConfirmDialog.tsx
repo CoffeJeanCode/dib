@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useFocusTrap } from "@/shared/hooks/useFocusTrap";
+import { useState, useRef, useCallback } from "react";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import "./dialog-shared.css";
 import "./DangerConfirmDialog.css";
 
@@ -12,20 +12,11 @@ interface Props {
 
 export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfirm, onCancel }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useFocusTrap({ containerRef: dialogRef });
-
-  useEffect(() => {
-    cancelRef.current?.focus();
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !loading) { e.stopImmediatePropagation(); onCancel(); }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  }, [onCancel, loading]);
+  const handleClose = useCallback(() => { if (!loading) onCancel(); }, [loading, onCancel]);
+  useDialogFocus({ containerRef: dialogRef, onClose: handleClose, closeOnBackdropClick: false });
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -47,7 +38,7 @@ export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfir
         <p className="dialog-message">{message}</p>
         {error && <p className="dialog-error">{error}</p>}
         <div className="dialog-actions">
-          <button ref={cancelRef} className="dialog-btn dialog-btn--cancel" onClick={onCancel} disabled={loading}>
+          <button className="dialog-btn dialog-btn--cancel" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
           <button className="dialog-btn dialog-btn--danger" onClick={handleConfirm} disabled={loading}>

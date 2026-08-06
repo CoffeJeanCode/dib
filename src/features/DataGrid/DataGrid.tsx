@@ -7,6 +7,8 @@ import { GridHeader } from "./Parts/GridHeader";
 import { GridBody } from "./Parts/GridBody";
 import { GridFooter } from "./Parts/GridFooter";
 import { FilterPopover } from "./Parts/FilterPopover";
+import { useFkPeek, FkPeekCard } from "./Parts/FkPeek";
+import { useColumnProfile, ColumnProfileCard } from "./Parts/ColumnProfile";
 import "./DataGrid.css";
 
 export interface DataGridProps {
@@ -39,6 +41,7 @@ export const DataGrid = memo(function DataGrid({
   rows,
   loading,
   tableName,
+  tableSchema,
   primaryKeyColumn,
   columnInfos,
   filters,
@@ -83,6 +86,19 @@ export const DataGrid = memo(function DataGrid({
     onFkNavigate,
     onSaveError,
   });
+  const fkPeek = useFkPeek({
+    fkMap: state.fkMap,
+    orderedColumns: state.orderedColumns,
+    rows: state.editState.rows as unknown[][],
+    isEditing: state.isEditing,
+  });
+
+  const columnProfile = useColumnProfile({
+    tableName,
+    tableSchema,
+    colInfoMap: state.colInfoMap,
+  });
+
   const columnsState = useMemo(() => {
     return {
       ...state,
@@ -90,8 +106,9 @@ export const DataGrid = memo(function DataGrid({
       orderBy,
       filters,
       footerRight,
+      handleHeaderContextMenu: columnProfile.handleHeaderContextMenu,
     };
-  }, [state, effectiveCols, orderBy, filters, footerRight]);
+  }, [state, effectiveCols, orderBy, filters, footerRight, columnProfile.handleHeaderContextMenu]);
 
   // Clamp the cell context menu inside the viewport — clientX/clientY alone
   // overflow off-screen when the click lands near the bottom/right edge.
@@ -125,13 +142,40 @@ export const DataGrid = memo(function DataGrid({
         aria-label="Data grid"
         tabIndex={0}
         ref={state.gridRef}
-        onKeyDown={state.handleGridKeyDown}
+        onKeyDown={(e) => {
+          if (fkPeek.handleKeyDown(e)) return;
+          state.handleGridKeyDown(e);
+        }}
       >
-        <div className="dg-scroll" ref={state.setContainerEl} onScroll={state.onScroll}>
+        <div
+          className="dg-scroll"
+          ref={state.setContainerEl}
+          onScroll={(e) => {
+            fkPeek.closePeek();
+            state.onScroll(e);
+          }}
+          {...fkPeek.peekHandlers}
+        >
           <GridHeader />
           <GridBody />
         </div>
         <FilterPopover />
+        {fkPeek.peek && (
+          <FkPeekCard
+            peek={fkPeek.peek}
+            onClose={fkPeek.closePeek}
+            onKeepOpen={fkPeek.cancelClose}
+            onOpenTable={
+              onFkNavigate
+                ? () => {
+                    const p = fkPeek.peek!;
+                    fkPeek.closePeek();
+                    onFkNavigate(p.table, p.column, p.value);
+                  }
+                : undefined
+            }
+          />
+        )}
         {state.fkMenu && (
           <div
             className="dg-fk-menu"
@@ -178,6 +222,9 @@ export const DataGrid = memo(function DataGrid({
               </button>
             )}
           </div>
+        )}
+        {columnProfile.profile && (
+          <ColumnProfileCard profile={columnProfile.profile} onClose={columnProfile.closeProfile} />
         )}
         <GridFooter />
       </div>

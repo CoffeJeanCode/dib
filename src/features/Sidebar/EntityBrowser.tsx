@@ -24,10 +24,9 @@ function parseNodeInfo(node: DbTreeNode): TableInfo {
 interface EntityBrowserProps {
   onScriptOpen?: (sql: string, name: string, id: string) => void;
   onDeleteTarget?: (conn: SavedConnection) => void;
-  connectionsOnly?: boolean;
 }
 
-export function EntityBrowser({ onScriptOpen, onDeleteTarget, connectionsOnly }: EntityBrowserProps) {
+export function EntityBrowser({ onScriptOpen, onDeleteTarget }: EntityBrowserProps) {
   const workspaceLayout = useSettingsStore((s) => s.workspaceLayout);
   const isAdvance = workspaceLayout === "advance";
   const { connections } = useSavedConnections();
@@ -120,44 +119,6 @@ export function EntityBrowser({ onScriptOpen, onDeleteTarget, connectionsOnly }:
       }
     }
   }, [activeSessionId, setNavigateTo, onScriptOpen, openTableStructure]);
-
-  if (connectionsOnly) {
-    return (
-      <nav className="sidebar-nav dg-scroll" aria-label="Instances">
-        <div className="sidebar-section-block">
-          <div className="sidebar-section-header">
-            <Database size={13} />
-            <span>Standalone</span>
-          </div>
-          {connections.length === 0 ? (
-            <div className="sidebar-item sidebar-item--empty">
-              <span className="sidebar-item-text sidebar-item-text--muted">No connections</span>
-            </div>
-          ) : (
-            connections.map((conn) => (
-              <ConnectionItem
-                key={conn.id}
-                conn={conn}
-                isSelected={false}
-                isActive={conn.id === activeConnectionId}
-                navIdx={-1}
-                sessionId={conn.id === activeConnectionId ? activeSessionId : null}
-                activeDb={conn.id === activeConnectionId ? activeDb : undefined}
-                onSelect={(_navIdx, connId) => selectConnection(connId)}
-                onDbSwitch={switchDatabase}
-                onEdit={onEditConnection}
-                onDelete={onDeleteTarget ?? (() => {})}
-                onNewQuery={conn.id === activeConnectionId ? () => onScriptOpen?.("", "New Query", `new-${Date.now()}`) : undefined}
-                onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction("create") : undefined}
-                onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction("rename", db) : undefined}
-                onDropDb={conn.id === activeConnectionId ? (db) => onDbAction("drop", db) : undefined}
-              />
-            ))
-          )}
-        </div>
-      </nav>
-    );
-  }
 
   if (isAdvance) {
     return (
