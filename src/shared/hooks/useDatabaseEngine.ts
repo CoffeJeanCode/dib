@@ -47,13 +47,27 @@ export function useDatabaseEngine(connectionId: string) {
       .catch(() => {});
   }, [connectionId]);
 
+  // One call for the whole list. Fanning out per table meant N concurrent
+  // information_schema queries queued behind a 10-connection pool.
   const loadColumnsBatch = useCallback((tableList: TableInfo[], existing: Record<string, ColumnInfo[]>) => {
-    tableList.forEach((t) => {
-      if (existing[t.name] !== undefined) return;
-      dbService.fetchTableSchema(connectionId, t.name, t.schema ?? null)
-        .then((cols) => setColumnMap((p) => ({ ...p, [t.name]: cols })))
-        .catch(() => setColumnMap((p) => ({ ...p, [t.name]: [] })));
-    });
+    const missing = tableList.filter((t) => existing[t.name] === undefined);
+    if (missing.length === 0) return;
+    dbService
+      .fetchTableSchemas(connectionId, missing.map((t) => ({ name: t.name, schema: t.schema ?? null })))
+      .then((results) =>
+        setColumnMap((p) => {
+          const next = { ...p };
+          for (const r of results) next[r.name] = r.columns;
+          return next;
+        }),
+      )
+      .catch(() =>
+        setColumnMap((p) => {
+          const next = { ...p };
+          for (const t of missing) next[t.name] ??= [];
+          return next;
+        }),
+      );
   }, [connectionId]);
 
   const commitChanges = useCallback(

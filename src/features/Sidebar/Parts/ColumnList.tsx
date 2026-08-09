@@ -23,7 +23,7 @@ export const ColumnList = React.memo(function ColumnList({ columns, loading }: C
       {loading ? (
         <div className="sidebar-db-col-item sidebar-db-col-item--muted">&hellip;</div>
       ) : !columns || columns.length === 0 ? (
-        <div className="sidebar-db-col-item sidebar-db-col-item--muted">Sin columnas</div>
+        <div className="sidebar-db-col-item sidebar-db-col-item--muted">(empty)</div>
       ) : (
         columns.map((col) => (
           <div key={col.name} className="sidebar-db-col-item">

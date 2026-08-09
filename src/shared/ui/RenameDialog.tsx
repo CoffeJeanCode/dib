@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
 import "./dialog-shared.css";
@@ -17,16 +18,13 @@ export function RenameDialog({ connectionId, entityType, entityName, schema, onC
   const [renaming, setRenaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useDialogFocus({ containerRef: dialogRef, onClose, closeOnBackdropClick: false });
 
   useEffect(() => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  }, [onClose]);
+    requestAnimationFrame(() => inputRef.current?.select());
+  }, []);
 
   const handleRename = useCallback(async () => {
     const trimmed = newName.trim();
@@ -61,7 +59,7 @@ export function RenameDialog({ connectionId, entityType, entityName, schema, onC
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
-      <div className="dialog rd" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div ref={dialogRef} className="dialog rd" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <span className="dialog-title">Rename {entityType}</span>
         <div className="dialog-entity">{displayLabel}</div>
         <input

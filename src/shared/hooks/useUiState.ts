@@ -3,6 +3,7 @@ import { persistenceService } from "@/services/persistenceService";
 
 export interface UiState {
   is_sidebar_open: boolean;
+  is_bottom_panel_open: boolean;
   save_password: boolean;
   sidebar_width: number;
   history_limit: number;
@@ -10,6 +11,7 @@ export interface UiState {
 
 const DEFAULT_STATE: UiState = {
   is_sidebar_open: true,
+  is_bottom_panel_open: true,
   save_password: true,
   sidebar_width: 260,
   history_limit: 500,
@@ -43,5 +45,9 @@ export function useUiState() {
     updateState({ is_sidebar_open: !state.is_sidebar_open });
   }, [state.is_sidebar_open, updateState]);
 
-  return { state, loaded, updateState, toggleSidebar };
+  const toggleBottomPanel = useCallback(() => {
+    updateState({ is_bottom_panel_open: !state.is_bottom_panel_open });
+  }, [state.is_bottom_panel_open, updateState]);
+
+  return { state, loaded, updateState, toggleSidebar, toggleBottomPanel };
 }

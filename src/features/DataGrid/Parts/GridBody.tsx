@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode, type RefObject } from "react";
 import { useDataGridContext } from "./DataGridContext";
 import { cellStr, cellId, makeKey } from "../DataGrid.utils";
 
@@ -6,6 +6,31 @@ const ROW_H = 38;
 
 interface GridRowProps {
   absIdx: number;
+}
+
+function renderCellContent(
+  isEditingThis: boolean,
+  isFk: boolean,
+  value: unknown,
+  editValue: string,
+  inputRef: RefObject<HTMLInputElement>,
+  commitEdit: (moveDirection: "down" | "right" | null) => void,
+): ReactNode {
+  if (isEditingThis) {
+    return (
+      <input
+        ref={inputRef}
+        className="dg-cell-input"
+        autoFocus
+        defaultValue={editValue}
+        onBlur={() => commitEdit(null)}
+      />
+    );
+  }
+  if (isFk) {
+    return <span className="dg-fk-link">{cellStr(value)}</span>;
+  }
+  return cellStr(value);
 }
 
 const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
@@ -30,18 +55,15 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
   const row = editState.rows[absIdx];
   const isGhost = editState.ghostRowIds.has(absIdx);
   const isDeleted = deletedRowIndices.has(absIdx);
-  const pkStr = pkColIdx >= 0
-    ? String((row as unknown[])?.[pkColIdx] ?? absIdx)
-    : String(absIdx);
+  const pkStr = pkColIdx >= 0 ? String((row as unknown[])?.[pkColIdx] ?? absIdx) : String(absIdx);
 
   return (
-    <div
+    <tr
       className={[
         "dg-row",
         isGhost ? " dg-row--ghost" : "",
         isDeleted ? " dg-row--deleted" : "",
       ].join("")}
-      role="row"
     >
       {orderedColumns.map((col, j) => {
         const origIdx = col.origIdx;
@@ -55,7 +77,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
         const cssW = `var(--dg-cw-${j}, 150px)`;
 
         return (
-          <div
+          <td
             key={col.id}
             className={[
               "dg-cell",
@@ -64,7 +86,7 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
               isChanged ? " dg-cell--changed" : "",
               isFk ? " dg-cell--fk" : "",
             ].join("")}
-            role="cell"
+            tabIndex={isActive ? 0 : -1}
             data-dg-r={absIdx}
             data-dg-c={j}
             style={{
@@ -76,27 +98,18 @@ const GridRow = memo(function GridRow({ absIdx }: GridRowProps) {
             onClick={(e) => handleCellClick(absIdx, j, e)}
             onContextMenu={(e) => handleCellContextMenu(j, e)}
             onDoubleClick={() => startEdit(absIdx, j)}
-            title={cellStr(value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === "F2") {
+                e.preventDefault();
+                startEdit(absIdx, j);
+              }
+            }}
           >
-            {isEditingThis ? (
-              <input
-                ref={inputRef}
-                className="dg-cell-input"
-                autoFocus
-                defaultValue={editValue}
-                onBlur={() => commitEdit(null)}
-              />
-            ) : isFk ? (
-              <span className="dg-fk-link" title="Ir a tabla referenciada (Ctrl+Click) o generar JOIN (Alt+Click)">
-                {cellStr(value)}
-              </span>
-            ) : (
-              cellStr(value)
-            )}
-          </div>
+            {renderCellContent(isEditingThis, isFk, value, editValue, inputRef, commitEdit)}
+          </td>
         );
       })}
-    </div>
+    </tr>
   );
 });
 
@@ -104,12 +117,12 @@ export const GridBody = memo(function GridBody() {
   const { editState, start, end, topPad, totalRows } = useDataGridContext();
 
   return (
-    <div className="dg-body" style={{ height: totalRows * ROW_H }}>
-      <div className="dg-body-inner" style={{ transform: `translateY(${topPad}px)` }}>
+    <table className="dg-body" style={{ height: totalRows * ROW_H }}>
+      <tbody className="dg-body-inner" style={{ transform: `translateY(${topPad}px)` }}>
         {editState.rows.slice(start, end).map((_, i) => (
           <GridRow key={start + i} absIdx={start + i} />
         ))}
-      </div>
-    </div>
+      </tbody>
+    </table>
   );
 });

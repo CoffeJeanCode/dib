@@ -20,6 +20,7 @@ export interface UiState {
   showNewConnection: boolean;
   editingConn: SavedConnection | null;
   theme: Theme;
+  isBottomPanelOpen: boolean;
   backendError: { command: string; message: string } | null;
 
   renameTarget: import("@/types/db").TableInfo | null;
@@ -41,6 +42,8 @@ export interface UiState {
   openPaletteWithQuery: (query: string) => void;
   closePalette: () => void;
   togglePalette: () => void;
+  toggleBottomPanel: () => void;
+  setBottomPanelOpen: (v: boolean) => void;
   setSettingsOpen: (v: boolean) => void;
   setCheatSheetOpen: (v: boolean) => void;
   setShowNewConnection: (v: boolean) => void;

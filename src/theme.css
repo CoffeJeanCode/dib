@@ -317,3 +317,23 @@ a:focus-visible {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ── Reduced motion ──────────────────────────────────────────
+   46 stylesheets, 19 animations, 7 of them infinite (spinners,
+   shimmers, the connection-status pulse) — only 2 files opted out
+   individually. One global reset covers the rest.
+
+   Durations collapse to 0.01ms rather than `animation: none` on
+   purpose: `none` cancels the animationend event, which would strand
+   anything driven by it (e.g. .toast--hiding, which relies on the
+   exit animation running to completion with `forwards`). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

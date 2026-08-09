@@ -9,5 +9,5 @@ pub use types::{
     ChangeRow, ColumnInfo, ColumnMetadata, ConnectionInfo, ConnectionStatus,
     CreateColumn, DbConfig, DbTreeNode, DdlResult, ExplainNode, ExplainPlan, ForeignKey, GridFilter, OrderBy, PagedResult,
     QueryError, QueryResult, SchemaChange, SchemaObjects, StructureColumn, StructureIndex,
-    StructureTrigger, TableInfo, TableRelation, TableStructure, TriggerInfo,
+    StructureTrigger, TableColumns, TableInfo, TableRef, TableRelation, TableStructure, TriggerInfo,
 };

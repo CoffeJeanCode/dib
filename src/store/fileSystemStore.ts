@@ -336,30 +336,4 @@ export const useFileSystemStore = create<FileSystemState>()(
   ),
 );
 
-// ── Memoized selectors ───────────────────────────────────────────────
-// Hand-rolled memoization (no reselect dep): recompute only when the
-// scripts array reference changes, so components using these with zustand
-// never re-render from a fresh-array identity.
 
-let memoScripts: ScriptEntry[] | null = null;
-let memoPinned: ScriptEntry[] = [];
-let memoRest: ScriptEntry[] = [];
-
-function recompute(scripts: ScriptEntry[]) {
-  if (scripts === memoScripts) return;
-  memoScripts = scripts;
-  memoPinned = scripts.filter((s) => s.isPinned).sort((a, b) => a.name.localeCompare(b.name));
-  memoRest = scripts.filter((s) => !s.isPinned);
-}
-
-/** Pinned scripts, alphabetical — render these at the top of the Sidebar. */
-export function selectPinnedScripts(s: FileSystemState): ScriptEntry[] {
-  recompute(s.scripts);
-  return memoPinned;
-}
-
-/** Everything else — feeds the main tree/list untouched. */
-export function selectUnpinnedScripts(s: FileSystemState): ScriptEntry[] {
-  recompute(s.scripts);
-  return memoRest;
-}

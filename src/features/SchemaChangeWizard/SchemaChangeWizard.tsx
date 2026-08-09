@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import { X, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { dbService } from "@/services/dbService";
 import { useConnectionStore } from "@/store/connectionStore";
@@ -80,6 +81,27 @@ function generateCreateSql(
   return `CREATE TABLE ${label} (\n${colDefs.join(",\n")}\n);`;
 }
 
+function formatCaughtError(e: unknown): string {
+  if (e instanceof Error) return e.message || e.name;
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object" && "message" in e) {
+    const msg = (e as { message: unknown }).message;
+    if (typeof msg === "string" && msg) return msg;
+  }
+  try {
+    return JSON.stringify(e) || "Unknown error";
+  } catch {
+    return "Unknown error";
+  }
+}
+
+function changeKindBadge(kind: SchemaChange["kind"]): ReactNode {
+  if (kind === "drop_column") return <><Trash2 size={10} /> DROP</>;
+  if (kind === "add_column") return "ADD";
+  if (kind === "rename_column") return "RENAME";
+  return "TYPE";
+}
+
 export function SchemaChangeWizard({ connectionId, tableName: initialTableName, schema, onClose, mode = "alter" }: SchemaChangeWizardProps) {
   const [columns, setColumns] = useState<ColumnInfo[]>([]);
   const [changes, setChanges] = useState<SchemaChange[]>([]);
@@ -99,23 +121,21 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
   const [renameTarget, setRenameTarget] = useState("");
   const [newName, setNewName] = useState("");
 
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const setAlterTarget = useUiStore((s) => s.setAlterTarget);
   const setCreateTarget = useUiStore((s) => s.setCreateTarget);
 
-  useEffect(() => {
-    cancelRef.current?.focus();
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopImmediatePropagation();
-        useUiStore.setState({ dismissedFromPalette: true });
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
+  const handleClose = useCallback(() => {
+    useUiStore.setState({ dismissedFromPalette: true });
+    onClose();
   }, [onClose]);
+
+  useDialogFocus({
+    containerRef: dialogRef,
+    onClose: handleClose,
+    initialFocusSelector: "[data-dialog-initial-focus]",
+  });
 
   useEffect(() => {
     if (mode === "alter") {
@@ -198,10 +218,7 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
         setAlterTarget(null);
         onClose();
       } catch (e: unknown) {
-        const msg = e && typeof e === "object"
-          ? String((e as Record<string, unknown>).message ?? e)
-          : String(e);
-        setError(msg);
+        setError(formatCaughtError(e));
       } finally {
         setApplying(false);
       }
@@ -215,10 +232,7 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
         setCreateTarget(null);
         onClose();
       } catch (e: unknown) {
-        const msg = e && typeof e === "object"
-          ? String((e as Record<string, unknown>).message ?? e)
-          : String(e);
-        setError(msg);
+        setError(formatCaughtError(e));
       } finally {
         setApplying(false);
       }
@@ -244,12 +258,21 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
 
   const label = schema ? `${schema}.${tableName}` : tableName;
 
+  const applyLabel = (() => {
+    if (applying) return "Applying…";
+    if (mode === "create") return "Create Table";
+    if (hasDrops) return "Apply (includes DROP)";
+    return "Apply Changes";
+  })();
+
   return (
-    <div className="dialog-backdrop" onClick={onClose}>
-      <div className="dialog scw" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+    <div className="dialog-backdrop">
+      <div ref={dialogRef} className="dialog scw" role="dialog" aria-modal="true">
         <div className="dialog-header">
           <span className="dialog-title">{mode === "create" ? "Create Table" : "Alter Table"}</span>
-          <button className="dialog-close" onClick={onClose} aria-label="Close"><X /></button>
+          <button type="button" className="dialog-close" onClick={handleClose} aria-label="Close">
+            <X />
+          </button>
         </div>
 
         <div className="dialog-body">
@@ -279,7 +302,8 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
                     key={c.name}
                     className={`scw-column-chip${c.is_primary_key ? " scw-column-chip--pk" : ""}`}
                   >
-                    {c.name}<span className="scw-col-type">{c.data_type}</span>
+                    {c.name}
+                    <span className="scw-col-type">{c.data_type}</span>
                   </span>
                 ))}
               </div>
@@ -348,7 +372,7 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
                     </>
                   )}
 
-                  <button className="scw-btn--add" onClick={addChange}>
+                  <button type="button" className="scw-btn--add" onClick={addChange}>
                     <Plus size={14} /> Add
                   </button>
                 </div>
@@ -376,11 +400,15 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
                   </select>
                   <label className="scw-checkbox-label">
                     <input type="checkbox" checked={newColPk} onChange={(e) => setNewColPk(e.target.checked)} />
-                    PK
+                    <span>PK</span>
                   </label>
                   <label className="scw-checkbox-label">
-                    <input type="checkbox" checked={!newColNullable} onChange={(e) => setNewColNullable(!e.target.checked)} />
-                    NN
+                    <input
+                      type="checkbox"
+                      checked={!newColNullable}
+                      onChange={(e) => setNewColNullable(!e.target.checked)}
+                    />
+                    <span>NN</span>
                   </label>
                   <input
                     className="scw-field-default"
@@ -388,7 +416,7 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
                     value={newColDefault}
                     onChange={(e) => setNewColDefault(e.target.value)}
                   />
-                  <button className="scw-btn--add" onClick={addCreateColumn}>
+                  <button type="button" className="scw-btn--add" onClick={addCreateColumn}>
                     <Plus size={14} /> Add
                   </button>
                 </div>
@@ -408,13 +436,17 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
                     className={`scw-change-item${c.kind === "drop_column" ? " scw-change-item--drop" : ""}`}
                   >
                     <span className={`scw-change-kind scw-change-kind--${c.kind}`}>
-                      {c.kind === "drop_column" ? <><Trash2 size={10} /> DROP</>
-                        : c.kind === "add_column" ? "ADD"
-                        : c.kind === "rename_column" ? "RENAME"
-                        : "TYPE"}
+                      {changeKindBadge(c.kind)}
                     </span>
                     <span className="scw-change-text">{changeLabel(c)}</span>
-                    <button className="scw-btn--remove" onClick={() => removeChange(i)} title="Remove">&times;</button>
+                    <button
+                      type="button"
+                      className="scw-btn--remove"
+                      onClick={() => removeChange(i)}
+                      title="Remove"
+                    >
+                      &times;
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -435,7 +467,14 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
                     <span className="scw-change-text">
                       {c.name} {c.data_type}{!c.is_nullable ? " NOT NULL" : ""}{c.default_value ? ` DEFAULT ${c.default_value}` : ""}
                     </span>
-                    <button className="scw-btn--remove" onClick={() => removeCreateColumn(i)} title="Remove">&times;</button>
+                    <button
+                      type="button"
+                      className="scw-btn--remove"
+                      onClick={() => removeCreateColumn(i)}
+                      title="Remove"
+                    >
+                      &times;
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -479,15 +518,25 @@ export function SchemaChangeWizard({ connectionId, tableName: initialTableName, 
                 : "Add at least one column")}
           </span>
           <div style={{ display: "flex", gap: "var(--space-3)" }}>
-            <button ref={cancelRef} className="dialog-btn dialog-btn--cancel" onClick={onClose} disabled={applying}>
+            <button
+              type="button"
+              data-dialog-initial-focus
+              className="dialog-btn dialog-btn--cancel"
+              onClick={handleClose}
+              disabled={applying}
+            >
               Cancel
             </button>
             <button
+              type="button"
               className={`dialog-btn scw-btn--apply${mode === "alter" && hasDrops ? " scw-btn--apply-warn" : ""}`}
               onClick={handleApply}
-              disabled={applying || (mode === "alter" ? changes.length === 0 : (createCols.length === 0 || !tableName.trim()))}
+              disabled={
+                applying ||
+                (mode === "alter" ? changes.length === 0 : createCols.length === 0 || !tableName.trim())
+              }
             >
-              {applying ? "Applying…" : mode === "create" ? "Create Table" : hasDrops ? "Apply (includes DROP)" : "Apply Changes"}
+              {applyLabel}
             </button>
           </div>
         </div>

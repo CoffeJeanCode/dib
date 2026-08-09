@@ -8,6 +8,8 @@ export type DataGridContextValue = ReturnType<typeof useDataGridState> & {
   orderBy?: UseDataGridStateOptions["orderBy"];
   onSortChange?: UseDataGridStateOptions["onSortChange"];
   handleSortColumn?: (colName: string, direction: "ASC" | "DESC" | null) => void;
+  /** Right-click a column header → distribution profile. */
+  handleHeaderContextMenu?: (column: string, e: React.MouseEvent) => void;
   footerRight?: ReactNode;
 };
 

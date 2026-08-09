@@ -28,6 +28,8 @@ export function fmtErr(e: unknown): string {
   return "Unknown error";
 }
 
+const SYSTEM_SCHEMAS = new Set(["pg_catalog", "information_schema"]);
+
 export const DDL_TEMPLATES: Record<CatKind, string> = {
   table: `CREATE TABLE new_table (\n  id SERIAL PRIMARY KEY,\n  created_at TIMESTAMP DEFAULT NOW()\n);`,
   view: `CREATE OR REPLACE VIEW new_view AS\nSELECT * FROM tablename;`,
@@ -149,6 +151,9 @@ export function useDatabaseCategoriesLogic(props: {
       } else if (kind === "view") {
         const res = await invoke<{ ddl: string }>("get_view_ddl", { connectionId: sessionId, viewName: name, schema });
         ddl = res.ddl;
+      } else if (kind === "procedure") {
+        const res = await invoke<{ ddl: string }>("get_function_ddl", { connectionId: sessionId, functionName: name, schema });
+        ddl = res.ddl;
       } else {
         return;
       }
@@ -231,7 +236,11 @@ export function useDatabaseCategoriesLogic(props: {
   // ── Data helpers ─────────────────────────────────────────────
   const itemsFor = useCallback((key: CatKey): (TableInfo | TriggerInfo)[] => {
     if (!objects) return [];
-    return (objects[key as keyof SchemaObjects] as (TableInfo | TriggerInfo)[]) ?? [];
+    const all = (objects[key as keyof SchemaObjects] as (TableInfo | TriggerInfo)[]) ?? [];
+    return all.filter((it) => {
+      const s = (it as TableInfo).schema;
+      return s ? !SYSTEM_SCHEMAS.has(s) : true;
+    });
   }, [objects]);
 
   const displayName = useCallback((it: TableInfo | TriggerInfo): string =>

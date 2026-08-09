@@ -1,8 +1,15 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, lazy, Suspense } from "react";
 import { X } from "lucide-react";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import { JsonViewer } from "./JsonViewer";
+import { Skeleton } from "@/shared/ui/Skeleton";
 import "./JsonPanel.css";
+
+// The other Monaco entry point. JsonPanel mounts with the Layout, so a static
+// import here would keep the editor in the startup graph even after SqlEditor
+// was split out.
+const JsonViewer = lazy(() =>
+  import("./JsonViewer").then((m) => ({ default: m.JsonViewer })),
+);
 
 const ROW_LIMITS = [50, 100, 500, 1000] as const;
 const MIN_WIDTH = 280;
@@ -81,7 +88,9 @@ export function JsonPanel() {
             </button>
           </div>
           <div className="json-panel-body">
-            <JsonViewer content={content} />
+            <Suspense fallback={<Skeleton height="100%" />}>
+              <JsonViewer content={content} />
+            </Suspense>
           </div>
         </>
       )}

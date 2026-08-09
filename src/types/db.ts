@@ -17,11 +17,6 @@ export interface ConnectionInfo {
   status: ConnectionStatus;
 }
 
-export interface QueryError {
-  message: string;
-  code: string | null;
-  severity: string | null;
-}
 
 export interface TableInfo {
   name: string;
@@ -115,6 +110,13 @@ export interface OrderBy {
   direction: SortDirection;
 }
 
+/** One entry of a batched `fetch_table_schemas` response. */
+export interface TableColumns {
+  name: string;
+  schema: string | null;
+  columns: ColumnInfo[];
+}
+
 export interface TableRelation {
   source_table: string;
   source_column: string;
@@ -182,18 +184,6 @@ export interface DdlResult {
   ddl: string;
 }
 
-/** @deprecated use InternalScript */
-export interface ScriptInfo {
-  name: string;
-  path: string;
-}
-
-/** @deprecated use InternalScript */
-export interface ScriptMeta {
-  name: string;
-  modified_ms: number;
-  size_bytes: number;
-}
 
 // ── Visual EXPLAIN ──────────────────────────────────────────────────────────
 

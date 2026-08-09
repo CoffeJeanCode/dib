@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { useConnectionStore } from "@/store/connectionStore";
 import { FlatCheckbox } from "@/shared/ui/FlatCheckbox";
@@ -36,6 +37,9 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useDialogFocus({ containerRef: dialogRef, onClose, closeOnBackdropClick: false });
 
   useEffect(() => {
     if (action === "drop" || action === "rename") {
@@ -46,15 +50,6 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
         .finally(() => setDbsLoading(false));
     }
   }, [action, connectionId]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  }, [onClose]);
 
   const handleSubmit = useCallback(async () => {
     setProcessing(true);
@@ -90,7 +85,7 @@ export function DbActionDialog({ action, connectionId, targetDb, onClose }: DbAc
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
-      <div className={`dialog ${isDrop ? "dialog--danger" : ""} dba`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div ref={dialogRef} className={`dialog ${isDrop ? "dialog--danger" : ""} dba`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <span className="dialog-title">{ACTION_TITLE[action]}</span>
 
         {action === "create" && (

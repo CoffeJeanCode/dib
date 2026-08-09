@@ -35,7 +35,6 @@ import { useUiStore } from "@/store/uiStore";
 import "@/shared/ui/dialog-shared.css";
 import "@/shared/ui/menu-shared.css";
 import "./CommandPalette.css";
-import { focusWithRetry } from "@/shared/utils/focusMain";
 
 export function generateOrmAlias(tableName: string): string {
   return tableName
@@ -229,6 +228,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = { current: null as HTMLButtonElement | null };
   const pointerActiveRef = useRef(false);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!menuOpenId) {
@@ -329,6 +329,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
       setBaseItems([]);
       return;
     }
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
     const store = useUiStore.getState();
     const initQuery = store.paletteInitialQuery ?? "";
     const initDdlMode = store.paletteInitialDdlMode as DdlMode | null;
@@ -338,7 +339,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
     setSelectedIndex(0);
     setLoading(true);
     setBaseItems([]);
-    setTimeout(() => inputRef.current?.focus(), 50);
+    requestAnimationFrame(() => inputRef.current?.focus());
 
     const next: PaletteItem[] = [];
     const loaders: Promise<void>[] = [];
@@ -485,7 +486,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
     setQuery("");
     setSelectedIndex(0);
     pointerActiveRef.current = false;
-    setTimeout(() => inputRef.current?.focus(), 0);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }, []);
 
   // DDL static actions — built-in, appear under > prefix and in suggestions
@@ -835,13 +836,6 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
         onClose();
       } else if (e.key === "Enter" && filtered[selectedIndex]) {
         execute(filtered[selectedIndex]);
-      } else if (e.key === "Escape") {
-        // handled by global handler — stop native event so it doesn't double-fire
-        e.nativeEvent.stopImmediatePropagation();
-        if (ddlMode) {
-          setDdlMode(null);
-          setQuery("");
-        } else onClose();
       }
     },
     [filtered, selectedIndex, execute, ddlMode, menuOpenId, onClose, pushToRecents],
@@ -859,10 +853,23 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
     window.addEventListener("keydown", handler);
     return () => {
       window.removeEventListener("keydown", handler);
-      // Don't steal focus if a modal was triggered from the palette
+      // Restore focus to the element that was focused before the palette opened.
+      // Skip if a modal was triggered from the palette (danger dialog, rename, etc.)
+      // Skip too when the action opened a script/table tab (openScript/navigateTo
+      // still pending in the store at cleanup time) — the tab-activation focus
+      // in QueryPanel owns focus then, and restoring here would steal it back.
       const s = useUiStore.getState();
-      if (!s.alterTarget && !s.renameTarget && !s.dbAction && !s.dangerDialog) {
-        focusWithRetry("#dib-main-panel", 3);
+      const ws = useWorkspaceStore.getState();
+      const navigated = ws.openScript || ws.navigateTo;
+      if (!navigated && !s.alterTarget && !s.renameTarget && !s.dbAction && !s.dangerDialog) {
+        const prev = previousFocusRef.current;
+        if (prev && document.contains(prev)) {
+          prev.focus({ preventScroll: true });
+        } else {
+          // Direct focus, not focusWithRetry: a retry call would cancel a
+          // pending editor-focus request via the generation counter.
+          document.getElementById("dib-main-panel")?.focus();
+        }
       }
     };
   }, [open, ddlMode, onClose]);

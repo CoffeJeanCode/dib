@@ -1,9 +1,15 @@
-import { memo } from "react";
+import { memo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { useDataGridContext } from "./DataGridContext";
 import { operatorsForType } from "../DataGrid.utils";
 import type { FilterOperator } from "@/types/db";
+
+const FOCUSABLE = [
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+].join(", ");
 
 export const FilterPopover = memo(function FilterPopover() {
   const {
@@ -20,6 +26,80 @@ export const FilterPopover = memo(function FilterPopover() {
     clearFilter,
   } = useDataGridContext();
 
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
+
+  // Store previous focus and trap focus within popover
+  useEffect(() => {
+    if (!filterPopover) return;
+
+    previousFocusRef.current = document.activeElement;
+
+    const popover = popoverRef.current;
+    if (!popover) return;
+
+    // Focus the first focusable element
+    requestAnimationFrame(() => {
+      const focusable = popover.querySelectorAll<HTMLElement>(FOCUSABLE);
+      if (focusable.length > 0) {
+        focusable[0].focus({ preventScroll: true });
+      }
+    });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setFilterPopover(null);
+        return;
+      }
+
+      if (e.key !== "Tab") return;
+
+      const focusable = popover.querySelectorAll<HTMLElement>(FOCUSABLE);
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const activeElement = document.activeElement as HTMLElement;
+
+      if (e.shiftKey) {
+        if (activeElement === first || !popover.contains(activeElement)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (activeElement === last || !popover.contains(activeElement)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      // If focus moves outside the popover, bring it back
+      if (!popover.contains(e.target as Node)) {
+        const focusable = popover.querySelectorAll<HTMLElement>(FOCUSABLE);
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    document.addEventListener("focusin", handleFocusIn);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
+      document.removeEventListener("focusin", handleFocusIn);
+      
+      // Restore focus when closing
+      if (previousFocusRef.current instanceof HTMLElement && document.contains(previousFocusRef.current)) {
+        previousFocusRef.current.focus({ preventScroll: true });
+      }
+    };
+  }, [filterPopover, setFilterPopover]);
+
   if (!filterPopover) return null;
 
   const col = filterPopover.col;
@@ -29,6 +109,7 @@ export const FilterPopover = memo(function FilterPopover() {
     <>
       <div className="dg-filter-backdrop" onClick={() => setFilterPopover(null)} />
       <div
+        ref={popoverRef}
         className="dg-filter-popover"
         style={{ left: filterPopover.x, top: filterPopover.y }}
         onClick={(e) => e.stopPropagation()}
@@ -72,7 +153,6 @@ export const FilterPopover = memo(function FilterPopover() {
                 if (e.key === "Escape") setFilterPopover(null);
               }}
               placeholder="Filter value…"
-              autoFocus
             />
           )}
         </div>

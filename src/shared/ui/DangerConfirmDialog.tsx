@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useDialogFocus } from "@/shared/hooks/useDialogFocus";
 import "./dialog-shared.css";
 import "./DangerConfirmDialog.css";
 
@@ -10,18 +11,12 @@ interface Props {
 }
 
 export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfirm, onCancel }: Props) {
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    cancelRef.current?.focus();
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !loading) { e.stopImmediatePropagation(); onCancel(); }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  }, [onCancel, loading]);
+  const handleClose = useCallback(() => { if (!loading) onCancel(); }, [loading, onCancel]);
+  useDialogFocus({ containerRef: dialogRef, onClose: handleClose, closeOnBackdropClick: false });
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -39,11 +34,11 @@ export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfir
 
   return (
     <div className="dialog-backdrop" onClick={loading ? undefined : onCancel}>
-      <div className="dialog dialog--danger dcd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+      <div ref={dialogRef} className="dialog dialog--danger dcd" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
         <p className="dialog-message">{message}</p>
         {error && <p className="dialog-error">{error}</p>}
         <div className="dialog-actions">
-          <button ref={cancelRef} className="dialog-btn dialog-btn--cancel" onClick={onCancel} disabled={loading}>
+          <button className="dialog-btn dialog-btn--cancel" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
           <button className="dialog-btn dialog-btn--danger" onClick={handleConfirm} disabled={loading}>

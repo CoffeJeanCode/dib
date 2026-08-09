@@ -251,7 +251,7 @@ interface UseSqlEditorOptions {
   onDirty?: () => void;
   onSaveScript?: (sql: string) => void;
   onSaveViewState?: (tabId: string, viewState: unknown) => void;
-  onContentChange?: (sql: string) => void;
+  onContentChange?: (sql: string, tabId?: string) => void;
   autoRun?: boolean;
 }
 
@@ -286,28 +286,42 @@ export function useSqlEditor({
   autoRunRef.current = autoRun;
 
   useEffect(() => {
+    const prevId = prevTabIdRef.current;
+    const editor = editorRef.current;
+    const isTabSwitch = Boolean(prevId && prevId !== tabId && editor);
+
+    if (prevId && prevId !== tabId && editor) {
+      const savedState = editor.saveViewState();
+      if (savedState) onSaveViewStateRef.current?.(prevId, savedState);
+    }
+
     if (initialSql !== undefined) {
-      const prevId = prevTabIdRef.current;
-      if (prevId && editorRef.current) {
-        const state = editorRef.current.saveViewState();
-        if (state) onSaveViewStateRef.current?.(prevId, state);
-      }
-      setSql(initialSql);
+      // Rebase the dirty baseline BEFORE touching the model: editor.setValue()
+      // below fires Monaco's onChange, and handleChange would otherwise compare
+      // the incoming tab's SQL against the outgoing tab's baseline and mark the
+      // destination tab dirty on a plain tab switch.
       initialSqlRef.current = initialSql;
       wasDirtyRef.current = false;
-    }
-  }, [initialSql]);
 
-  useEffect(() => {
-    const state = viewStateRef.current;
-    if (state && editorRef.current) {
-      requestAnimationFrame(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        editorRef.current?.restoreViewState(state as any);
-      });
+      if (isTabSwitch && editor) {
+        // Swap content and restore the cursor synchronously, back-to-back.
+        // Setting `sql` state below re-renders <Editor value={sql}>, whose
+        // own internal setValue (async, next tick) resets the cursor to
+        // end-of-doc — doing it here first means the model already matches,
+        // so that later setValue is a no-op and can't clobber our position.
+        editor.setValue(initialSql);
+        const incomingState = viewStateRef.current;
+        if (incomingState) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          editor.restoreViewState(incomingState as any);
+        }
+        editor.focus();
+      }
+      setSql(initialSql);
     }
+
     prevTabIdRef.current = tabId;
-  }, [tabId]);
+  }, [initialSql, tabId]);
 
   useEffect(() => {
     return () => {
@@ -448,6 +462,7 @@ export function useSqlEditor({
       } finally {
         if (!cancelledRef.current) {
           setLoading(false);
+          useUiStore.getState().setBottomPanelOpen(true);
         }
         dbService
           .saveQueryHistory(connectionId, sqlText, success, Date.now() - t0, uiState.history_limit)
@@ -459,7 +474,7 @@ export function useSqlEditor({
         });
       }
     },
-    [connectionId, toast],
+    [connectionId, toast, uiState.history_limit],
   );
 
   const runExplain = useCallback(
@@ -477,6 +492,7 @@ export function useSqlEditor({
         toast.error(msg);
       } finally {
         setExplainLoading(false);
+        useUiStore.getState().setBottomPanelOpen(true);
         // CRITERIO 2: Return focus to Monaco after EXPLAIN resolves too.
         requestAnimationFrame(() => {
           editorRef.current?.focus();
@@ -731,7 +747,10 @@ export function useSqlEditor({
       }, 0);
     }
 
-    editor.focus();
+    // Always focus the editor when it mounts (for new tabs and initial load)
+    requestAnimationFrame(() => {
+      editor.focus();
+    });
   }, []); // stable — reads from refs only
 
   const handleChange = useCallback(
@@ -744,8 +763,9 @@ export function useSqlEditor({
       }
       // Debounce sync to global tab state so unsaved content survives tab switches
       if (contentChangeTimerRef.current) clearTimeout(contentChangeTimerRef.current);
+      const currentTabId = tabIdRef.current;
       contentChangeTimerRef.current = setTimeout(() => {
-        onContentChangeRef.current?.(value);
+        onContentChangeRef.current?.(value, currentTabId);
       }, 300);
     },
     [onDirty],

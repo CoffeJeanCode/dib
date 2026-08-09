@@ -1,4 +1,3 @@
-export { SidebarHeader } from "./SidebarHeader";
 export { DatabaseSelector } from "./DatabaseSelector";
 export { ConnectionItem } from "./ConnectionItem";
 export { InstanceContextMenu } from "./InstanceContextMenu";
@@ -8,6 +7,5 @@ export { DatabaseCategories } from "./DatabaseCategories";
 export { ConnectionStatusDot } from "./ConnectionStatusDot";
 export { WorkspaceTree } from "./WorkspaceTree";
 export { DatabaseTree } from "./DatabaseTree";
-export { PinnedSection } from "./PinnedSection";
 export { WorkspaceList } from "./WorkspaceList";
 export { getEngineIcon, getDbName, ENGINE_COLORS, PostgresIcon, SqliteIcon } from "./utils";

@@ -1,40 +1,28 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Database, FileCode2, Clock, LayoutGrid, Settings, Compass, FolderOpen } from "lucide-react";
+import { FileCode2, Clock, Settings, Compass } from "lucide-react";
 import { useUiState } from "@/shared/hooks/useUiState";
 import { useKeybindings } from "@/shared/hooks/useKeybindings";
 import { Sidebar } from "@/features/Sidebar";
 import { Titlebar } from "@/app/Titlebar";
 import { JsonPanel } from "@/features/JsonViewer/JsonPanel";
 import { useWorkspaceStore } from "@/store/workspaceStore";
-import { useSettingsStore } from "@/store/settingsStore";
 import { useConnectionStore } from "@/store/connectionStore";
+import { useUiStore } from "@/store/uiStore";
 import "./Layout.css";
 
 const SIDEBAR_MIN = 160;
 const SIDEBAR_SNAP = 140;
 
-// "explorer" only exists in unified layout; the other 4 only exist in split layout.
-type Panel = "explorer" | "connections" | "scripts" | "history" | "database" | "workspaces";
+// One panel set everywhere — Home, simple and advance. "Instances" and
+// "Entities" were the same browser under a flag, and "Workspaces" was a picker
+// for the tree "Scripts" already showed; both folded into their host panel.
+// The simple/advance setting still controls the depth of the Explorer tree.
+type Panel = "explorer" | "files" | "history";
 
-// Home (no active connection) — Instances and Workspaces.
-const HOME_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
-  { id: "connections", icon: <Database size={20} />, title: "Instances" },
-  { id: "workspaces", icon: <FolderOpen size={20} />, title: "Workspaces" },
-];
-
-const UNIFIED_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
-  { id: "workspaces", icon: <FolderOpen size={20} />, title: "Workspaces" },
-  { id: "explorer", icon: <Compass size={20} />,   title: "Explorer" },
-  { id: "scripts",  icon: <FileCode2 size={20} />, title: "Scripts" },
-  { id: "history",  icon: <Clock size={20} />,      title: "History" },
-];
-
-const SPLIT_PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
-  { id: "workspaces", icon: <FolderOpen size={20} />, title: "Workspaces" },
-  { id: "connections", icon: <Database size={20} />,    title: "Instances" },
-  { id: "database",    icon: <LayoutGrid size={20} />,  title: "Entities" },
-  { id: "scripts",     icon: <FileCode2 size={20} />,   title: "Scripts" },
-  { id: "history",     icon: <Clock size={20} />,       title: "History" },
+const PANELS: Array<{ id: Panel; icon: React.ReactNode; title: string }> = [
+  { id: "explorer", icon: <Compass size={20} />,   title: "Explorer (Ctrl+1)" },
+  { id: "files",    icon: <FileCode2 size={20} />, title: "Files (Ctrl+2)" },
+  { id: "history",  icon: <Clock size={20} />,     title: "History (Ctrl+3)" },
 ];
 
 interface LayoutProps {
@@ -45,48 +33,45 @@ interface LayoutProps {
 export function Layout({ children, onSettingsOpen }: LayoutProps) {
   const { state, loaded, updateState } = useUiState();
   const activeConnectionId = useConnectionStore((s) => s.active?.activeId ?? null);
-  const workspaceLayout = useSettingsStore((s) => s.workspaceLayout);
-  // No active connection AND no active workspace = Home (instance selection screen)
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const isHome = !activeConnectionId && !activeWorkspaceId;
-  const PANELS = isHome ? HOME_PANELS : (workspaceLayout === "unified" ? UNIFIED_PANELS : SPLIT_PANELS);
-  const [activePanel, setActivePanel] = useState<Panel>(() =>
-    isHome ? "connections" : (workspaceLayout === "unified" ? "explorer" : "database"),
-  );
+  const [activePanel, setActivePanel] = useState<Panel>("explorer");
 
   useEffect(() => {
     if (activeConnectionId) {
-      setActivePanel(workspaceLayout === "unified" ? "explorer" : "database");
+      setActivePanel("explorer");
       if (!state.is_sidebar_open) updateState({ is_sidebar_open: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConnectionId]);
 
-  // Normalize the active tab whenever Home/workspace status or the layout
-  // preference changes — a tab valid in one context may not exist in another.
-  useEffect(() => {
-    const validIds = (isHome ? HOME_PANELS : (workspaceLayout === "unified" ? UNIFIED_PANELS : SPLIT_PANELS)).map((p) => p.id);
-    if (validIds.includes(activePanel)) return;
-    setActivePanel(isHome ? "connections" : (workspaceLayout === "unified" ? "explorer" : "database"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceLayout, isHome]);
-
   const handleActivityClick = useCallback((panel: Panel) => {
     if (state.is_sidebar_open && activePanel === panel) {
       updateState({ is_sidebar_open: false });
-    } else {
-      setActivePanel(panel);
-      if (!state.is_sidebar_open) updateState({ is_sidebar_open: true });
+      return;
     }
+    setActivePanel(panel);
+    if (!state.is_sidebar_open) updateState({ is_sidebar_open: true });
+    // Ctrl+1..3 doubles as "focus the sidebar" — the old standalone binding for
+    // that targeted an element with no tabIndex and never actually focused.
+    requestAnimationFrame(() => document.getElementById("dib-sidebar-nav")?.focus());
   }, [state.is_sidebar_open, activePanel, updateState]);
 
   const jsonPanel = useWorkspaceStore((s) => s.jsonPanel);
   const closeJsonPanel = useWorkspaceStore((s) => s.closeJsonPanel);
 
   useKeybindings([
+    ...PANELS.map(({ id }, i) => ({
+      combo: `ctrl+${i + 1}`,
+      handler: () => handleActivityClick(id),
+      allowInMonaco: true,
+    })),
     {
       combo: "ctrl+b",
       handler: () => updateState({ is_sidebar_open: !state.is_sidebar_open }),
+      allowInMonaco: true,
+    },
+    {
+      combo: "ctrl+j",
+      handler: () => useUiStore.getState().toggleBottomPanel(),
       allowInMonaco: true,
     },
     {

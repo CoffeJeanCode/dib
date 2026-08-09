@@ -5,6 +5,7 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useToastStore } from "@/store/toastStore";
 import { safeInvoke as invoke } from "@/shared/utils/ipc";
+import { dbService } from "@/services/dbService";
 import { TableContextMenu } from "@/features/Sidebar/Parts/TableContextMenu";
 import { ColumnList } from "@/features/Sidebar/Parts/ColumnList";
 import { CATEGORIES, fmtErr } from "@/features/Sidebar/hooks/useDatabaseCategoriesLogic";
@@ -100,7 +101,7 @@ export const DatabaseCategoryItem = React.memo(function DatabaseCategoryItem({
         onSetDangerDialog(null);
         try {
           if (kind === "table") {
-            await invoke("drop_table", { connectionId: sessionId, tableName: name, schema });
+            await dbService.dropTable(sessionId, name, schema);
           } else {
             await invoke("run_query", { connectionId: sessionId, sql: `DROP ${dropVerb} IF EXISTS ${label}` });
           }

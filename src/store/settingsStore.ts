@@ -14,7 +14,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      workspaceLayout: "unified",
+      workspaceLayout: "simple",
       setWorkspaceLayout: (layout) => set({ workspaceLayout: layout }),
       autoConnectOnStartup: false,
       setAutoConnectOnStartup: (v) => set({ autoConnectOnStartup: v }),

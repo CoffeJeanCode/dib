@@ -19,23 +19,11 @@ export default defineConfig(async () => ({
     },
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom"],
-          "vendor-monaco": ["@monaco-editor/react", "monaco-editor"],
-          "vendor-xyflow": ["@xyflow/react"],
-          "vendor-ui": [
-            "@dnd-kit/core",
-            "@dnd-kit/sortable",
-            "@dnd-kit/utilities",
-            "lucide-react",
-            "@tanstack/react-virtual",
-          ],
-          "vendor-tauri": ["@tauri-apps/api"],
-        },
-      },
-    },
+    // No manualChunks on purpose. Naming monaco/xyflow as static chunks made
+    // Rollup treat them as eager dependencies of the entry, so the lazy()
+    // boundaries around SqlEditor, JsonViewer and SchemaVisualizer emitted
+    // separate files that index.html modulepreloaded anyway. Letting Rollup
+    // split on the dynamic import boundaries is what actually defers them.
   },
   clearScreen: false,
   server: {

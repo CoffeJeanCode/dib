@@ -100,6 +100,20 @@ pub struct ColumnInfo {
     pub is_nullable: bool,
 }
 
+/// One entry of a batched column request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TableRef {
+    pub name: String,
+    pub schema: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TableColumns {
+    pub name: String,
+    pub schema: Option<String>,
+    pub columns: Vec<ColumnInfo>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableRelation {
     pub source_table: String,

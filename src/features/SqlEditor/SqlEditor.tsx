@@ -8,6 +8,7 @@ import { MOD } from "@/shared/utils/platform";
 import { DataGrid } from "@/features/DataGrid";
 import { Skeleton } from "@/shared/ui/Skeleton";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useUiStore } from "@/store/uiStore";
 import "./SqlEditor.css";
 
 const VisualExplain = lazy(() =>
@@ -24,7 +25,7 @@ interface SqlEditorProps {
   tabId?: string;
   viewState?: unknown;
   onSaveViewState?: (tabId: string, viewState: unknown) => void;
-  onContentChange?: (sql: string) => void;
+  onContentChange?: (sql: string, tabId?: string) => void;
   autoRun?: boolean;
 }
 
@@ -70,6 +71,8 @@ export function SqlEditor({
     autoRun,
   });
 
+  const isBottomPanelOpen = useUiStore((s) => s.isBottomPanelOpen);
+
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const isResizingRef = useRef(false);
   const startYRef = useRef(0);
@@ -78,8 +81,16 @@ export function SqlEditor({
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     isResizingRef.current = true;
+    
+    const editorEl = editorContainerRef.current;
+    const currentH = editorEl?.clientHeight ?? 220;
+    
+    if (!useUiStore.getState().isBottomPanelOpen) {
+      useUiStore.getState().setBottomPanelOpen(true);
+    }
+    
     startYRef.current = e.clientY;
-    startHRef.current = editorContainerRef.current?.clientHeight ?? 220;
+    startHRef.current = currentH;
 
     document.body.style.cursor = "row-resize";
     document.body.style.pointerEvents = "none";
@@ -173,7 +184,10 @@ export function SqlEditor({
           )}
         </div>
       </div>
-      <div className="sqleditor-body" ref={editorContainerRef}>
+      <div
+        className={`sqleditor-body${!isBottomPanelOpen ? " sqleditor-body--expanded" : ""}`}
+        ref={editorContainerRef}
+      >
         <MonacoEditor
           language="sql"
           value={sql}
@@ -200,10 +214,10 @@ export function SqlEditor({
 
       <div className="sqleditor-resizer" onMouseDown={handleResizeStart} />
 
-      {queryError && <div className="sqleditor-error">{queryError}</div>}
+      {isBottomPanelOpen && queryError && <div className="sqleditor-error">{queryError}</div>}
 
       {/* Visual EXPLAIN results — rendered in a dedicated panel */}
-      {explainResult && (
+      {isBottomPanelOpen && explainResult && (
         <div className="sqleditor-explain-panel">
           <Suspense fallback={<Skeleton height="100%" />}>
             <VisualExplain plan={explainResult} />
@@ -211,7 +225,7 @@ export function SqlEditor({
         </div>
       )}
 
-      {queryResult && !explainResult && (
+      {isBottomPanelOpen && queryResult && !explainResult && (
         <div className="sqleditor-results">
           <div className="sqleditor-results-meta">
             {(queryResult as QueryResult).rows_affected > 0

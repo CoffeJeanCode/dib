@@ -39,8 +39,10 @@ export function useAppKeybindings({ isConnected, onTogglePalette, onToggleCheatS
     { combo: "ctrl+shift+i", handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "insert" }); }, allowInMonaco: true },
 
     // ── Navigation ─────────────────────────────────────────
-    { combo: "ctrl+1",       handler: () => (document.getElementById("dib-sidebar-nav") as HTMLElement | null)?.focus(), allowInMonaco: true },
-    { combo: "ctrl+2",       handler: () => (document.getElementById("dib-main-panel") as HTMLElement | null)?.focus(), allowInMonaco: true },
+    // Ctrl+1..3 select a sidebar panel (and focus it) — owned by Layout.
+    // Ctrl+L only exists while QueryPanel is mounted, so main-panel focus
+    // keeps its own global binding here.
+    { combo: "ctrl+0",       handler: () => (document.getElementById("dib-main-panel") as HTMLElement | null)?.focus(), allowInMonaco: true },
 
     // ── Dev / reload ───────────────────────────────────────
     { combo: "ctrl+r",       handler: () => useConnectionStore.getState().triggerReload(), allowInMonaco: true },

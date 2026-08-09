@@ -14,8 +14,8 @@ interface SettingsPanelProps {
 }
 
 const LAYOUT_OPTIONS: { value: WorkspaceLayout; label: string; Icon: typeof LayoutList }[] = [
-  { value: "unified", label: "Unified", Icon: LayoutList },
-  { value: "split", label: "Split", Icon: Columns3 },
+  { value: "simple", label: "Simple", Icon: LayoutList },
+  { value: "advance", label: "Advance", Icon: Columns3 },
 ];
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
@@ -39,7 +39,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             <div className="sp-option-info">
               <span className="sp-option-title">Sidebar layout</span>
               <span className="sp-option-desc">
-                Unified shows everything in one tree; Split separates DBs and files.
+                Simple shows flat categories; Advance shows a full catalog tree like pgAdmin.
               </span>
             </div>
             <div className="sp-layout-selector">

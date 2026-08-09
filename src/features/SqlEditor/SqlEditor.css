@@ -162,6 +162,11 @@
   overflow: hidden;
 }
 
+.sqleditor-body--expanded {
+  flex: 1 !important;
+  height: auto !important;
+}
+
 .sqleditor-body .monaco-editor {
   border-radius: 0;
   background-color: #FAFAFA !important;

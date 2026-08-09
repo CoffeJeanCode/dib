@@ -17,9 +17,9 @@ import { TableStructureView } from "@/features/TableStructure/TableStructureView
 import { DataGrid } from "@/features/DataGrid";
 import { CommitFooter } from "@/features/QueryPanel/CommitFooter";
 import { TabBar } from "@/features/QueryPanel/TabBar";
-import { SqlEditor } from "@/features/SqlEditor";
 import { UnsavedChangesDialog } from "@/shared/ui/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/features/QueryPanel/EmptyWorkspaceState";
+import { SaveAsDialog } from "@/features/QueryPanel/SaveAsDialog";
 import { Skeleton } from "@/shared/ui/Skeleton";
 import { useToastStore } from "@/store/toastStore";
 
@@ -28,6 +28,12 @@ const SchemaVisualizer = lazy(() =>
 );
 const MockGenerator = lazy(() =>
   import("@/features/MockGenerator/MockGenerator").then((m) => ({ default: m.MockGenerator })),
+);
+// Monaco is ~3.8 MB of JS. Static-importing it here made every launch parse the
+// whole editor before the first table could render, even for a session that
+// never opens a script. Loaded on first script tab instead.
+const SqlEditor = lazy(() =>
+  import("@/features/SqlEditor").then((m) => ({ default: m.SqlEditor })),
 );
 import "@/shared/ui/menu-shared.css";
 import "./QueryPanel.css";
@@ -203,6 +209,7 @@ export function QueryPanel({
   const [committing, setCommitting] = useState<string | null>(null);
   const [isReloading, setIsReloading] = useState(false);
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
+  const [isClosingAll, setIsClosingAll] = useState(false);
   const [saveAsTabId, setSaveAsTabId] = useState<string | null>(null);
   const [saveAsName, setSaveAsName] = useState("");
   const [closeAfterSaveAs, setCloseAfterSaveAs] = useState(false);
@@ -249,15 +256,14 @@ export function QueryPanel({
 
   // ── Focus management ───────────────────────────────────────────────────
   useEffect(() => {
-    if (!isReloading) {
-      requestAnimationFrame(() => {
-        const main = document.getElementById("dib-main-panel");
-        const grid = main?.querySelector<HTMLElement>(".dg-wrap");
-        const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
-        (grid ?? editor ?? main)?.focus();
-      });
-    }
-  }, [isReloading]);
+    if (isReloading) return;
+    // Retry-based: on a fresh mount (db/connection switch) Monaco's textarea
+    // isn't in the DOM yet — a one-shot fallback to #dib-main-panel here used
+    // to steal focus from the editor.
+    const tab = tabs.find((t) => t.id === activeTabId);
+    const selector = tab ? (FOCUS_SELECTORS[tab.type] ?? "[data-focus-host]") : "#dib-main-panel";
+    focusWithRetry(selector);
+  }, [isReloading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Data loading ───────────────────────────────────────────────────────
   const updateTableTabState = useCallback((tabId: string, patch: Partial<TableTabState>) => {
@@ -385,11 +391,16 @@ export function QueryPanel({
         await commitChanges(ts.table.name, ts.primaryKeyColumn, ts.pendingChanges);
         updateTableTabState(tabId, { pendingChanges: [] });
         markTabClean(tabId);
-        loadTablePage(tabId, ts.table, ts.offset, ts.pageSize, ts.filters, ts.orderBy);
+        await loadTablePage(tabId, ts.table, ts.offset, ts.pageSize, ts.filters, ts.orderBy);
       } catch (e) {
         updateTableTabState(tabId, { error: fmtErr(e) });
       } finally {
         setCommitting(null);
+        requestAnimationFrame(() => {
+          const main = document.getElementById("dib-main-panel");
+          const grid = main?.querySelector<HTMLElement>(".dg-wrap");
+          grid?.focus({ preventScroll: true });
+        });
       }
     },
     [tableTabStates, commitChanges, updateTableTabState, markTabClean, loadTablePage, toast],
@@ -401,10 +412,8 @@ export function QueryPanel({
       const tabId = scriptId ?? crypto.randomUUID();
       setTabs((prev) => {
         if (prev.some((t) => t.id === tabId)) {
-          setActiveTabId(tabId);
           return prev;
         }
-        // scriptId provided → tab is already saved; null → draft
         const newTab: TabData = {
           id: tabId,
           type: "script",
@@ -414,9 +423,9 @@ export function QueryPanel({
           closeable: true,
         };
         registerTabSql(tabId, sql);
-        setActiveTabId(tabId);
         return [...prev, newTab];
       });
+      setActiveTabId(tabId);
     },
     [registerTabSql],
   );
@@ -576,9 +585,14 @@ export function QueryPanel({
             { tab, sql: tabSqlRef.current[id] },
           ];
         }
+        const closedIdx = prev.findIndex((t) => t.id === id);
         const next = prev.filter((t) => t.id !== id);
+        // Editor convention: focus the tab that slid into the closed one's slot
+        // (the one on its right), falling back to the left neighbour at the end.
         setActiveTabId((cur) =>
-          cur === id ? (next.length > 0 ? next[next.length - 1].id : "") : cur,
+          cur === id
+            ? (next[Math.min(closedIdx, next.length - 1)]?.id ?? "")
+            : cur,
         );
         removeTabSql(id);
         setTableTabStates((p) => {
@@ -592,6 +606,19 @@ export function QueryPanel({
     },
     [removeTabSql],
   );
+
+  useEffect(() => {
+    if (isClosingAll && !closingTabId && !saveAsTabId) {
+      const nextDirty = tabs.find((t) => t.isDirty && t.closeable);
+      if (nextDirty) {
+        setClosingTabId(nextDirty.id);
+      } else {
+        const remainingToClose = tabs.filter((t) => t.closeable);
+        remainingToClose.forEach((t) => performClose(t.id));
+        setIsClosingAll(false);
+      }
+    }
+  }, [isClosingAll, closingTabId, saveAsTabId, tabs, performClose]);
 
   const handleTabClose = useCallback(
     (id: string) => {
@@ -728,9 +755,7 @@ export function QueryPanel({
     {
       combo: "ctrl+shift+w",
       handler: () => {
-        setTabs([]);
-        setActiveTabId("");
-        setTableTabStates({});
+        setIsClosingAll(true);
       },
       allowInMonaco: true,
     },
@@ -754,7 +779,9 @@ export function QueryPanel({
       combo: "ctrl+l",
       handler: () => {
         const main = document.getElementById("dib-main-panel");
-        const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+        const editor = main?.querySelector<HTMLElement>(
+          ".monaco-editor textarea, .monaco-editor .native-edit-context",
+        );
         const grid = main?.querySelector<HTMLElement>(".dg-wrap");
         (editor ?? grid ?? main)?.focus();
       },
@@ -820,8 +847,8 @@ export function QueryPanel({
 
   // Adapter: SqlEditor sends just `sql`; we add the active tabId context
   const handleContentChange = useCallback(
-    (sql: string) => {
-      persistContentChange(activeTabIdRef.current, sql);
+    (sql: string, changedTabId?: string) => {
+      persistContentChange(changedTabId ?? activeTabIdRef.current, sql);
     },
     [persistContentChange],
   );
@@ -943,7 +970,9 @@ export function QueryPanel({
   }, [handleTabClose]);
   const handleGridFocusEditor = useCallback(() => {
     const main = document.getElementById("dib-main-panel");
-    const editor = main?.querySelector<HTMLElement>(".monaco-editor textarea");
+    const editor = main?.querySelector<HTMLElement>(
+      ".monaco-editor textarea, .monaco-editor .native-edit-context",
+    );
     const grid = main?.querySelector<HTMLElement>(".dg-wrap");
     (editor ?? grid ?? main)?.focus();
   }, []);
@@ -1198,6 +1227,7 @@ export function QueryPanel({
         )}
 
         {activeTab?.type === "script" && (
+          <Suspense fallback={<Skeleton height="100%" />}>
           <SqlEditor
             connectionId={connectionId}
             connectionName={connectionName}
@@ -1211,6 +1241,7 @@ export function QueryPanel({
             onContentChange={handleContentChange}
             autoRun={activeTab.payload.autoRun}
           />
+          </Suspense>
         )}
 
         {activeTab?.type === "mock_generator" && activeTab.payload.table && (
@@ -1243,50 +1274,18 @@ export function QueryPanel({
       </div>
 
       {saveAsTabId && (
-        <div
-          className="qp-save-as-overlay"
-          onClick={() => {
+        <SaveAsDialog
+          name={saveAsName}
+          onNameChange={setSaveAsName}
+          onConfirm={handleSaveAsConfirm}
+          onCancel={() => {
             setSaveAsTabId(null);
             setSaveAsName("");
             setCloseAfterSaveAs(false);
+            setIsClosingAll(false);
           }}
-        >
-          <div className="qp-save-as-dialog" onClick={(e) => e.stopPropagation()}>
-            <label className="qp-save-as-label">Nombre del script</label>
-            <input
-              className="qp-save-as-input"
-              value={saveAsName}
-              onChange={(e) => setSaveAsName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSaveAsConfirm(saveAsName);
-                if (e.key === "Escape") {
-                  setSaveAsTabId(null);
-                  setSaveAsName("");
-                  setCloseAfterSaveAs(false);
-                }
-              }}
-              autoFocus
-            />
-            <div className="qp-save-as-actions">
-              <button
-                onClick={() => {
-                  setSaveAsTabId(null);
-                  setSaveAsName("");
-                  setCloseAfterSaveAs(false);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="qp-save-as-confirm"
-                onClick={() => handleSaveAsConfirm(saveAsName)}
-                disabled={!saveAsName.trim()}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+          disabled={!saveAsName.trim()}
+        />
       )}
 
       {closingTabId &&
@@ -1319,7 +1318,10 @@ export function QueryPanel({
                 }
               }}
               onDiscard={() => performClose(tabToClose.id)}
-              onCancel={() => setClosingTabId(null)}
+              onCancel={() => {
+                setClosingTabId(null);
+                setIsClosingAll(false);
+              }}
             />
           );
         })()}

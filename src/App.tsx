@@ -6,6 +6,7 @@ import { PasswordPrompt } from "@/features/Connections/PasswordPrompt";
 import { mod } from "@/shared/utils/platform";
 import { useToastStore } from "@/store/toastStore";
 import { useAppKeybindings } from "@/shared/hooks/useAppKeybindings";
+import { useAutoUpdate } from "@/shared/hooks/useAutoUpdate";
 import { DDL_TEMPLATE } from "@/constants/ddlTemplates";
 import { useUiStore } from "@/store/uiStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
@@ -19,6 +20,7 @@ import { DDL_TEMPLATES } from "@/features/Sidebar/hooks/useDatabaseCategoriesLog
 import "./App.css";
 
 function App() {
+  useAutoUpdate();
   const error = useToastStore((s) => s.error);
   const active = useConnectionStore((s) => s.active);
   const connecting = useConnectionStore((s) => s.connecting);

@@ -7,8 +7,8 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use crate::db::{
     ChangeRow, ColumnInfo, ColumnMetadata, CreateColumn, DatabaseDriver, DbConfig, DbTreeNode, DdlResult, ExplainNode,
     ExplainPlan, ForeignKey, GridFilter, OrderBy, PagedResult, QueryError, QueryResult, SchemaChange,
-    SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableInfo, TableRelation,
-    TableStructure, TriggerInfo,
+    SchemaObjects, StructureColumn, StructureIndex, StructureTrigger, TableColumns, TableInfo,
+    TableRef, TableRelation, TableStructure, TriggerInfo,
 };
 
 /// Try to coerce a filter string to a numeric JSON value so Postgres
@@ -142,6 +142,7 @@ fn pg_bind_json(args: &mut sqlx::postgres::PgArguments, val: &Value) {
             else if lower == "false" { let _ = args.add(false); }
             else if let Ok(i) = s.parse::<i64>() { let _ = args.add(i); }
             else if let Ok(f) = s.parse::<f64>() { let _ = args.add(f); }
+            else if let Ok(u) = uuid::Uuid::parse_str(s) { let _ = args.add(u); }
             else { let _ = args.add(s.clone()); }
         }
         other => { let _ = args.add(other.to_string()); }
@@ -572,8 +573,6 @@ impl DatabaseDriver for PostgresDriver {
         sqlx::query(
             "SELECT schemaname, tablename \
              FROM pg_catalog.pg_tables \
-             WHERE schemaname != 'information_schema' \
-               AND schemaname != 'pg_catalog' \
              ORDER BY schemaname, tablename",
         )
         .fetch_all(&self.pool)
@@ -590,33 +589,54 @@ impl DatabaseDriver for PostgresDriver {
     }
 
     async fn get_schema_objects(&self) -> Result<SchemaObjects, QueryError> {
-        let tables = self.get_tables().await?;
+        // Four independent catalog reads — issued together so the cost is one
+        // round trip of latency, not four. Each still uses its own pool
+        // connection, so this is bounded by the pool, not by the table count.
+        let (tables, view_rows, routines, trigger_rows) = tokio::try_join!(
+            self.get_tables(),
+            async {
+                sqlx::query(
+                    "SELECT schemaname, viewname \
+                     FROM pg_catalog.pg_views \
+                     ORDER BY schemaname, viewname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))
+            },
+            async {
+                sqlx::query(
+                    "SELECT routine_schema, routine_name, routine_type \
+                     FROM information_schema.routines \
+                     ORDER BY routine_name",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))
+            },
+            async {
+                sqlx::query(
+                    "SELECT t.tgname AS trigger_name, c.relname AS table_name, \
+                            n.nspname AS schema, '' AS event, '' AS timing \
+                     FROM pg_trigger t \
+                     JOIN pg_class c ON c.oid = t.tgrelid \
+                     JOIN pg_namespace n ON n.oid = c.relnamespace \
+                     WHERE NOT t.tgisinternal \
+                     ORDER BY n.nspname, t.tgname",
+                )
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))
+            },
+        )?;
 
-        let views = sqlx::query(
-            "SELECT schemaname, viewname \
-             FROM pg_catalog.pg_views \
-             WHERE schemaname NOT IN ('pg_catalog', 'information_schema') \
-             ORDER BY schemaname, viewname",
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QueryError::from(e.to_string()))?
-        .iter()
-        .map(|r| TableInfo {
-            schema: r.try_get("schemaname").ok(),
-            name: r.try_get("viewname").unwrap_or_default(),
-        })
-        .collect();
-
-        let routines = sqlx::query(
-            "SELECT routine_schema, routine_name, routine_type \
-             FROM information_schema.routines \
-             WHERE routine_schema NOT IN ('pg_catalog', 'information_schema') \
-             ORDER BY routine_name",
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QueryError::from(e.to_string()))?;
+        let views = view_rows
+            .iter()
+            .map(|r| TableInfo {
+                schema: r.try_get("schemaname").ok(),
+                name: r.try_get("viewname").unwrap_or_default(),
+            })
+            .collect();
 
         let mut functions = Vec::new();
         let mut procedures = Vec::new();
@@ -633,21 +653,9 @@ impl DatabaseDriver for PostgresDriver {
             }
         }
 
-        let triggers = sqlx::query(
-            "SELECT t.tgname AS trigger_name, c.relname AS table_name, \
-                    n.nspname AS schema, '' AS event, '' AS timing \
-             FROM pg_trigger t \
-             JOIN pg_class c ON c.oid = t.tgrelid \
-             JOIN pg_namespace n ON n.oid = c.relnamespace \
-             WHERE NOT t.tgisinternal \
-               AND n.nspname NOT IN ('pg_catalog', 'information_schema') \
-             ORDER BY n.nspname, t.tgname",
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QueryError::from(e.to_string()))?
-        .into_iter()
-        .map(|r| TriggerInfo {
+        let triggers = trigger_rows
+            .into_iter()
+            .map(|r| TriggerInfo {
             trigger_name: r.try_get("trigger_name").unwrap_or_default(),
             table_name:   r.try_get("table_name").unwrap_or_default(),
             schema:       r.try_get("schema").ok(),
@@ -696,6 +704,90 @@ impl DatabaseDriver for PostgresDriver {
                     data_type: r.try_get("data_type").unwrap_or_default(),
                     is_primary_key: r.try_get("is_primary_key").unwrap_or(false),
                     is_nullable: nullable == "YES",
+                }
+            })
+            .collect())
+    }
+
+    /// Batched twin of `get_table_schema`. Same two information_schema views,
+    /// same output — but two round trips total instead of two per table, which
+    /// is what the schema visualizer and mock generator were paying.
+    async fn get_table_schemas(
+        &self,
+        tables: &[TableRef],
+    ) -> Result<Vec<TableColumns>, QueryError> {
+        use std::collections::{HashMap, HashSet};
+        if tables.is_empty() { return Ok(Vec::new()); }
+
+        let schemas: Vec<String> =
+            tables.iter().map(|t| t.schema.clone().unwrap_or_else(|| "public".into())).collect();
+        let names: Vec<String> = tables.iter().map(|t| t.name.clone()).collect();
+        // ANY() over both axes is a superset of the requested pairs (it matches
+        // the cross product); the exact pairs are re-selected below.
+        let wanted: HashSet<(String, String)> =
+            schemas.iter().cloned().zip(names.iter().cloned()).collect();
+
+        let col_rows = sqlx::query(
+            "SELECT table_schema, table_name, column_name, data_type, is_nullable \
+             FROM information_schema.columns \
+             WHERE table_schema = ANY($1) AND table_name = ANY($2) \
+             ORDER BY table_schema, table_name, ordinal_position",
+        )
+        .bind(&schemas)
+        .bind(&names)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let pk_rows = sqlx::query(
+            "SELECT tc.table_schema, tc.table_name, kcu.column_name \
+             FROM information_schema.table_constraints tc \
+             JOIN information_schema.key_column_usage kcu \
+                 ON tc.constraint_name = kcu.constraint_name \
+                 AND tc.table_schema = kcu.table_schema \
+                 AND tc.table_name = kcu.table_name \
+             WHERE tc.constraint_type = 'PRIMARY KEY' \
+               AND tc.table_schema = ANY($1) AND tc.table_name = ANY($2)",
+        )
+        .bind(&schemas)
+        .bind(&names)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| QueryError::from(e.to_string()))?;
+
+        let mut pks: HashSet<(String, String, String)> = HashSet::new();
+        for r in &pk_rows {
+            pks.insert((
+                r.try_get("table_schema").unwrap_or_default(),
+                r.try_get("table_name").unwrap_or_default(),
+                r.try_get("column_name").unwrap_or_default(),
+            ));
+        }
+
+        let mut grouped: HashMap<(String, String), Vec<ColumnInfo>> = HashMap::new();
+        for r in &col_rows {
+            let s: String = r.try_get("table_schema").unwrap_or_default();
+            let t: String = r.try_get("table_name").unwrap_or_default();
+            if !wanted.contains(&(s.clone(), t.clone())) { continue; }
+            let name: String = r.try_get("column_name").unwrap_or_default();
+            let nullable: String = r.try_get("is_nullable").unwrap_or_default();
+            let is_primary_key = pks.contains(&(s.clone(), t.clone(), name.clone()));
+            grouped.entry((s, t)).or_default().push(ColumnInfo {
+                name,
+                data_type: r.try_get("data_type").unwrap_or_default(),
+                is_primary_key,
+                is_nullable: nullable == "YES",
+            });
+        }
+
+        Ok(tables
+            .iter()
+            .map(|t| {
+                let s = t.schema.clone().unwrap_or_else(|| "public".into());
+                TableColumns {
+                    name: t.name.clone(),
+                    schema: t.schema.clone(),
+                    columns: grouped.remove(&(s, t.name.clone())).unwrap_or_default(),
                 }
             })
             .collect())
@@ -875,15 +967,21 @@ impl DatabaseDriver for PostgresDriver {
                     _ => (vec!["f"], "foreign_table", true),
                 };
                 let schema = require_parent()?;
+                // Partition children belong under their parent's "Partitions"
+                // folder only. Listing them here too produced a duplicate row
+                // sharing the same tree-node id, so expanding one expanded both.
+                let hide_partitions = node_type == "schema_tables";
                 let rows = sqlx::query(
                     "SELECT c.relname AS name \
                      FROM pg_catalog.pg_class c \
                      JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
                      WHERE n.nspname = $1 AND c.relkind = ANY($2::\"char\"[]) \
+                       AND (NOT $3::bool OR NOT c.relispartition) \
                      ORDER BY c.relname",
                 )
                 .bind(&schema)
                 .bind(&kinds)
+                .bind(hide_partitions)
                 .fetch_all(&self.pool)
                 .await
                 .map_err(err)?;
