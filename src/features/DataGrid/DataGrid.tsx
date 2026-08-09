@@ -30,7 +30,7 @@ export interface DataGridProps {
   activeCell?: { row: number; col: number } | null;
   onActiveCellChange?: (cell: { row: number; col: number } | null) => void;
   relations?: TableRelation[];
-  onFkNavigate?: (targetTable: string, targetColumn: string, value: unknown) => void;
+  onFkNavigate?: (targetTable: string, targetColumn: string, value: unknown, inPlace?: boolean) => void;
   onSaveError?: (msg: string) => void;
   disableAutoFocus?: boolean;
   footerRight?: React.ReactNode;

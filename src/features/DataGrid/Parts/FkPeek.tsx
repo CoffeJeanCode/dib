@@ -61,6 +61,14 @@ export function useFkPeek({ fkMap, orderedColumns, rows, isEditing }: UseFkPeekA
 
   useEffect(() => clearTimers, [clearTimers]);
 
+  // QueryPanel renders a single <DataGrid> element with no key, so switching tabs
+  // reuses this hook's instance instead of remounting it — a peek opened in one tab
+  // would keep floating over the next (the card is position:fixed, z-index 1000).
+  // Every tab owns its own result array, so a new `rows` identity means the peeked
+  // row is gone: tab switch, refetch, sort or filter change. Same trigger the grid
+  // already uses to rebuild edit state.
+  useEffect(() => closePeek, [rows, closePeek]);
+
   const openAt = useCallback(
     (cell: HTMLElement) => {
       const rowIdx = Number(cell.dataset.dgR);

@@ -7,6 +7,10 @@ import { useTheme, setTheme } from "@/shared/hooks/useTheme";
 import { Dropzone, type ImportResult } from "@/shared/ui/Dropzone";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import type { OpenScript } from "@/types/workspace";
+// Same source of truth as the app icon, so the titlebar can never drift from it.
+// The 32px variant, not the 512px master: this renders at 14px (28px on hidpi) and
+// staying under Vite's 4 KB inline limit keeps it a data URI instead of a request.
+import logoUrl from "../../src-tauri/icons/32x32.png";
 import "./Titlebar.css";
 
 const appWindow = getCurrentWindow();
@@ -32,7 +36,10 @@ export function Titlebar() {
   return (
     <div className="titlebar" data-tauri-drag-region>
       <div className="titlebar-start" data-tauri-drag-region>
-        <span className="titlebar-brand" data-tauri-drag-region>DIB</span>
+        <span className="titlebar-brand" data-tauri-drag-region>
+          <img className="titlebar-logo" src={logoUrl} alt="" width={14} height={14} data-tauri-drag-region />
+          DIB
+        </span>
         {activeWorkspacePath && (
           <div className="titlebar-workspace-pill">
             <span className="titlebar-workspace-name">{activeWorkspacePath.split(/[/\\]/).pop()}</span>

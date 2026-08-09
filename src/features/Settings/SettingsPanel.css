@@ -111,3 +111,9 @@
 .sp-number-wrapper {
   width: 80px;
 }
+
+.sp-build-info {
+  margin-right: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

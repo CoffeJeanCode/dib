@@ -31,7 +31,7 @@ export type GridKeyDownDeps = {
   markRowsForDeletion: (rows: number[]) => void;
   onForceClose?: () => void;
   onFocusEditor?: () => void;
-  onFkNavigate?: (targetTable: string, targetColumn: string, value: unknown) => void;
+  onFkNavigate?: (targetTable: string, targetColumn: string, value: unknown, inPlace?: boolean) => void;
   onGenerateJoinQuery?: (col: string) => void;
   fkMap?: Record<string, { targetTable: string; targetColumn: string }>;
   editStateRows?: unknown[][];
@@ -276,7 +276,8 @@ function handleGridStartEdit(d: GridKeyDownDeps): boolean {
         e.preventDefault();
         const value = (d.editStateRows[row] as unknown[])?.[col];
         if (value != null) {
-          d.onFkNavigate(fk.targetTable, fk.targetColumn, value);
+          // Ctrl+Shift+Enter navigates in place, mirroring Ctrl+Shift+Click.
+          d.onFkNavigate(fk.targetTable, fk.targetColumn, value, e.shiftKey);
           return true;
         }
       }

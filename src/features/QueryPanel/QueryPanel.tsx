@@ -17,11 +17,21 @@ import { TableStructureView } from "@/features/TableStructure/TableStructureView
 import { DataGrid } from "@/features/DataGrid";
 import { CommitFooter } from "@/features/QueryPanel/CommitFooter";
 import { TabBar } from "@/features/QueryPanel/TabBar";
+import { TrailBreadcrumb } from "@/features/QueryPanel/TrailBreadcrumb";
+import { PageSizeSelect } from "@/features/QueryPanel/PageSizeSelect";
 import { UnsavedChangesDialog } from "@/shared/ui/UnsavedChangesDialog";
 import { EmptyWorkspaceState } from "@/features/QueryPanel/EmptyWorkspaceState";
 import { SaveAsDialog } from "@/features/QueryPanel/SaveAsDialog";
 import { Skeleton } from "@/shared/ui/Skeleton";
 import { useToastStore } from "@/store/toastStore";
+import {
+  type TrailNode,
+  trailNode,
+  tableLabel,
+  pushTrail,
+  syncTrail,
+  validTrailIdx,
+} from "@/features/QueryPanel/trail";
 
 const SchemaVisualizer = lazy(() =>
   import("@/features/SchemaVisualizer").then((m) => ({ default: m.SchemaVisualizer })),
@@ -58,11 +68,16 @@ interface TableTabState {
   pendingChanges: PendingChange[];
   primaryKeyColumn: string;
   pageSize: number;
+  // Relational breadcrumbs: FK hops taken inside this tab. Always ≥1 node.
+  trail: TrailNode[];
+  trailIdx: number;
 }
 
-function defaultTableTabState(table: TableInfo): TableTabState {
+function defaultTableTabState(table: TableInfo, initialFilters: GridFilter[] = []): TableTabState {
   return {
     table,
+    trail: [trailNode(table, initialFilters)],
+    trailIdx: 0,
     result: null,
     loading: false,
     error: null,
@@ -73,6 +88,12 @@ function defaultTableTabState(table: TableInfo): TableTabState {
     primaryKeyColumn: "",
     pageSize: DEFAULT_PAGE_SIZE,
   };
+}
+
+// Snapshot the live view into the node we are leaving, so back/forward
+// restores the filters and sort the user actually had there.
+function syncedTrail(ts: TableTabState): TrailNode[] {
+  return syncTrail(ts.trail, ts.trailIdx, { filters: ts.filters, orderBy: ts.orderBy });
 }
 
 function tableTabId(table: TableInfo): string {
@@ -430,13 +451,51 @@ export function QueryPanel({
     [registerTabSql],
   );
 
+  // ── Relational breadcrumbs ─────────────────────────────────────────────
+  // Point a table tab at trail[idx]: retitle the tab, repoint its payload and
+  // re-run the query. Nodes hold coordinates only, so this always re-fetches.
+  // pageSize is a preference of the *viewer*, not of the node, so trail hops
+  // carry the tab's current page size instead of snapping back to the default.
+  const applyTrailNode = useCallback(
+    (tabId: string, trail: TrailNode[], idx: number, pageSize: number) => {
+      const node = trail[idx];
+      if (!node) return;
+      tabsRef.current = tabsRef.current.map((t) =>
+        t.id === tabId
+          ? {
+              ...t,
+              title: tableLabel(node.table),
+              payload: { ...t.payload, table: node.table, activeCell: null },
+            }
+          : t,
+      );
+      setTabs(tabsRef.current);
+      updateTableTabState(tabId, {
+        table: node.table,
+        trail,
+        trailIdx: idx,
+        orderBy: node.orderBy,
+      });
+      loadTablePage(tabId, node.table, 0, pageSize, node.filters, node.orderBy);
+      loadTableRelations(node.table);
+    },
+    [updateTableTabState, loadTablePage, loadTableRelations],
+  );
+
   const openTableTab = useCallback(
     (table: TableInfo, initialFilters?: GridFilter[]) => {
       const tid = tableTabId(table);
       const exists = tabsRef.current.some((t) => t.id === tid);
       if (exists) {
         setActiveTabId(tid);
-        if (initialFilters?.length) loadTablePage(tid, table, 0, DEFAULT_PAGE_SIZE, initialFilters);
+        // The tab may be parked on a FK hop (its id is the *root* table), so
+        // reopening from the sidebar resets the trail to this table as root.
+        const showing = tabsRef.current.find((t) => t.id === tid)?.payload.table;
+        if (initialFilters?.length || showing?.name !== table.name) {
+          // Reopening from the sidebar is a fresh start, so the default page
+          // size applies here — unlike a trail hop, which continues a session.
+          applyTrailNode(tid, [trailNode(table, initialFilters ?? [])], 0, DEFAULT_PAGE_SIZE);
+        }
         return;
       }
       const newTab: TabData = {
@@ -449,12 +508,15 @@ export function QueryPanel({
       };
       tabsRef.current = [...tabsRef.current, newTab];
       setTabs(tabsRef.current);
-      setTableTabStates((prev) => ({ ...prev, [tid]: prev[tid] || defaultTableTabState(table) }));
+      setTableTabStates((prev) => ({
+        ...prev,
+        [tid]: prev[tid] || defaultTableTabState(table, initialFilters ?? []),
+      }));
       setActiveTabId(tid);
       loadTablePage(tid, table, 0, DEFAULT_PAGE_SIZE, initialFilters ?? []);
       loadTableRelations(table);
     },
-    [loadTablePage, loadTableRelations],
+    [loadTablePage, loadTableRelations, applyTrailNode],
   );
 
   const openTableStructureTab = useCallback((table: TableInfo) => {
@@ -734,24 +796,33 @@ export function QueryPanel({
       },
       allowInMonaco: true,
     },
-    {
-      combo: "ctrl+tab",
+    // Next / previous tab, with Ctrl+PageDown/PageUp as browser-standard aliases.
+    // These only started matching once _key() switched to e.code — webkit2gtk reports
+    // Shift+Tab as "ISO_Left_Tab" and PageUp/Down as "Prior"/"Next" via e.key.
+    ...[
+      { combo: "ctrl+tab", delta: 1 },
+      { combo: "ctrl+pagedown", delta: 1 },
+      { combo: "ctrl+shift+tab", delta: -1 },
+      { combo: "ctrl+pageup", delta: -1 },
+    ].map(({ combo, delta }) => ({
+      combo,
       handler: () => {
         if (tabs.length < 2) return;
         const idx = tabs.findIndex((t) => t.id === activeTabId);
-        setActiveTabId(tabs[(idx + 1) % tabs.length].id);
+        setActiveTabId(tabs[(idx + delta + tabs.length) % tabs.length].id);
       },
       allowInMonaco: true,
-    },
-    {
-      combo: "ctrl+shift+tab",
+    })),
+    // Alt+1..9 → jump to the Nth tab; Alt+9 is always the last one (browser-style).
+    // Combos are fixed at mount, so all 9 register regardless of how many tabs exist.
+    ...Array.from({ length: 9 }, (_, i) => ({
+      combo: `alt+${i + 1}`,
       handler: () => {
-        if (tabs.length < 2) return;
-        const idx = tabs.findIndex((t) => t.id === activeTabId);
-        setActiveTabId(tabs[(idx - 1 + tabs.length) % tabs.length].id);
+        const tab = i === 8 ? tabs[tabs.length - 1] : tabs[i];
+        if (tab) setActiveTabId(tab.id);
       },
       allowInMonaco: true,
-    },
+    })),
     {
       combo: "ctrl+shift+w",
       handler: () => {
@@ -948,16 +1019,69 @@ export function QueryPanel({
     [handleCommit],
   );
 
+  // Trail hops discard nothing: refuse to move while edits are uncommitted.
+  const warnIfPendingChanges = useCallback(
+    (ts: TableTabState) => {
+      if (ts.pendingChanges.length === 0) return false;
+      toast.warn("Commit or discard your pending changes before navigating.");
+      return true;
+    },
+    [toast],
+  );
+
   const handleFkNavigate = useCallback(
-    (targetTable: string, targetColumn: string, value: unknown) => {
+    (targetTable: string, targetColumn: string, value: unknown, inPlace?: boolean) => {
       const table = tables.find((t) => t.name === targetTable) ?? {
         name: targetTable,
         schema: null,
       };
-      openTableTab(table, [{ column: targetColumn, operator: "=", value: String(value) }]);
+      const filters: GridFilter[] = [
+        { column: targetColumn, operator: "=", value: String(value) },
+      ];
+      const tabId = activeTabIdRef.current;
+      const ts = tabId ? tableTabStates[tabId] : undefined;
+      // A tab is identified by its *root* table, so a FK cycling back to that
+      // root resolves to this very tab — there is no second tab to open, and
+      // letting openTableTab handle it would reset the trail to a single node.
+      // Pushing a hop keeps the path the user walked.
+      const targetIsThisTab = !!ts && tableTabId(table) === tabId;
+      if (!ts || (!inPlace && !targetIsThisTab)) {
+        openTableTab(table, filters);
+        return;
+      }
+      if (warnIfPendingChanges(ts)) return;
+      const { trail, idx } = pushTrail(syncedTrail(ts), ts.trailIdx, trailNode(table, filters));
+      applyTrailNode(tabId, trail, idx, ts.pageSize);
     },
-    [tables, openTableTab],
+    [tables, openTableTab, tableTabStates, applyTrailNode, warnIfPendingChanges],
   );
+
+  const handleTrailGoto = useCallback(
+    (idx: number) => {
+      const tabId = activeTabIdRef.current;
+      const ts = tabId ? tableTabStates[tabId] : undefined;
+      if (!ts) return;
+      const target = validTrailIdx(ts.trail, idx);
+      if (target === null || target === ts.trailIdx) return;
+      if (warnIfPendingChanges(ts)) return;
+      applyTrailNode(tabId, syncedTrail(ts), target, ts.pageSize);
+    },
+    [tableTabStates, applyTrailNode, warnIfPendingChanges],
+  );
+
+  // Alt+←/→ walk the trail. Registered through the shared keybinding registry
+  // so the cell editor and filter inputs keep priority (useKeybindings.ts:67).
+  const stepTrail = useCallback(
+    (dir: -1 | 1) => {
+      const ts = activeTabIdRef.current ? tableTabStates[activeTabIdRef.current] : undefined;
+      if (ts) handleTrailGoto(ts.trailIdx + dir);
+    },
+    [tableTabStates, handleTrailGoto],
+  );
+  useKeybindings([
+    { combo: "alt+arrowleft", handler: () => stepTrail(-1) },
+    { combo: "alt+arrowright", handler: () => stepTrail(1) },
+  ]);
 
   const handleGridSaveError = useCallback(
     (msg: string) => {
@@ -1015,11 +1139,12 @@ export function QueryPanel({
               <div className="qp-data-error">{activeTableState.error}</div>
             )}
             <div className="qp-grid-header">
-              <span className="qp-breadcrumb">
-                {activeTab.payload.table?.schema
-                  ? `${activeTab.payload.table.schema}.${activeTab.payload.table.name}`
-                  : activeTab.payload.table?.name}
-              </span>
+              <TrailBreadcrumb
+                trail={activeTableState?.trail ?? []}
+                trailIdx={activeTableState?.trailIdx ?? 0}
+                fallbackLabel={activeTab.payload.table ? tableLabel(activeTab.payload.table) : ""}
+                onGoto={handleTrailGoto}
+              />
             </div>
             {!activeTableState?.loading &&
               !activeTableState?.result &&
@@ -1183,11 +1308,10 @@ export function QueryPanel({
                 >
                   Next ›
                 </button>
-                <select
-                  className="qp-page-size-select"
+                <PageSizeSelect
                   value={currentPageSize}
-                  onChange={(e) => {
-                    const newSize = Number(e.target.value);
+                  disabled={activeTableState.loading}
+                  onChange={(newSize) => {
                     if (activeTab.payload.table)
                       loadTablePage(
                         activeTabId,
@@ -1197,11 +1321,7 @@ export function QueryPanel({
                         activeTableState.filters,
                       );
                   }}
-                >
-                  <option value={50}>50 / page</option>
-                  <option value={100}>100 / page</option>
-                  <option value={500}>500 / page</option>
-                </select>
+                />
               </div>
             )}
             <div className="qp-footer-row">

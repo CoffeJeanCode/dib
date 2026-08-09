@@ -52,11 +52,58 @@
 }
 
 .qp-breadcrumb {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   font-family: var(--font-mono);
   color: var(--color-text-primary);
   flex: 1;
+}
+
+.qp-breadcrumb::-webkit-scrollbar {
+  display: none;
+}
+
+.qp-bc-item {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.qp-bc-sep {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  flex-shrink: 0;
+}
+
+.qp-bc-node {
+  padding: 2px 4px;
+  border: none;
+  border-radius: var(--radius-sm, 3px);
+  background: transparent;
+  font: inherit;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.qp-bc-node:hover:not(.is-current) {
+  background: var(--color-bg-hover, var(--color-surface));
+  color: var(--color-text-primary);
+}
+
+.qp-bc-node.is-current {
+  color: var(--color-text-primary);
+  cursor: default;
+}
+
+.qp-bc-filter {
+  margin-left: 2px;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-weight: var(--font-weight-normal, 400);
 }
 
 .qp-footer-row {
@@ -144,27 +191,56 @@
   position: relative;
 }
 
-.qp-page-size-select {
+/* Page-size picker. The trigger keeps the old <select>'s metrics so the footer
+   doesn't shift; the arrow is a real icon now instead of a background SVG. */
+.qp-page-size {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.qp-page-size-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
   font-family: var(--font-sans);
   font-size: var(--font-size-xs);
-  padding: var(--space-1) var(--space-3);
-  padding-right: var(--space-6);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-bg);
   color: var(--color-text-primary);
-  appearance: none;
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%23888888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right var(--space-1) center;
   transition: border-color var(--transition-fast);
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.qp-page-size-select:hover,
-.qp-page-size-select:focus {
+.qp-page-size-btn:hover,
+.qp-page-size-btn:focus-visible,
+.qp-page-size-btn[aria-expanded="true"] {
   outline: none;
   border-color: var(--color-teal);
+}
+
+.qp-page-size-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Opens upward: the pagination bar is pinned to the bottom of the window, which
+   is exactly where a native select popup got clipped. Mirrors
+   .dg-footer-actions-menu. */
+.qp-page-size-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  z-index: 100;
+  margin-bottom: 4px;
+  min-width: 100%;
+}
+
+.qp-page-size-menu .ui-menu-item[aria-selected="true"] {
+  color: var(--color-teal);
 }
 
 /* ── Save-As dialog ───────────────────────────────────────── */

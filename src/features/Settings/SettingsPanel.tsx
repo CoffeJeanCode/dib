@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { LayoutList, Columns3 } from "lucide-react";
+import { getVersion } from "@tauri-apps/api/app";
 import { useUiState } from "@/shared/hooks/useUiState";
 import { useTheme, setTheme } from "@/shared/hooks/useTheme";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -25,6 +27,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const setLayout = useSettingsStore((s) => s.setWorkspaceLayout);
   const autoConnect = useSettingsStore((s) => s.autoConnectOnStartup);
   const setAutoConnect = useSettingsStore((s) => s.setAutoConnectOnStartup);
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    if (open) getVersion().then(setVersion);
+  }, [open]);
 
   if (!open) return null;
 
@@ -115,6 +122,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           </div>
         </div>
         <div className="dialog-footer">
+          <span className="sp-build-info">
+            v{version || "…"} · built {new Date(__BUILD_DATE__).toLocaleDateString()}
+          </span>
           <button className="dialog-btn dialog-btn--primary" onClick={onClose}>
             Done
           </button>

@@ -10,12 +10,31 @@ export interface ShortcutDef {
 const _reg = new Map<string, { call: () => void; allowInMonaco: boolean }>();
 let _listening = false;
 
-function _key(e: KeyboardEvent): string {
+// Non-printable keys are matched on `e.code` (the PHYSICAL key), never `e.key`.
+// `e.key` is layout- and modifier-dependent, and webkit2gtk leaks raw X11 keysym
+// names through it — Shift+Tab arrives as "ISO_Left_Tab" and PageUp/PageDown as
+// "Prior"/"Next", none of which match the combo strings callers register. `e.code`
+// stays "Tab"/"PageUp"/"PageDown" regardless. Lowercased, these codes already equal
+// our combo vocabulary ("Space" → "space", "ArrowLeft" → "arrowleft").
+const _CODE_KEYS = new Set([
+  "Tab", "PageUp", "PageDown", "Home", "End",
+  "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+  "Escape", "Enter", "Space", "Backspace", "Delete",
+]);
+
+function _baseKey(e: KeyboardEvent): string {
+  if (_CODE_KEYS.has(e.code)) return e.code.toLowerCase();
+  // Digit row: Alt+1 reports e.key "¡" on some layouts, but always code "Digit1".
+  if (/^Digit[0-9]$/.test(e.code)) return e.code.slice(5);
+  return e.key === " " ? "space" : (e.key || "").toLowerCase();
+}
+
+export function _key(e: KeyboardEvent): string {
   const parts: string[] = [];
   if (e.ctrlKey || e.metaKey) parts.push("ctrl");
   if (e.altKey) parts.push("alt");
   if (e.shiftKey) parts.push("shift");
-  parts.push(e.key === " " ? "space" : (e.key || "").toLowerCase());
+  parts.push(_baseKey(e));
   return parts.join("+");
 }
 
@@ -57,15 +76,19 @@ function _initListener() {
       if (!entry) return;
 
       const el = e.target as HTMLElement | null;
+      const active = document.activeElement as HTMLElement | null;
 
       // Monaco check MUST come before the generic textarea guard — Monaco uses a hidden
       // <textarea> as its input surface, so `activeElement.tagName === "TEXTAREA"` when
       // the editor has focus, which would otherwise short-circuit `allowInMonaco`.
-      if (_isMonaco(el)) {
+      // Test BOTH target and activeElement: with Monaco's EditContext surface the two
+      // diverge (the event retargets outside .monaco-editor while focus stays inside),
+      // and testing only the target let the TEXTAREA guard below swallow the shortcut.
+      if (_isMonaco(el) || _isMonaco(active)) {
         if (!entry.allowInMonaco) return;
       } else {
         // Generic guard: native inputs always win (DataGrid cell editor, filter inputs, etc.)
-        const activeTag = (document.activeElement as HTMLElement | null)?.tagName;
+        const activeTag = active?.tagName;
         if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
         if (_isPlainInput(el)) return;
       }

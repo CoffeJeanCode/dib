@@ -19,11 +19,25 @@
 }
 
 .titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 700;
   font-size: 11px;
   letter-spacing: 0.5px;
   color: var(--color-text-tertiary);
   margin-right: 12px;
+}
+
+/* -webkit-user-drag matters here: without it the webview starts a native image
+   drag and the titlebar stops acting as a window drag handle. */
+.titlebar-logo {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: contain;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .titlebar-workspace-pill {

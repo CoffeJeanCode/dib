@@ -1010,7 +1010,8 @@ export function useDataGridState({
         markRowsForDeletion,
         onForceClose: () => onForceCloseRef.current?.(),
         onFocusEditor: () => onFocusEditorRef.current?.(),
-        onFkNavigate: (targetTable, targetColumn, value) => onFkNavigateRef.current?.(targetTable, targetColumn, value),
+        onFkNavigate: (targetTable, targetColumn, value, inPlace) =>
+          onFkNavigateRef.current?.(targetTable, targetColumn, value, inPlace),
         onGenerateJoinQuery: generateJoinQuery,
         fkMap,
         editStateRows: editState.rows,
@@ -1065,14 +1066,15 @@ export function useDataGridState({
         generateJoinQuery(col);
         return;
       }
-      // FK Ctrl+Click → navigate to parent table
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && fkMap[col] && onFkNavigateRef.current) {
+      // FK Ctrl+Click → parent table in a new tab.
+      // FK Ctrl+Shift+Click → parent table in place, pushing a breadcrumb.
+      if ((e.ctrlKey || e.metaKey) && fkMap[col] && onFkNavigateRef.current) {
         e.preventDefault();
         const origIdx = orderedColumns[colIdx].origIdx;
         const value = (editState.rows[rowIdx] as unknown[])?.[origIdx];
         if (value != null) {
           const { targetTable, targetColumn } = fkMap[col];
-          onFkNavigateRef.current(targetTable, targetColumn, value);
+          onFkNavigateRef.current(targetTable, targetColumn, value, e.shiftKey);
           return;
         }
       }
