@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { connectionService } from "@/services/connectionService";
 import type { SavedConnection } from "@/types/db";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useConnectionStore } from "@/store/connectionStore";
 
 const useConnectionsStore = create<{
   connections: SavedConnection[];
@@ -45,6 +46,14 @@ export function useSavedConnections() {
   }, [activeWorkspaceId, refresh]);
 
   const remove = useCallback((connectionId: string) => {
+    // Deleting the connection you are currently on would otherwise leave a live
+    // session pointing at a row that no longer exists. Every caller needs this,
+    // so it lives here rather than in each menu.
+    const { active, setActive } = useConnectionStore.getState();
+    if (active?.savedId === connectionId) {
+      connectionService.disconnect(active.activeId).catch(() => {});
+      setActive(null);
+    }
     connectionService.deleteConnection(connectionId).then(refresh).catch(() => {});
   }, [refresh]);
 

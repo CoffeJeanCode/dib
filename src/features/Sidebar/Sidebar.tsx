@@ -7,7 +7,6 @@ import { useSidebarScripts } from "@/shared/hooks/useSidebarScripts";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { workspaceService } from "@/services/workspaceService";
-import { connectionService } from "@/services/connectionService";
 import { EntityBrowser } from "./EntityBrowser";
 import {
   DatabaseSelector,
@@ -72,11 +71,6 @@ export function Sidebar({
   const deleteConn = useCallback(
     (conn: SavedConnection) => {
       setUndoStack((prev) => [...prev.slice(-4), conn]);
-      const { active, setActive } = useConnectionStore.getState();
-      if (active?.savedId === conn.id) {
-        connectionService.disconnect(active.activeId).catch(() => {});
-        setActive(null);
-      }
       remove(conn.id);
       setDeleteTarget(null);
     },
