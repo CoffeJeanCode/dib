@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
-import { useEffect, useState, useCallback } from "react";
-import { Copy, X, AlertTriangle, Info, Check } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Copy, X, AlertTriangle, Info, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useToastStore, type Toast as ToastType } from "@/store/toastStore";
 import "./Toast.css";
 
@@ -13,6 +13,9 @@ const ERROR_TIMEOUT = 8000;
 function ToastItem({ toast }: { toast: ToastType }) {
   const remove = useToastStore((s) => s.remove);
   const [hiding, setHiding] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const msgRef = useRef<HTMLSpanElement>(null);
 
   const doRemove = useCallback(() => {
     setHiding(true);
@@ -29,6 +32,17 @@ function ToastItem({ toast }: { toast: ToastType }) {
     return () => clearTimeout(t);
   }, [toast.type, doRemove]);
 
+  useEffect(() => {
+    if (expanded) return;
+    const el = msgRef.current;
+    if (!el) return;
+    const check = () => setTruncated(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [toast.message, expanded]);
+
   const dismiss = () => doRemove();
 
   const handleCopy = () => {
@@ -42,9 +56,26 @@ function ToastItem({ toast }: { toast: ToastType }) {
   return (
     <div className={`toast toast--${toast.type}${hiding ? " toast--hiding" : ""}`}>
       <div className={`toast-badge toast-badge--${toast.type}`}>
-        <Icon size={12} strokeWidth={3} />
+        <Icon size={14} strokeWidth={2.5} />
       </div>
-      <span className="toast-message">{toast.message}</span>
+      <div className="toast-body">
+        <span
+          ref={msgRef}
+          className={`toast-message${expanded ? " toast-message--expanded" : ""}`}
+        >
+          {toast.message}
+        </span>
+        {truncated && (
+          <button
+            className="toast-more-btn"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+          >
+            {expanded ? "View less" : "View more"}
+            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+        )}
+      </div>
       <button className="toast-copy-btn" onClick={handleCopy} title="Copy message">
         <Copy />
       </button>

@@ -73,6 +73,12 @@
    ═══════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
+  /* Tells the engine to paint NATIVE widgets dark too — <select> popups and
+     their <option> lists, scrollbars, date pickers. Those are drawn by the
+     OS/webview, so no amount of CSS on our side reaches them; without this the
+     app is dark but every dropdown opens white with unreadable text. */
+  color-scheme: dark;
+
   /* Backgrounds */
   --color-bg:           #121215;
   --color-bg-sidebar:   #1A1A1E;
@@ -142,6 +148,10 @@
    (neon-green → forest green, neon-yellow → amber, etc.)
    ═══════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
+  /* Must be reset explicitly: :root already set dark, and both selectors match
+     <html data-theme="light">. */
+  color-scheme: light;
+
   /* Backgrounds */
   --color-bg:           #FAFAFA;
   --color-bg-sidebar:   #F4F4F6;

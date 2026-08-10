@@ -173,12 +173,16 @@
 }
 
 /* ── Selected cell (multi-select) ───────────────────────── */
+/* Tinted with the focus accent, not a grey: --color-bg-hover is what
+   .dg-row:hover already paints, so a grey selection vanished the moment the
+   pointer entered the row. Translucent so it layers over the hover lift and
+   still reads as selected. */
 .dg-cell--selected {
-  background: var(--color-bg-hover);
+  background: color-mix(in srgb, var(--color-focus) 18%, transparent);
 }
 
 .dg-cell--selected.dg-cell--active {
-  background: var(--color-bg-active);
+  background: color-mix(in srgb, var(--color-focus) 32%, transparent);
 }
 
 /* ── Dirty cell — pending change indicator ───────────────── */
