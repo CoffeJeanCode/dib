@@ -17,22 +17,18 @@ else
   NULL ?= /dev/null
 endif
 
-.PHONY: all linux windows clean distclean help
+.PHONY: all linux windows both clean distclean help
 
 all: linux  ## build for Linux (default)
 
 # ── Linux ────────────────────────────────────────────────────
-linux: export/linux/dib  ## build Linux release binary
-
-export/linux/dib: Dockerfile.build
+linux:  ## build Linux release binary
 	$(DOCKER) build -f Dockerfile.build --target build-linux -t $(IMAGE) .
 	$(DOCKER) run --rm -v "$(CURDIR)/$(OUT):/host-out" $(IMAGE) sh -c "mkdir -p /host-out/linux && cp /out/dib /host-out/linux/dib && chmod +x /host-out/linux/dib"
 	@echo "✓ Linux binary: $(OUT)/linux/dib"
 
 # ── Windows ──────────────────────────────────────────────────
-windows: export/windows/dib.exe  ## build Windows release binary (cross)
-
-export/windows/dib.exe: Dockerfile.build
+windows:  ## build Windows release binary (cross)
 	$(DOCKER) build -f Dockerfile.build --target build-windows -t $(IMAGE) .
 	$(DOCKER) run --rm -v "$(CURDIR)/$(OUT):/host-out" $(IMAGE) sh -c "mkdir -p /host-out/windows && cp -r /out/* /host-out/windows/"
 	@echo "✓ Windows binary: $(OUT)/windows/dib.exe"
