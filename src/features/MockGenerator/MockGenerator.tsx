@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useRef, useState } from "react";
+import { dbService } from "@/services/dbService";
+import { guessAll } from "./mockMapping";
+import { LookupSelect } from "@/shared/ui/LookupSelect";
 import { useToastStore } from "@/store/toastStore";
 import type { ColumnInfo, TableInfo } from "@/types/db";
 import "./MockGenerator.css";
@@ -22,6 +24,7 @@ const FAKER_TYPES = [
   { value: "sentence", label: "Sentence" },
   { value: "number", label: "Number (1–100k)" },
   { value: "boolean", label: "Boolean" },
+  { value: "custom", label: "Valor fijo…" },
 ];
 
 interface Props {
@@ -34,9 +37,37 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
   const toast = useToastStore.getState();
   const [rowCount, setRowCount] = useState(100);
   const [running, setRunning] = useState(false);
-  const [mappings, setMappings] = useState<Record<string, string>>(() =>
-    Object.fromEntries(columns.map((c) => [c.name, ""]))
-  );
+  // Pre-filled from the column names/types: on a typical table this leaves
+  // nothing to do but press Generate.
+  const [mappings, setMappings] = useState<Record<string, string>>(() => guessAll(columns));
+  const [customValues, setCustomValues] = useState<Record<string, string>>({});
+  const selectRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const focusRow = (i: number) => {
+    const el = selectRefs.current[Math.max(0, Math.min(columns.length - 1, i))];
+    el?.focus();
+  };
+
+  /** Excel keys: Ctrl/Cmd+D fills down, Enter / Alt+arrows walk the rows. */
+  const handleSelectKey = (e: React.KeyboardEvent<HTMLInputElement>, i: number) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+      e.preventDefault();
+      const value = mappings[columns[i].name];
+      setMappings((p) => {
+        const next = { ...p };
+        for (let j = i; j < columns.length; j++) next[columns[j].name] = value;
+        return next;
+      });
+      return;
+    }
+    if (e.key === "Enter" || (e.altKey && e.key === "ArrowDown")) {
+      e.preventDefault();
+      focusRow(i + 1);
+    } else if (e.altKey && e.key === "ArrowUp") {
+      e.preventDefault();
+      focusRow(i - 1);
+    }
+  };
   const [nullRatios, setNullRatios] = useState<Record<string, number>>(() =>
     Object.fromEntries(columns.map((c) => [c.name, 0.1]))
   );
@@ -48,6 +79,13 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
       toast.warn("Asigna al menos un tipo Faker a una columna.");
       return;
     }
+    const missingCustom = activeColumns.filter(
+      (c) => mappings[c.name] === "custom" && !(customValues[c.name] ?? "").trim(),
+    );
+    if (missingCustom.length > 0) {
+      toast.warn(`Escribe el valor fijo para: ${missingCustom.map((c) => c.name).join(", ")}`);
+      return;
+    }
     setRunning(true);
     try {
       const column_mappings = activeColumns.map((c) => ({
@@ -55,13 +93,15 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
         faker_type: mappings[c.name],
         nullable: c.is_nullable,
         null_ratio: nullRatios[c.name] ?? 0.1,
+        custom_value: mappings[c.name] === "custom" ? (customValues[c.name] ?? "") : null,
       }));
-      const result = await invoke<{ rows_inserted: number }>("generate_mock_data", {
-        connection_id: connectionId,
-        table_name: table.name,
-        rows_count: rowCount,
+      const result = await dbService.generateMockData(
+        connectionId,
+        table.name,
+        table.schema ?? null,
+        rowCount,
         column_mappings,
-      });
+      );
       toast.info(`${result.rows_inserted} filas insertadas en ${table.schema ? `${table.schema}.` : ""}${table.name}`);
     } catch (e: unknown) {
       const msg =
@@ -94,6 +134,23 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
           value={rowCount}
           onChange={(e) => setRowCount(Math.max(1, Math.min(100000, Number(e.target.value))))}
         />
+        <button
+          type="button"
+          className="mock-gen-tool-btn"
+          onClick={() => setMappings(guessAll(columns))}
+        >
+          Auto-mapear
+        </button>
+        <button
+          type="button"
+          className="mock-gen-tool-btn"
+          onClick={() => setMappings(Object.fromEntries(columns.map((c) => [c.name, ""])))}
+        >
+          Limpiar
+        </button>
+        <span className="mock-gen-hint">
+          <kbd>Ctrl</kbd>+<kbd>D</kbd> rellenar abajo · <kbd>Enter</kbd> siguiente fila
+        </span>
       </div>
 
       <div className="mock-gen-table-wrap">
@@ -107,20 +164,31 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
             </tr>
           </thead>
           <tbody>
-            {columns.map((col) => (
+            {columns.map((col, i) => (
               <tr key={col.name} className={mappings[col.name] ? "mock-gen-row--active" : ""}>
                 <td className="mock-gen-col-name">{col.name}</td>
                 <td className="mock-gen-col-type">{col.data_type || "—"}</td>
                 <td>
-                  <select
+                  <LookupSelect
                     className="mock-gen-select"
+                    ref={(el) => { selectRefs.current[i] = el; }}
                     value={mappings[col.name]}
-                    onChange={(e) => setMappings((p) => ({ ...p, [col.name]: e.target.value }))}
-                  >
-                    {FAKER_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
+                    options={FAKER_TYPES}
+                    placeholder="— skip —"
+                    onKeyDown={(e) => handleSelectKey(e, i)}
+                    onChange={(v) => setMappings((p) => ({ ...p, [col.name]: v }))}
+                  />
+                  {mappings[col.name] === "custom" && (
+                    <input
+                      type="text"
+                      className="mock-gen-custom-input"
+                      placeholder="Valor fijo para todas las filas"
+                      value={customValues[col.name] ?? ""}
+                      onChange={(e) =>
+                        setCustomValues((p) => ({ ...p, [col.name]: e.target.value }))
+                      }
+                    />
+                  )}
                 </td>
                 <td>
                   {col.is_nullable && mappings[col.name] && (

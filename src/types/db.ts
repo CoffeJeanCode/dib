@@ -55,6 +55,16 @@ export interface CreateColumn {
   default_value?: string | null;
 }
 
+/** One column's fake-data recipe. Field names match the Rust `ColumnMapping`. */
+export interface MockColumnMapping {
+  column: string;
+  faker_type: string;
+  nullable: boolean;
+  null_ratio: number;
+  /** Literal used for every row when faker_type is "custom". */
+  custom_value?: string | null;
+}
+
 export interface ColumnMetadata {
   table_name: string | null;
   column_name: string;

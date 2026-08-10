@@ -1,0 +1,47 @@
+.lookup {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lookup-input {
+  width: 100%;
+  padding: 6px 22px 6px 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.lookup-input:focus {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.lookup-caret {
+  position: absolute;
+  right: 7px;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+/* Portaled to <body>, so it escapes any `overflow: auto` ancestor. */
+.lookup-menu {
+  position: fixed;
+  z-index: 9500;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.ui-menu-item--highlighted {
+  background: var(--color-bg-hover);
+  color: var(--color-teal);
+}
+
+.lookup-empty {
+  padding: 6px 10px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}

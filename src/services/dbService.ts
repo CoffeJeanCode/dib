@@ -1,5 +1,5 @@
 import { safeInvoke } from "@/shared/utils/ipc";
-import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableColumns, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects, CreateColumn } from "@/types/db";
+import type { ColumnInfo, PagedResult, QueryResult, PendingChange, GridFilter, TableColumns, TableRelation, ExplainPlan, TableStructure, QueryHistoryEntry, DdlResult, SchemaObjects, CreateColumn, MockColumnMapping } from "@/types/db";
 
 export const dbService = {
   fetchTableSchema: (connectionId: string, tableName: string, schema: string | null) =>
@@ -98,4 +98,15 @@ export const dbService = {
 
   fetchSchemaObjects: (connectionId: string) =>
     safeInvoke<SchemaObjects>("fetch_schema_objects", { connectionId }),
+
+  generateMockData: (
+    connectionId: string,
+    tableName: string,
+    schema: string | null,
+    rowsCount: number,
+    columnMappings: MockColumnMapping[],
+  ) =>
+    safeInvoke<{ rows_inserted: number }>("generate_mock_data", {
+      connectionId, tableName, schema, rowsCount, columnMappings,
+    }),
 };

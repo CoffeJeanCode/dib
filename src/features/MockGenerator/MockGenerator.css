@@ -60,6 +60,55 @@
   border-color: var(--color-purple);
 }
 
+.mock-gen-custom-input {
+  width: 100%;
+  margin-top: 4px;
+  padding: 5px 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.mock-gen-custom-input:focus {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.mock-gen-tool-btn {
+  padding: 6px 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mock-gen-tool-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
+.mock-gen-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.mock-gen-hint kbd {
+  padding: 1px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
 .mock-gen-table-wrap {
   flex: 1;
   overflow: auto;
@@ -106,26 +155,15 @@
   font-size: 11px;
 }
 
+/* Wrapper around <LookupSelect>; the input inside carries the visuals, this
+   only sizes it and matches the table's denser type scale. */
 .mock-gen-select {
-  padding: 5px 8px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 5px;
-  color: var(--color-text-primary);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
   min-width: 160px;
 }
 
-.mock-gen-select:focus {
-  outline: none;
-  border-color: var(--color-purple);
-}
-
-.mock-gen-select option {
-  background: var(--color-bg-elevated);
-  color: var(--color-text-primary);
+.mock-gen-select .lookup-input {
+  padding: 5px 20px 5px 8px;
+  font-size: 12px;
 }
 
 .mock-gen-null-input {
