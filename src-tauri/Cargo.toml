@@ -23,7 +23,7 @@ async-trait = "0.1"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "postgres", "chrono", "json", "rust_decimal", "uuid"] }
 rust_decimal = "1"
 chrono = { version = "0.4", features = ["serde"] }
-tokio = { version = "1", features = ["sync", "macros"] }
+tokio = { version = "1", features = ["sync", "macros", "rt"] }
 dashmap = "6"
 rusqlite = { version = "0.32", features = ["bundled"] }
 url = "2"
@@ -34,6 +34,13 @@ rand = "0.8"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+# ponytail: optional — odbc-api links against the unixODBC/iODBC driver manager,
+# which is not installed on this box or in CI. Build with `--features odbc`
+# once libodbc is provisioned; default build stays green.
+odbc-api = { version = "29", optional = true }
+
+[features]
+odbc = ["dep:odbc-api"]
 
 [profile.release]
 panic = "abort"

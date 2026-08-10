@@ -144,6 +144,12 @@ pub async fn create_driver(config: &DbConfig) -> Result<Box<dyn DatabaseDriver>,
                 .await
                 .map(|d| Box::new(d) as Box<dyn DatabaseDriver>)
         }
+        // Everything else (SQL Server, Oracle, Snowflake, ...) goes through the
+        // universal ODBC driver, given a connection string in `config.url`.
+        #[cfg(feature = "odbc")]
+        "odbc" => crate::db::odbc::OdbcDriver::connect(config)
+            .await
+            .map(|d| Box::new(d) as Box<dyn DatabaseDriver>),
         other => Err(QueryError {
             message: format!("Unsupported driver: {other}"),
             code: None,

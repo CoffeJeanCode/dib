@@ -20,6 +20,9 @@ pub struct ColumnMapping {
     pub faker_type: String,
     pub nullable: bool,
     pub null_ratio: f64,
+    /// Literal reused for every row when `faker_type` is "custom".
+    #[serde(default)]
+    pub custom_value: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -53,6 +56,7 @@ fn fake_value(faker_type: &str) -> String {
 pub async fn generate_mock_data(
     connection_id: String,
     table_name: String,
+    schema: Option<String>,
     rows_count: u64,
     column_mappings: Vec<ColumnMapping>,
     state: State<'_, DbState>,
@@ -67,8 +71,13 @@ pub async fn generate_mock_data(
         })?
         .clone();
 
-    // Quote identifiers to prevent injection via schema-derived names
-    let safe_table = table_name.replace('"', "");
+    // Quote identifiers to prevent injection via schema-derived names.
+    // Schema must be qualified as "schema"."table" — a single quoted
+    // "schema.table" is one identifier containing a dot, which no server resolves.
+    let safe_table = match schema.as_deref().filter(|s| !s.is_empty()) {
+        Some(s) => format!("\"{}\".\"{}\"", s.replace('"', ""), table_name.replace('"', "")),
+        None => format!("\"{}\"", table_name.replace('"', "")),
+    };
     let col_list = column_mappings
         .iter()
         .map(|m| format!("\"{}\"", m.column.replace('"', "")))
@@ -91,7 +100,12 @@ pub async fn generate_mock_data(
                     if m.nullable && rng.gen_bool(m.null_ratio.clamp(0.0, 1.0)) {
                         "NULL".to_string()
                     } else {
-                        let v = fake_value(&m.faker_type);
+                        // "custom" reuses the user's literal verbatim; it still
+                        // goes through the same quote-escaping below.
+                        let v = match (m.faker_type.as_str(), m.custom_value.as_deref()) {
+                            ("custom", Some(literal)) => literal.to_string(),
+                            _ => fake_value(&m.faker_type),
+                        };
                         format!("'{}'", v.replace('\'', "''"))
                     }
                 })
@@ -100,7 +114,7 @@ pub async fn generate_mock_data(
         }
 
         let sql = format!(
-            "INSERT INTO \"{}\" ({}) VALUES {}",
+            "INSERT INTO {} ({}) VALUES {}",
             safe_table,
             col_list,
             value_rows.join(", ")

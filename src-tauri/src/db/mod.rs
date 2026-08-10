@@ -1,4 +1,6 @@
 pub mod driver;
+#[cfg(feature = "odbc")]
+pub mod odbc;
 pub mod postgres;
 pub mod sqlite;
 pub mod types;
