@@ -1,10 +1,11 @@
-import { Database, Pencil, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { Server, Pencil, Trash2, ChevronRight, ChevronDown, Database } from "lucide-react";
 import { useTreeStateStore, useNodeExpanded } from "@/store/treeStateStore";
 import { ENGINE_COLORS, getEngineIcon, getDbName } from "./utils";
 import { InstanceContextMenu } from "./InstanceContextMenu";
 import { DbContextMenu } from "./DbContextMenu";
 import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import { DatabaseCategories } from "./DatabaseCategories";
+import { ReadonlyBadge } from "@/shared/ui/ReadonlyBadge";
 import { useDatabases } from "@/shared/hooks/useDatabases";
 import type { SavedConnection, TableInfo } from "@/types/db";
 
@@ -19,6 +20,7 @@ interface ConnectionItemProps {
   onDbSwitch?: (dbName: string) => void;
   onEdit: (conn: SavedConnection) => void;
   onDelete: (conn: SavedConnection) => void;
+  onToggleReadonly?: (conn: SavedConnection) => void;
   // instance context menu actions
   onNewQuery?: () => void;
   onCreateDatabase?: () => void;
@@ -35,7 +37,7 @@ interface ConnectionItemProps {
 
 export function ConnectionItem({
   conn, isSelected, isActive, navIdx, sessionId, activeDb,
-  onSelect, onDbSwitch, onEdit, onDelete,
+  onSelect, onDbSwitch, onEdit, onDelete, onToggleReadonly,
   onNewQuery, onCreateDatabase, onRenameDb, onDropDb,
   compact = false, showEntities = false, onTableSelect, onScriptOpen,
 }: ConnectionItemProps) {
@@ -50,6 +52,9 @@ export function ConnectionItem({
         onCreateDatabase={onCreateDatabase}
         onEditConnection={() => onEdit(conn)}
         onRemoveConnection={() => onDelete(conn)}
+        onToggleReadonly={onToggleReadonly ? () => onToggleReadonly(conn) : undefined}
+        isReadonly={!!conn.readonly}
+        writeDisabled={!!conn.readonly}
       >
         <div
           className={`sidebar-item${compact ? " sidebar-item--compact" : ""}${isSelected ? " sidebar-item--keyboard-selected" : ""}${isActive ? " sidebar-item--active" : ""}`}
@@ -66,16 +71,20 @@ export function ConnectionItem({
           ) : (
             <span className="sidebar-item-expand-spacer" />
           )}
-          <Database
+          <Server
             size={compact ? 12 : 14}
             className={`sidebar-icon sidebar-icon--${ENGINE_COLORS[conn.engine?.toLowerCase()] ?? "gray"}`}
           />
           <ConnectionStatusDot connectionId={conn.id} />
           <div className="sidebar-item-texts">
-            <span className="sidebar-item-text">{conn.name}</span>
+            <span className="sidebar-item-text">
+              {conn.name}
+              {conn.readonly ? <ReadonlyBadge size={11} /> : null}
+            </span>
             {!compact && (
               <span className="sidebar-item-detail">
                 {getEngineIcon(conn.engine)} {getDbName(conn)}
+                {conn.readonly ? " · Read-only" : ""}
               </span>
             )}
           </div>
@@ -102,7 +111,7 @@ export function ConnectionItem({
 
       {isActive && expanded && (
         <div className="sidebar-db-tree">
-          {loading ? (
+          {loading && databases.length === 0 ? (
             <div className="sidebar-db-tree-item sidebar-db-tree-item--loading">Loading…</div>
           ) : databases.length === 0 ? (
             <div className="sidebar-db-tree-item sidebar-db-tree-item--empty">No databases</div>

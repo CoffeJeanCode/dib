@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronRight, Table2, Eye, Layers, Hash, FileCode2, Zap,
-  FolderTree, Users, Puzzle, BookA, Columns3, ListOrdered, Database,
+  FolderTree, Users, Puzzle, BookA, Columns3, ListOrdered, Database, Server,
   Folder, KeyRound, Link2, Fingerprint, ShieldCheck, Shapes, Package,
   Languages, GitBranch, Shield, ArrowLeftRight, Plug, Code2, Radio, Rss,
 } from "lucide-react";
@@ -267,6 +267,8 @@ function useLazyChildren(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasFetchedRef = useRef(false);
+  const childrenRef = useRef<DbTreeNode[] | null>(null);
+  childrenRef.current = children;
   const reloadVersion = useConnectionStore((s) => s.reloadVersion);
   const prevReloadRef = useRef(reloadVersion);
   const fetchingRef = useRef(false);
@@ -276,7 +278,8 @@ function useLazyChildren(
     let cancelled = false;
     fetchingRef.current = true;
     hasFetchedRef.current = true;
-    setLoading(true);
+    // Only show skeleton when we have nothing to keep on screen.
+    if (childrenRef.current === null) setLoading(true);
     setError(null);
     invoke<DbTreeNode[]>("get_node_children", {
       instanceId: sessionId,
@@ -299,10 +302,10 @@ function useLazyChildren(
     if (!enabled || !fetchType) return;
     if (prevReloadRef.current !== reloadVersion) {
       prevReloadRef.current = reloadVersion;
-      setChildren(null);
-      setLoading(false);
-      setError(null);
+      // Keep previous children visible while refetching — clearing them caused
+      // a sidebar layout jump on every Ctrl+R.
       hasFetchedRef.current = false;
+      fetchingRef.current = false;
     } else if (hasFetchedRef.current || fetchingRef.current) {
       return;
     }
@@ -463,6 +466,7 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
   const stateId = `dbtree:${sessionId}:${node.id}`;
   const expanded = useNodeExpanded(stateId);
   const storeActiveTable = useWorkspaceStore((s) => s.activeTable);
+  const connectionReadonly = useConnectionStore((s) => s.active?.readonly ?? false);
   const folders = NODE_FOLDERS[node.type];
   const directType = folders ? null : childNodeType(node);
   const { children, loading, error, retry } = useLazyChildren(
@@ -595,14 +599,15 @@ function TreeNodeRow({ node, depth, sessionId, onNodeClick }: TreeNodeRowProps) 
       {ctxKind ? (
         <TableContextMenu
           item={{ name: tableInfo.name, schema: tableInfo.schema, kind: ctxKind }}
+          writeDisabled={connectionReadonly}
           onViewStructure={ctxKind === "table" || ctxKind === "view"
             ? () => useWorkspaceStore.getState().openTableStructure({ name: tableInfo.name, schema: tableInfo.schema })
             : undefined}
           onViewRelations={ctxKind === "table"
             ? () => useWorkspaceStore.getState().openTableRelations({ name: tableInfo.name, schema: tableInfo.schema })
             : undefined}
-          onDrop={handleDrop}
-          onTruncate={ctxKind === "table" ? handleTruncate : undefined}
+          onDrop={connectionReadonly ? undefined : handleDrop}
+          onTruncate={connectionReadonly || ctxKind !== "table" ? undefined : handleTruncate}
         >
           {row}
         </TableContextMenu>
@@ -782,7 +787,7 @@ function ConnectionTreeRoot({
             }}
           />
         </button>
-        <Database
+        <Server
           size={11}
           className={`sidebar-db-item-icon sidebar-icon--${ENGINE_COLORS[conn.engine?.toLowerCase()] ?? "gray"}`}
         />
@@ -795,7 +800,7 @@ function ConnectionTreeRoot({
         <div>
           {isPostgres ? (
             <>
-              {dbsLoading ? (
+              {dbsLoading && databases.length === 0 ? (
                 <>
                   <SkeletonRow indent={12} />
                   <SkeletonRow indent={12} />
@@ -850,11 +855,7 @@ export function DatabaseTree({ onNodeClick }: DatabaseTreeProps) {
         aria-label="Database objects"
         onKeyDown={handleKeyDown}
       >
-      {connections.length === 0 ? (
-        <div className="sidebar-item sidebar-item--empty">
-          <span className="sidebar-item-text sidebar-item-text--muted">No connections</span>
-        </div>
-      ) : (
+      {connections.length === 0 ? null : (
         connections.map((conn) => (
           <ConnectionTreeRoot key={conn.id} conn={conn} onNodeClick={onNodeClick} />
         ))

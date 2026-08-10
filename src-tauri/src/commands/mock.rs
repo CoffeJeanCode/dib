@@ -8,7 +8,7 @@ use fake::faker::phone_number::en::PhoneNumber;
 use fake::Fake;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{Manager, State};
 use uuid::Uuid;
 
 use crate::commands::connection::DbState;
@@ -60,7 +60,11 @@ pub async fn generate_mock_data(
     rows_count: u64,
     column_mappings: Vec<ColumnMapping>,
     state: State<'_, DbState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<MockResult, QueryError> {
+    let app_db = app_handle.state::<crate::storage::AppDb>();
+    crate::commands::connection::assert_connection_writable(&state, &app_db, &connection_id)?;
+
     let driver = state
         .connections
         .get(&connection_id)

@@ -1,0 +1,62 @@
+.mts {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  background: var(--color-bg);
+  overflow: auto;
+}
+
+.mts-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  max-width: 360px;
+  width: 100%;
+  padding: var(--space-8, 32px);
+  text-align: center;
+}
+
+.mts-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-1, 4px);
+}
+
+.mts-title {
+  margin: 0;
+  font-size: var(--font-size-md, 15px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.mts-body {
+  margin: 0;
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.mts-code {
+  font-family: var(--font-mono);
+  font-size: 0.95em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.mts-db {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary);
+}

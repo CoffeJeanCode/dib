@@ -7,6 +7,7 @@ export interface ActiveConn {
   name: string;
   engine: string;
   dbVersion: number;
+  readonly: boolean;
 }
 
 interface ConnectionState {
@@ -52,6 +53,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         name: connInfo.config.database || connInfo.config.path || connInfo.id,
         engine: connInfo.config.db_type,
         dbVersion: 0,
+        readonly: !!connInfo.config.readonly,
       },
     }),
 
@@ -59,12 +61,14 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     set({ connecting: true });
     try {
       const { connectionService } = await import("@/services/connectionService");
+      const { useWorkspaceStore } = await import("@/store/workspaceStore");
       const connInfo = await connectionService.connectSaved(savedId, password ?? null, savePassword ?? false);
-      
-      const allSaved = await connectionService.getSavedConnections();
+
+      const wsId = useWorkspaceStore.getState().activeWorkspaceId;
+      const allSaved = await connectionService.getSavedConnections(wsId);
       const saved = allSaved.find(c => c.id === savedId);
       const finalName = connInfo.config.database || connInfo.config.path || saved?.name || connInfo.id;
-      
+
       set({
         active: {
           activeId: connInfo.id,
@@ -72,17 +76,20 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
           name: finalName,
           engine: connInfo.config.db_type,
           dbVersion: 0,
+          readonly: !!(saved?.readonly ?? connInfo.config.readonly),
         }
       });
-      const { useWorkspaceStore } = await import("@/store/workspaceStore");
       const { rememberLastConnection } = await import("@/shared/utils/quickConnect");
-      rememberLastConnection(useWorkspaceStore.getState().activeWorkspaceId, savedId);
+      rememberLastConnection(wsId, savedId);
       get().triggerReload();
       return true;
     } catch (e: any) {
       if (e?.code === "PASSWORD_REQUIRED" || e?.code === "AuthRequired" || e?.code === "MissingCredentials") {
         const { connectionService } = await import("@/services/connectionService");
-        const allSaved = await connectionService.getSavedConnections();
+        const { useWorkspaceStore } = await import("@/store/workspaceStore");
+        const allSaved = await connectionService.getSavedConnections(
+          useWorkspaceStore.getState().activeWorkspaceId,
+        );
         const saved = allSaved.find(c => c.id === savedId);
         set({ passwordPrompt: { savedId, name: saved?.name || savedId } });
       } else {

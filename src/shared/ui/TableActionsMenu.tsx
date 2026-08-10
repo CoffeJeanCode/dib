@@ -5,12 +5,12 @@ import "./menu-shared.css";
 
 export type TableAction = "structure" | "erd" | "alter" | "insert" | "rename" | "drop";
 
-const ITEMS: { action: TableAction; icon: ReactNode; label: string }[] = [
+const ITEMS: { action: TableAction; icon: ReactNode; label: string; write?: boolean }[] = [
   { action: "structure", icon: <Layers size={13} />, label: "Structure" },
   { action: "erd", icon: <Network size={13} />, label: "ERD" },
-  { action: "alter", icon: <Wrench size={13} />, label: "Alter" },
-  { action: "insert", icon: <PlusSquare size={13} />, label: "Insert Row" },
-  { action: "rename", icon: <Edit3 size={13} />, label: "Rename" },
+  { action: "alter", icon: <Wrench size={13} />, label: "Alter", write: true },
+  { action: "insert", icon: <PlusSquare size={13} />, label: "Insert Row", write: true },
+  { action: "rename", icon: <Edit3 size={13} />, label: "Rename", write: true },
 ];
 
 interface TableActionsMenuProps {
@@ -21,9 +21,19 @@ interface TableActionsMenuProps {
   className?: string;
   style?: CSSProperties;
   onKeyDown?: KeyboardEventHandler;
+  writeDisabled?: boolean;
 }
 
-export function TableActionsMenu({ table, onAction, menuRef, className, style, onKeyDown }: TableActionsMenuProps) {
+export function TableActionsMenu({
+  table,
+  onAction,
+  menuRef,
+  className,
+  style,
+  onKeyDown,
+  writeDisabled = false,
+}: TableActionsMenuProps) {
+  const items = writeDisabled ? ITEMS.filter((i) => !i.write) : ITEMS;
   return (
     <div
       ref={menuRef}
@@ -33,15 +43,19 @@ export function TableActionsMenu({ table, onAction, menuRef, className, style, o
       onKeyDown={onKeyDown}
       onClick={(e) => e.stopPropagation()}
     >
-      {ITEMS.map(({ action, icon, label }) => (
+      {items.map(({ action, icon, label }) => (
         <button key={action} className="ui-menu-item" role="menuitem" onClick={() => onAction(action, table)}>
           {icon} {label}
         </button>
       ))}
-      <div className="ui-menu-sep" />
-      <button className="ui-menu-item ui-menu-item--danger" role="menuitem" onClick={() => onAction("drop", table)}>
-        <Trash2 size={13} /> Drop
-      </button>
+      {!writeDisabled && (
+        <>
+          <div className="ui-menu-sep" />
+          <button className="ui-menu-item ui-menu-item--danger" role="menuitem" onClick={() => onAction("drop", table)}>
+            <Trash2 size={13} /> Drop
+          </button>
+        </>
+      )}
     </div>
   );
 }

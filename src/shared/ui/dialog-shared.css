@@ -119,27 +119,26 @@
 
 .dialog-btn--primary {
   background: var(--color-highlight);
-  color: var(--text-primary);
+  color: var(--color-on-accent);
   border-color: var(--color-highlight);
 }
 
 .dialog-btn--primary:hover:not(:disabled) {
-  opacity: 0.9;
+  filter: brightness(0.92);
 }
 
 .dialog-btn--danger {
   background: var(--color-red);
-  color: var(--text-primary);
+  color: var(--color-on-danger);
   border-color: var(--color-red);
 }
 
 .dialog-btn--danger:hover:not(:disabled) {
-  opacity: 0.9;
+  filter: brightness(0.92);
 }
 
 .dialog-btn--danger:active {
-  box-shadow: 1px 1px 0px var(--color-red-dark);
-  transform: translate(2px, 2px);
+  filter: brightness(0.88);
 }
 
 .dialog-input {

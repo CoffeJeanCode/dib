@@ -5,6 +5,29 @@
   background: var(--color-bg);
 }
 
+.query-result-panel {
+  /* results-only tab: no toolbar/monaco — fill the panel */
+  min-height: 0;
+}
+
+.query-result-panel > .sqleditor-results,
+.query-result-panel > .sqleditor-error {
+  flex: 1;
+}
+
+.query-result-loading-meta {
+  gap: 8px;
+}
+
+.query-result-loading-spinner {
+  animation: query-result-spin 0.7s linear infinite;
+  color: var(--color-teal, #2dd4bf);
+}
+
+@keyframes query-result-spin {
+  to { transform: rotate(360deg); }
+}
+
 .sqleditor-toolbar {
   display: flex;
   align-items: center;
@@ -96,12 +119,12 @@
   border: 1px solid var(--color-red);
   border-radius: var(--radius-sm);
   background: var(--color-red);
-  color: #fff;
+  color: var(--color-on-danger);
   cursor: pointer;
-  transition: opacity 80ms ease;
+  transition: filter 80ms ease;
 }
 .sqleditor-cancel:hover {
-  opacity: 0.88;
+  filter: brightness(0.92);
 }
 .sqleditor-cancel:active {
   transform: translate(1px, 1px);
@@ -169,11 +192,11 @@
 
 .sqleditor-body .monaco-editor {
   border-radius: 0;
-  background-color: #FAFAFA !important;
+  background-color: var(--color-monaco-bg) !important;
 }
 
 [data-theme="dark"] .sqleditor-body .monaco-editor {
-  background-color: #121215 !important;
+  background-color: var(--color-monaco-bg) !important;
 }
 
 .sqleditor-resizer {
@@ -198,6 +221,25 @@
   font-family: var(--font-mono);
   white-space: pre-wrap;
   flex-shrink: 0;
+}
+
+.sqleditor-readonly-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px var(--space-3);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-text-tertiary) 10%, transparent);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.sqleditor-readonly-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-text-tertiary);
 }
 
 .sqleditor-results {
@@ -285,5 +327,19 @@
   flex-direction: column;
   overflow: hidden;
   border-top: 1px solid var(--color-border);
+  min-height: 0;
+}
+
+.sqleditor-results-host {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sqleditor-results-host > .sqleditor-results,
+.sqleditor-results-host > .sqleditor-error {
+  flex: 1;
   min-height: 0;
 }

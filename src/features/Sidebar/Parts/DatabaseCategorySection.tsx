@@ -1,11 +1,12 @@
 import React, { useMemo } from "react";
-import { ChevronRight, FolderTree } from "lucide-react";
+import { ChevronRight, FolderTree, Lock } from "lucide-react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { useTreeStateStore, useNodeExpanded, treeKey } from "@/store/treeStateStore";
 import { DatabaseCategoryItem } from "@/features/Sidebar/Parts/DatabaseCategoryItem";
 import { CATEGORIES } from "@/features/Sidebar/hooks/useDatabaseCategoriesLogic";
 import type { SchemaObjects, TableInfo, TriggerInfo, ColumnInfo } from "@/types/db";
 import type { CatKind } from "@/features/Sidebar/Parts/TableContextMenu";
+import "@/shared/ui/ContextMenu.css";
 
 type IconType = (typeof CATEGORIES)[number];
 
@@ -22,7 +23,7 @@ interface DatabaseCategorySectionProps {
   columnMap: Record<string, ColumnInfo[]>;
   colLoadingSet: Set<string>;
   storeActiveTable: { name: string; schema: string | null } | null;
-  onCreateObject: (kind: CatKind) => void;
+  onCreateObject?: (kind: CatKind) => void;
   onItemClick: (kind: CatKind, item: TableInfo | TriggerInfo) => void;
   onExpandClick: (e: React.MouseEvent, item: TableInfo) => void;
   onGenerateSql: (item: TableInfo, action: string) => void;
@@ -110,7 +111,7 @@ export const DatabaseCategorySection = React.memo(function DatabaseCategorySecti
   };
 
   let categoryBody: React.ReactNode;
-  if (loading) {
+  if (loading && items.length === 0) {
     categoryBody = (
       <span className="sidebar-item-text sidebar-item-text--muted" style={{ paddingLeft: 24 }}>
         Loading&hellip;
@@ -184,15 +185,22 @@ export const DatabaseCategorySection = React.memo(function DatabaseCategorySecti
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
           <ContextMenu.Content className="ContextMenuContent" sideOffset={5} align="start">
-            <ContextMenu.Item
-              className="ContextMenuItem"
-              onSelect={() => onCreateObject(icon.kind as CatKind)}
-            >
-              <div className="ctx-item-icon">
-                <CatIcon size={14} style={{ color: icon.color }} />
-              </div>
-              <span className="ctx-item-label">Create New {icon.label.slice(0, -1)}</span>
-            </ContextMenu.Item>
+            {onCreateObject ? (
+              <ContextMenu.Item
+                className="ContextMenuItem"
+                onSelect={() => onCreateObject(icon.kind as CatKind)}
+              >
+                <div className="ctx-item-icon">
+                  <CatIcon size={14} style={{ color: icon.color }} />
+                </div>
+                <span className="ctx-item-label">Create New {icon.label.slice(0, -1)}</span>
+              </ContextMenu.Item>
+            ) : (
+              <ContextMenu.Label className="ContextMenuLabel">
+                <Lock size={12} aria-hidden />
+                <span>Read-only — can’t create {icon.label.toLowerCase()}</span>
+              </ContextMenu.Label>
+            )}
           </ContextMenu.Content>
         </ContextMenu.Portal>
       </ContextMenu.Root>

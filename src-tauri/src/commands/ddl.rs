@@ -1,4 +1,4 @@
-use tauri::State;
+use tauri::{Manager, State};
 
 use crate::db::{ColumnInfo, CreateColumn, DdlResult, QueryError, SchemaChange};
 use crate::commands::connection::DbState;
@@ -10,7 +10,10 @@ pub async fn apply_schema_changes(
     schema: Option<String>,
     changes: Vec<SchemaChange>,
     state: State<'_, DbState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), QueryError> {
+    let app_db = app_handle.state::<crate::storage::AppDb>();
+    crate::commands::connection::assert_connection_writable(&state, &app_db, &connection_id)?;
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
@@ -26,7 +29,10 @@ pub async fn create_table(
     schema: Option<String>,
     columns: Vec<CreateColumn>,
     state: State<'_, DbState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), QueryError> {
+    let app_db = app_handle.state::<crate::storage::AppDb>();
+    crate::commands::connection::assert_connection_writable(&state, &app_db, &connection_id)?;
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
@@ -41,7 +47,10 @@ pub async fn drop_table(
     table_name: String,
     schema: Option<String>,
     state: State<'_, DbState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), QueryError> {
+    let app_db = app_handle.state::<crate::storage::AppDb>();
+    crate::commands::connection::assert_connection_writable(&state, &app_db, &connection_id)?;
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,

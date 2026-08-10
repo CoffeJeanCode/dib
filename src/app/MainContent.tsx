@@ -60,13 +60,12 @@ export function MainContent({
     );
   }
   if (!connecting && active) {
-    // Tab scope: tabs belong to a specific connection+database in BOTH modes —
-    // switching db (or connection, in a workspace) remounts QueryPanel, and
-    // scopeTabCache (QueryPanel.tsx) restores that scope's tab set on return.
-    // active.name is the database name (or file path for sqlite).
+    // Tabs are scoped per connection/instance — switching databases keeps the
+    // same QueryPanel mounted. scopeTabCache restores on return to this instance.
+    // Table tabs missing in the current DB show an empty state (not closed).
     const scopeKey = activeWorkspaceId
-      ? `ws:${activeWorkspaceId}:${active.savedId}:${active.name}`
-      : `conn:${active.savedId}:${active.name}`;
+      ? `ws:${activeWorkspaceId}:${active.savedId}`
+      : `conn:${active.savedId}`;
     return (
       <QueryPanel
         key={scopeKey}

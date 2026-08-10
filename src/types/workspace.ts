@@ -1,7 +1,14 @@
-import type { TableInfo } from "./db";
+import type { GridFilter, TableInfo } from "./db";
 
-export interface NavTable { table: TableInfo; v: number }
+export interface NavTable {
+  table: TableInfo;
+  v: number;
+  /** Optional filters when opening via FK / related-record navigation. */
+  filters?: GridFilter[];
+}
 export interface OpenScript { sql: string; name: string; id: string; v: number; autoRun?: boolean; }
+/** Sidebar "Run" without opening the editor — QueryPanel opens a results-only tab. */
+export interface PendingScriptRun { sql: string; name: string; id: string; v: number; }
 
 export interface FsNode {
   name: string;

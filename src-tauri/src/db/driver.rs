@@ -140,7 +140,7 @@ pub async fn create_driver(config: &DbConfig) -> Result<Box<dyn DatabaseDriver>,
                 code: None,
                 severity: Some("ERROR".into()),
             })?;
-            crate::db::sqlite::SqliteDriver::connect(path)
+            crate::db::sqlite::SqliteDriver::connect(path, config.readonly)
                 .await
                 .map(|d| Box::new(d) as Box<dyn DatabaseDriver>)
         }

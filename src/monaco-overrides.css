@@ -19,21 +19,21 @@
 
 /* ── Base variables (re-stated here for specificity when body has no theme) */
 .monaco-editor {
-  --suggest-bg:          var(--color-suggest-bg,       #1A1A1E);
-  --suggest-border:      var(--color-suggest-border,   #2A2A30);
-  --suggest-focus-bg:    var(--color-suggest-focus-bg, rgba(0, 238, 255, 0.08));
-  --suggest-focus-text:  var(--color-suggest-focus-text, #FFFFFF);
-  --suggest-radius:      var(--radius-md, 6px);
-  --suggest-shadow:      var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.8));
-  --suggest-font-sans:   var(--font-sans, "Inter", sans-serif);
-  --suggest-font-mono:   var(--font-mono, "JetBrains Mono", monospace);
-  --suggest-font-size:   13px;
+  --suggest-bg: var(--color-suggest-bg, #1c1a18);
+  --suggest-border: var(--color-suggest-border, #2a2a30);
+  --suggest-focus-bg: var(--color-suggest-focus-bg, rgba(0, 238, 255, 0.08));
+  --suggest-focus-text: var(--color-suggest-focus-text, #ffffff);
+  --suggest-radius: var(--radius-md, 6px);
+  --suggest-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.8));
+  --suggest-font-sans: var(--font-sans, "Inter", sans-serif);
+  --suggest-font-mono: var(--font-mono, "JetBrains Mono", monospace);
+  --suggest-font-size: 13px;
 }
 
 /* The host container loaded by @monaco-editor/react */
 .sqleditor-body .monaco-editor,
 .sqleditor-body .monaco-editor .margin {
-  background-color: var(--color-monaco-bg, #121215) !important;
+  background-color: var(--color-monaco-bg, #141210) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -44,28 +44,28 @@
 
 @media (prefers-color-scheme: light) {
   .monaco-editor {
-    --suggest-bg:         var(--color-suggest-bg,       #FFFFFF);
-    --suggest-border:     var(--color-suggest-border,   #DCDCE0);
-    --suggest-focus-bg:   var(--color-suggest-focus-bg, rgba(0, 104, 201, 0.08));
-    --suggest-focus-text: var(--color-suggest-focus-text, #111118);
-    --suggest-shadow:     0 10px 15px -3px rgba(0,0,0,0.15);
+    --suggest-bg: var(--color-suggest-bg, #fffbf5);
+    --suggest-border: var(--color-suggest-border, #e0d5c6);
+    --suggest-focus-bg: var(--color-suggest-focus-bg, rgba(10, 122, 138, 0.1));
+    --suggest-focus-text: var(--color-suggest-focus-text, #1f1a14);
+    --suggest-shadow: 0 10px 15px -3px rgba(60, 42, 24, 0.13);
   }
 
   .sqleditor-body .monaco-editor,
   .sqleditor-body .monaco-editor .margin {
-    background-color: #FAFAFA !important;
+    background-color: var(--color-monaco-bg, #f7f1e9) !important;
   }
 }
 
 [data-theme="light"] .monaco-editor {
-  --suggest-bg:         #FFFFFF;
-  --suggest-border:     #DCDCE0;
-  --suggest-focus-bg:   rgba(0, 104, 201, 0.08);
-  --suggest-focus-text: #111118;
-  --suggest-shadow:     0 10px 15px -3px rgba(0,0,0,0.15);
+  --suggest-bg: var(--color-suggest-bg, #fffbf5);
+  --suggest-border: var(--color-suggest-border, #e0d5c6);
+  --suggest-focus-bg: var(--color-suggest-focus-bg, rgba(10, 122, 138, 0.1));
+  --suggest-focus-text: var(--color-suggest-focus-text, #1f1a14);
+  --suggest-shadow: 0 10px 15px -3px rgba(60, 42, 24, 0.13);
 }
 
 [data-theme="light"] .sqleditor-body .monaco-editor,
 [data-theme="light"] .sqleditor-body .monaco-editor .margin {
-  background-color: #FAFAFA !important;
+  background-color: var(--color-monaco-bg, #f7f1e9) !important;
 }

@@ -24,7 +24,7 @@ const FAKER_TYPES = [
   { value: "sentence", label: "Sentence" },
   { value: "number", label: "Number (1–100k)" },
   { value: "boolean", label: "Boolean" },
-  { value: "custom", label: "Valor fijo…" },
+  { value: "custom", label: "Fix Value…" },
 ];
 
 interface Props {
@@ -69,7 +69,7 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
     }
   };
   const [nullRatios, setNullRatios] = useState<Record<string, number>>(() =>
-    Object.fromEntries(columns.map((c) => [c.name, 0.1]))
+    Object.fromEntries(columns.map((c) => [c.name, 0.1])),
   );
 
   const activeColumns = columns.filter((c) => mappings[c.name]);
@@ -83,7 +83,7 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
       (c) => mappings[c.name] === "custom" && !(customValues[c.name] ?? "").trim(),
     );
     if (missingCustom.length > 0) {
-      toast.warn(`Escribe el valor fijo para: ${missingCustom.map((c) => c.name).join(", ")}`);
+      toast.warn(`Escribe el Fix Value para: ${missingCustom.map((c) => c.name).join(", ")}`);
       return;
     }
     setRunning(true);
@@ -102,7 +102,9 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
         rowCount,
         column_mappings,
       );
-      toast.info(`${result.rows_inserted} filas insertadas en ${table.schema ? `${table.schema}.` : ""}${table.name}`);
+      toast.info(
+        `${result.rows_inserted} filas insertadas en ${table.schema ? `${table.schema}.` : ""}${table.name}`,
+      );
     } catch (e: unknown) {
       const msg =
         e && typeof e === "object" && "message" in e
@@ -124,7 +126,9 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
       </div>
 
       <div className="mock-gen-row-count">
-        <label className="mock-gen-label" htmlFor="mock-rows">Filas a generar</label>
+        <label className="mock-gen-label" htmlFor="mock-rows">
+          Filas a generar
+        </label>
         <input
           id="mock-rows"
           type="number"
@@ -171,7 +175,9 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
                 <td>
                   <LookupSelect
                     className="mock-gen-select"
-                    ref={(el) => { selectRefs.current[i] = el; }}
+                    ref={(el) => {
+                      selectRefs.current[i] = el;
+                    }}
                     value={mappings[col.name]}
                     options={FAKER_TYPES}
                     placeholder="— skip —"
@@ -182,7 +188,7 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
                     <input
                       type="text"
                       className="mock-gen-custom-input"
-                      placeholder="Valor fijo para todas las filas"
+                      placeholder="Fix Value para todas las filas"
                       value={customValues[col.name] ?? ""}
                       onChange={(e) =>
                         setCustomValues((p) => ({ ...p, [col.name]: e.target.value }))
@@ -212,7 +218,8 @@ export function MockGenerator({ connectionId, table, columns }: Props) {
 
       <div className="mock-gen-footer">
         <span className="mock-gen-summary">
-          {activeColumns.length} col{activeColumns.length !== 1 ? "s" : ""} seleccionada{activeColumns.length !== 1 ? "s" : ""}
+          {activeColumns.length} col{activeColumns.length !== 1 ? "s" : ""} seleccionada
+          {activeColumns.length !== 1 ? "s" : ""}
         </span>
         <button
           className="mock-gen-btn"

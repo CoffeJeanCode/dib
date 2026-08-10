@@ -1,6 +1,6 @@
 import React from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { Layers, Network, Pencil, Workflow, Table2, Trash2, ChevronRight, Eye } from "lucide-react";
+import { Layers, Network, Pencil, Workflow, Table2, Trash2, ChevronRight, Eye, Lock } from "lucide-react";
 import "@/shared/ui/ContextMenu.css";
 
 export interface TableInfo {
@@ -21,6 +21,8 @@ export interface TableContextMenuProps {
   onTruncate?: () => void;
   onDrop?: () => void;
   onViewDdl?: () => void;
+  /** Hide insert/update generate + mutate ops when connection is read-only. */
+  writeDisabled?: boolean;
 }
 
 export function TableContextMenu({
@@ -34,8 +36,12 @@ export function TableContextMenu({
   onTruncate,
   onDrop,
   onViewDdl,
+  writeDisabled = false,
 }: TableContextMenuProps) {
   const isTable = item.kind === "table";
+  const hasOps = !!(onRename || onAlter || onTruncate || onDrop);
+  const hasReadable =
+    !!(onViewStructure || onViewRelations || onGenerateSql || onViewDdl) || hasOps;
 
   return (
     <ContextMenu.Root>
@@ -59,7 +65,9 @@ export function TableContextMenu({
                 </ContextMenu.Item>
               )}
 
-              <ContextMenu.Separator className="ContextMenuSeparator" />
+              {(onViewStructure || onViewRelations) && (onGenerateSql || hasOps) && (
+                <ContextMenu.Separator className="ContextMenuSeparator" />
+              )}
 
               {onGenerateSql && (
                 <ContextMenu.Sub>
@@ -73,12 +81,16 @@ export function TableContextMenu({
                       <ContextMenu.Item className="ContextMenuItem" onSelect={() => onGenerateSql("select")}>
                         <span className="ctx-item-label">SELECT</span>
                       </ContextMenu.Item>
-                      <ContextMenu.Item className="ContextMenuItem" onSelect={() => onGenerateSql("insert")}>
-                        <span className="ctx-item-label">INSERT</span>
-                      </ContextMenu.Item>
-                      <ContextMenu.Item className="ContextMenuItem" onSelect={() => onGenerateSql("update")}>
-                        <span className="ctx-item-label">UPDATE</span>
-                      </ContextMenu.Item>
+                      {!writeDisabled && (
+                        <>
+                          <ContextMenu.Item className="ContextMenuItem" onSelect={() => onGenerateSql("insert")}>
+                            <span className="ctx-item-label">INSERT</span>
+                          </ContextMenu.Item>
+                          <ContextMenu.Item className="ContextMenuItem" onSelect={() => onGenerateSql("update")}>
+                            <span className="ctx-item-label">UPDATE</span>
+                          </ContextMenu.Item>
+                        </>
+                      )}
                       <ContextMenu.Item className="ContextMenuItem" onSelect={() => onGenerateSql("ddl")}>
                         <span className="ctx-item-label">DDL</span>
                       </ContextMenu.Item>
@@ -87,6 +99,7 @@ export function TableContextMenu({
                 </ContextMenu.Sub>
               )}
 
+              {hasOps && (
               <ContextMenu.Sub>
                 <ContextMenu.SubTrigger className="ContextMenuSubTrigger">
                   <div className="ctx-item-icon"><Workflow size={14} /></div>
@@ -125,6 +138,7 @@ export function TableContextMenu({
                   </ContextMenu.SubContent>
                 </ContextMenu.Portal>
               </ContextMenu.Sub>
+              )}
             </>
           ) : (
             <>
@@ -142,13 +156,23 @@ export function TableContextMenu({
               )}
               {onDrop && (
                 <>
-                  <ContextMenu.Separator className="ContextMenuSeparator" />
+                  {(onViewDdl || onRename) && <ContextMenu.Separator className="ContextMenuSeparator" />}
                   <ContextMenu.Item className="ContextMenuItem ctx-item--danger" onSelect={onDrop}>
                     <div className="ctx-item-icon"><Trash2 size={14} /></div>
                     <span className="ctx-item-label">Drop</span>
                   </ContextMenu.Item>
                 </>
               )}
+            </>
+          )}
+
+          {writeDisabled && (
+            <>
+              {hasReadable && <ContextMenu.Separator className="ContextMenuSeparator" />}
+              <ContextMenu.Label className="ContextMenuLabel">
+                <Lock size={12} aria-hidden />
+                <span>Read-only — writes are blocked</span>
+              </ContextMenu.Label>
             </>
           )}
         </ContextMenu.Content>

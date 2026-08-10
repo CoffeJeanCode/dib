@@ -8,7 +8,7 @@ import { useToastStore } from "@/store/toastStore";
 import { PasswordInput } from "@/shared/ui/PasswordInput";
 import { FlatInput } from "@/shared/ui/FlatInput";
 import { FlatSelect } from "@/shared/ui/FlatSelect";
-import { FlatCheckbox } from "@/shared/ui/FlatCheckbox";
+import { FlatSwitch } from "@/shared/ui/FlatSwitch";
 import "./ConnectionManager.css";
 
 interface ConnectionManagerProps {
@@ -46,6 +46,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [savePassword, setSavePassword] = useState(true);
+  const [readonly, setReadonly] = useState(false);
   const [database, setDatabase] = useState("");
   const autoFillTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -61,6 +62,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
     setDatabase(editing.db_name || editing.path || "");
     setPassword(""); // never expose stored password; leave blank to preserve it
     setSavePassword(editing.save_password ?? true);
+    setReadonly(!!editing.readonly);
     setError(null);
     setTestOk(false);
     setSuccess(null);
@@ -101,6 +103,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         username: null,
         password: null,
         path: null,
+        readonly,
       };
     }
     return {
@@ -110,8 +113,9 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
       port: isSqlite ? null : parseInt(port, 10),
       database: isSqlite ? null : database || null,
       username: isSqlite ? null : username || null,
-      password: isSqlite ? null : password || null,
+      password: isSqlite ? null : (password || editing?.password || null),
       path: isSqlite ? database : null,
+      readonly,
     };
   };
 
@@ -160,7 +164,12 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           password: savePassword ? (password || editing.password || null) : null,
           save_password: savePassword,
           workspace_id: editing.workspace_id,
+          readonly,
         });
+        const active = useConnectionStore.getState().active;
+        if (active?.savedId === editing.id) {
+          useConnectionStore.getState().setActive({ ...active, readonly });
+        }
         onEditSaved?.();
       } catch (err) {
         const msg = String(err);
@@ -189,6 +198,7 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         password: isSqlite ? null : savePassword ? (password || null) : null,
         save_password: savePassword,
         workspace_id: undefined, // Let useSavedConnections inject activeWorkspaceId
+        readonly,
       });
 
       setSuccess(result);
@@ -279,11 +289,6 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
               </div>
             </div>
 
-            <FlatCheckbox
-              label="Remember password"
-              checked={savePassword}
-              onChange={(e) => setSavePassword(e.target.checked)}
-            />
           </>
         )}
 
@@ -294,6 +299,22 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
           onChange={(e) => handleFieldChange(setDatabase)(e.target.value)}
           placeholder={dbType === "sqlite" ? "./mydb.sqlite" : "mydb"}
         />
+
+        <div className="cm-options">
+          {dbType !== "sqlite" && (
+            <FlatSwitch
+              label="Remember password"
+              checked={savePassword}
+              onChange={(e) => setSavePassword(e.target.checked)}
+            />
+          )}
+          <FlatSwitch
+            label="Read-only"
+            description="Blocks all write operations"
+            checked={readonly}
+            onChange={(e) => setReadonly(e.target.checked)}
+          />
+        </div>
 
         {testOk && !error && (
           <div className="cm-test-ok">
@@ -316,25 +337,24 @@ export function ConnectionManager({ onConnected, editing, onEditSaved }: Connect
         )}
 
         <div className="cm-actions">
-          {editing ? (
+          {editing && (
             <button
               type="button"
               className="cm-button cm-button--ghost"
               onClick={onEditSaved}
-              disabled={loading}
+              disabled={loading || testing}
             >
               Cancel
             </button>
-          ) : (
-            <button
-              type="button"
-              className="cm-button cm-button--ghost"
-              onClick={handleTest}
-              disabled={testing || loading || !(connectionUrl || database)}
-            >
-              {testing ? "Testing…" : "Test Connection"}
-            </button>
           )}
+          <button
+            type="button"
+            className="cm-button cm-button--ghost"
+            onClick={handleTest}
+            disabled={testing || loading || !(connectionUrl || database)}
+          >
+            {testing ? "Testing…" : "Test Connection"}
+          </button>
           <button
             type="submit"
             className="cm-button cm-button--primary"

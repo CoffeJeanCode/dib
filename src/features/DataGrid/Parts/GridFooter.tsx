@@ -4,12 +4,32 @@ import { mod } from "@/shared/utils/platform";
 import { useDataGridContext } from "./DataGridContext";
 
 export const GridFooter = memo(function GridFooter() {
-  const { totalRows, selectedCells, saveIndicator, editState, activeCell, isEditing, footerRight } = useDataGridContext();
+  const {
+    totalRows,
+    selectedCells,
+    saveIndicator,
+    editState,
+    activeCell,
+    isEditing,
+    footerRight,
+    showRowCount = true,
+  } = useDataGridContext();
+
+  const hasLeftStatus =
+    showRowCount ||
+    selectedCells.size > 1 ||
+    !!saveIndicator ||
+    editState.changes.size > 0 ||
+    editState.past.length > 0 ||
+    (!!activeCell && !isEditing);
+
+  if (!hasLeftStatus && !footerRight) return null;
 
   return (
     <div className="dg-footer">
-      <span>{totalRows.toLocaleString()} row{totalRows !== 1 ? "s" : ""}</span>
-      {totalRows >= 100 && <span className="dg-footer-note"> (limit 100)</span>}
+      {showRowCount && (
+        <span>{totalRows.toLocaleString()} row{totalRows !== 1 ? "s" : ""}</span>
+      )}
 
       {selectedCells.size > 1 && (
         <span className="dg-footer-selection">
@@ -38,7 +58,7 @@ export const GridFooter = memo(function GridFooter() {
           F{activeCell.row + 1} C{activeCell.col + 1}
         </span>
       )}
-      
+
       {footerRight && (
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
           {footerRight}

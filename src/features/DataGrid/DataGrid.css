@@ -360,11 +360,11 @@
 
 .dg-filter-apply {
   background: var(--color-highlight);
-  color: var(--bg-base);
+  color: var(--color-on-accent);
   border-color: var(--color-highlight);
 }
 
-.dg-filter-apply:hover { opacity: 0.88; }
+.dg-filter-apply:hover { filter: brightness(0.92); }
 
 .dg-filter-clear {
   background: var(--color-bg-secondary);

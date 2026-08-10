@@ -6,28 +6,38 @@ import type { TableInfo, ColumnInfo, PagedResult, GridFilter, TableRelation, Pen
 export const DEFAULT_PAGE_SIZE = 100;
 
 export function useDatabaseEngine(connectionId: string) {
+  const databaseName = useConnectionStore((s) => s.active?.name ?? "");
   const [tables, setTables] = useState<TableInfo[]>([]);
+  const [tablesLoading, setTablesLoading] = useState(true);
   const [columnMap, setColumnMap] = useState<Record<string, ColumnInfo[]>>({});
-  const reloadVersion = useConnectionStore((s) => s.reloadVersion);
+  const columnMapRef = useRef(columnMap);
+  columnMapRef.current = columnMap;
 
-  // Invalidate columnMap on reload (e.g. after ALTER TABLE) so next
-  // loadColumnsBatch re-fetches instead of hitting the early-return guard.
-  useEffect(() => {
-    setColumnMap({});
-  }, [reloadVersion]);
+  // Reloads force-refetch via loadColumnsBatch(..., {}) — keep stale types visible
+  // until the new schema arrives so the grid header does not flash empty.
   const [tableRelations, setTableRelations] = useState<Record<string, TableRelation[]>>({});
   const tableRelationsRef = useRef<Record<string, TableRelation[]>>({});
 
+  // Refetch schema when the connection OR current database changes (tabs stay
+  // mounted across switchDatabase — connectionId alone is not enough).
   useEffect(() => {
     let mounted = true;
     setTables([]);
+    setTablesLoading(true);
     setColumnMap({});
     tableRelationsRef.current = {};
+    setTableRelations({});
     dbService.fetchSchemaObjects(connectionId)
-      .then((obj) => { if (mounted) setTables(obj.tables); })
-      .catch(() => {});
+      .then((obj) => {
+        if (!mounted) return;
+        setTables(obj.tables);
+        setTablesLoading(false);
+      })
+      .catch(() => {
+        if (mounted) setTablesLoading(false);
+      });
     return () => { mounted = false; };
-  }, [connectionId]);
+  }, [connectionId, databaseName]);
 
   // Pure fetch — callers own state updates
   const fetchTablePage = useCallback(
@@ -49,8 +59,10 @@ export function useDatabaseEngine(connectionId: string) {
 
   // One call for the whole list. Fanning out per table meant N concurrent
   // information_schema queries queued behind a 10-connection pool.
-  const loadColumnsBatch = useCallback((tableList: TableInfo[], existing: Record<string, ColumnInfo[]>) => {
-    const missing = tableList.filter((t) => existing[t.name] === undefined);
+  // Pass existing={} to force a refetch (e.g. after Ctrl+R / ALTER TABLE).
+  const loadColumnsBatch = useCallback((tableList: TableInfo[], existing?: Record<string, ColumnInfo[]>) => {
+    const map = existing ?? columnMapRef.current;
+    const missing = tableList.filter((t) => map[t.name] === undefined);
     if (missing.length === 0) return;
     dbService
       .fetchTableSchemas(connectionId, missing.map((t) => ({ name: t.name, schema: t.schema ?? null })))
@@ -78,6 +90,7 @@ export function useDatabaseEngine(connectionId: string) {
 
   return {
     tables,
+    tablesLoading,
     columnMap,
     tableRelations,
     tableRelationsRef,

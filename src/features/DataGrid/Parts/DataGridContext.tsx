@@ -11,6 +11,7 @@ export type DataGridContextValue = ReturnType<typeof useDataGridState> & {
   /** Right-click a column header → distribution profile. */
   handleHeaderContextMenu?: (column: string, e: React.MouseEvent) => void;
   footerRight?: ReactNode;
+  showRowCount?: boolean;
 };
 
 export const DataGridContext = createContext<DataGridContextValue | null>(null);

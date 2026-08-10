@@ -64,11 +64,21 @@ export function useDatabaseCategoriesLogic(props: {
 
   const [objects, setObjects] = useState<SchemaObjects | null>(null);
   const [loading, setLoading] = useState(false);
+  const sessionIdRef = useRef(sessionId);
 
   useEffect(() => {
-    if (!sessionId) { setObjects(null); return; }
+    if (!sessionId) {
+      setObjects(null);
+      setLoading(false);
+      sessionIdRef.current = sessionId;
+      return;
+    }
     let cancelled = false;
-    setObjects(null);
+    const sessionChanged = sessionIdRef.current !== sessionId;
+    sessionIdRef.current = sessionId;
+    // Stale-while-revalidate: only clear on session switch. Ctrl+R keeps the
+    // previous tree visible so the sidebar does not jump while schema reloads.
+    if (sessionChanged) setObjects(null);
     setLoading(true);
     invoke<SchemaObjects>("fetch_schema_objects", { connectionId: sessionId })
       .then((o) => { if (!cancelled) setObjects(o); })

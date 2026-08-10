@@ -42,7 +42,7 @@ export function DangerConfirmDialog({ message, confirmLabel = "Delete", onConfir
             Cancel
           </button>
           <button className="dialog-btn dialog-btn--danger" onClick={handleConfirm} disabled={loading}>
-            {loading ? "Deleting…" : confirmLabel}
+            {loading ? "Working…" : confirmLabel}
           </button>
         </div>
       </div>

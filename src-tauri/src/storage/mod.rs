@@ -90,6 +90,9 @@ pub struct SavedConnection {
     #[serde(default = "default_true")]
     pub save_password: bool,
     pub workspace_id: Option<String>,
+    /// Blocks write operations when true. Existing rows default false.
+    #[serde(default)]
+    pub readonly: bool,
 }
 
 fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
@@ -115,7 +118,8 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             path          TEXT,
             save_password INTEGER NOT NULL DEFAULT 1,
             password      TEXT,
-            workspace_id  TEXT
+            workspace_id  TEXT,
+            readonly      INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS saved_scripts (
             id            TEXT PRIMARY KEY,
@@ -174,6 +178,10 @@ fn run_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
     let _ = conn.execute_batch("ALTER TABLE saved_connections ADD COLUMN url TEXT;");
     // Add workspace_id column for isolated workspaces
     let _ = conn.execute_batch("ALTER TABLE saved_connections ADD COLUMN workspace_id TEXT;");
+    // Read-only instances — existing rows stay writable (DEFAULT 0).
+    let _ = conn.execute_batch(
+        "ALTER TABLE saved_connections ADD COLUMN readonly INTEGER NOT NULL DEFAULT 0;",
+    );
     let _ = conn.execute_batch("ALTER TABLE virtual_folders ADD COLUMN color TEXT;");
     let _ = conn.execute_batch("ALTER TABLE virtual_folders ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0;");
     let _ = conn.execute_batch("ALTER TABLE virtual_scripts ADD COLUMN color TEXT;");
@@ -245,8 +253,8 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         db.execute(
             "INSERT OR REPLACE INTO saved_connections
-             (id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)",
+             (id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id, readonly)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
             params![
                 conn.id,
                 conn.name,
@@ -260,6 +268,7 @@ impl AppDb {
                 conn.save_password as i64,
                 sqlite_pw,
                 conn.workspace_id,
+                conn.readonly as i64,
             ],
         )
         .map_err(|e| e.to_string())?;
@@ -271,10 +280,10 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         
         let query = if workspace_id.is_some() {
-            "SELECT id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id
+            "SELECT id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id, readonly
              FROM saved_connections WHERE workspace_id = ?1 ORDER BY name"
         } else {
-            "SELECT id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id
+            "SELECT id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id, readonly
              FROM saved_connections WHERE workspace_id IS NULL ORDER BY name"
         };
         
@@ -285,6 +294,7 @@ impl AppDb {
             let save_password = r.get::<_, i64>(9)? != 0;
             let sqlite_pw: Option<String> = r.get(10)?;
             let ws_id: Option<String> = r.get(11)?;
+            let readonly = r.get::<_, i64>(12).unwrap_or(0) != 0;
 
                 let mut password = None;
                 if save_password {
@@ -309,6 +319,7 @@ impl AppDb {
                     save_password,
                     password,
                     workspace_id: ws_id,
+                    readonly,
                 })
             };
 
@@ -325,7 +336,7 @@ impl AppDb {
         let db = self.0.lock().map_err(|e| e.to_string())?;
         let mut stmt = db
             .prepare(
-                "SELECT id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id \
+                "SELECT id, name, engine, url, host, port, username, db_name, path, save_password, password, workspace_id, readonly \
                  FROM saved_connections WHERE id = ?1",
             )
             .map_err(|e| e.to_string())?;
@@ -335,6 +346,7 @@ impl AppDb {
             let save_password = r.get::<_, i64>(9)? != 0;
             let sqlite_pw: Option<String> = r.get(10)?;
             let ws_id: Option<String> = r.get(11)?;
+            let readonly = r.get::<_, i64>(12).unwrap_or(0) != 0;
 
             let mut password = None;
             if save_password {
@@ -359,6 +371,7 @@ impl AppDb {
                 save_password,
                 password,
                 workspace_id: ws_id,
+                readonly,
             })
         })
         .map_err(|e| format!("Connection '{}' not found: {}", id, e))

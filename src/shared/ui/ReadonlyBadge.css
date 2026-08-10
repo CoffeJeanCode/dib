@@ -1,0 +1,8 @@
+.ro-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  line-height: 0;
+}

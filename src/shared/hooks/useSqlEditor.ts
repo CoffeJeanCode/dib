@@ -19,6 +19,14 @@ function fmtErr(e: unknown): string {
   return "Unknown error";
 }
 
+function isReadonlyBlockedError(e: unknown, message: string): boolean {
+  if (/read-only connection/i.test(message) || /is read-only/i.test(message)) return true;
+  if (e && typeof e === "object" && (e as { code?: unknown }).code === "ReadOnlyConnection") {
+    return true;
+  }
+  return false;
+}
+
 export const SQL_KEYWORDS = [
   "SELECT",
   "FROM",
@@ -168,39 +176,39 @@ export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
       { token: "predefined", foreground: "0891b2" },
     ],
     colors: {
-      "editor.background": "#F4F4F6",
-      "editor.foreground": "#18181b",
-      "editor.lineHighlightBackground": "#EBEBEF",
+      "editor.background": "#F7F1E9",
+      "editor.foreground": "#1F1A14",
+      "editor.lineHighlightBackground": "#EFE6DA",
       "editor.selectionBackground": "#d946ef22",
       "editor.inactiveSelectionBackground": "#d946ef11",
       "editorCursor.foreground": "#d946ef",
-      "editorWhitespace.foreground": "#D4D4DC",
-      "editorIndentGuide.background": "#D4D4DC",
-      "editorIndentGuide.activeBackground": "#B8B8C8",
-      "editorLineNumber.foreground": "#90909E",
-      "editorLineNumber.activeForeground": "#5E5E70",
+      "editorWhitespace.foreground": "#E0D5C6",
+      "editorIndentGuide.background": "#E0D5C6",
+      "editorIndentGuide.activeBackground": "#CDBFAE",
+      "editorLineNumber.foreground": "#8F8476",
+      "editorLineNumber.activeForeground": "#5C5349",
       "editor.selectionHighlightBackground": "#d946ef18",
       "editorBracketMatch.background": "#d946ef22",
       "editorBracketMatch.border": "#d946ef",
-      "scrollbarSlider.background": "#D4D4DC80",
-      "scrollbarSlider.hoverBackground": "#B8B8C8AA",
-      "scrollbarSlider.activeBackground": "#90909E",
-      "editorSuggestWidget.background": "#FFFFFF",
-      "editorSuggestWidget.border": "#D4D4DC",
-      "editorSuggestWidget.foreground": "#18181b",
+      "scrollbarSlider.background": "#E0D5C680",
+      "scrollbarSlider.hoverBackground": "#CDBFAEAA",
+      "scrollbarSlider.activeBackground": "#8F8476",
+      "editorSuggestWidget.background": "#FFFBF5",
+      "editorSuggestWidget.border": "#E0D5C6",
+      "editorSuggestWidget.foreground": "#1F1A14",
       "editorSuggestWidget.selectedBackground": "#d946ef14",
       "editorSuggestWidget.highlightForeground": "#d946ef",
-      "editorHoverWidget.background": "#FFFFFF",
-      "editorHoverWidget.border": "#D4D4DC",
+      "editorHoverWidget.background": "#FFFBF5",
+      "editorHoverWidget.border": "#E0D5C6",
     },
   });
 
-  // ── DARK THEME (custom — neon-dash inspired, low saturation) ──
+  // ── DARK THEME (custom — warm charcoal neon-dash) ──
   monaco.editor.defineTheme(THEME_DARK, {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "comment", foreground: "5c5c6e", fontStyle: "italic" },
+      { token: "comment", foreground: "5A5650", fontStyle: "italic" },
       { token: "keyword", foreground: "f472b6" },
       { token: "string", foreground: "34d399" },
       { token: "string.sql", foreground: "34d399" },
@@ -208,36 +216,36 @@ export function defineDibThemes(monaco: Parameters<OnMount>[1]) {
       { token: "string.key.json", foreground: "7dd3fc" },
       { token: "keyword.json", foreground: "f472b6" },
       { token: "number", foreground: "facc15" },
-      { token: "operator", foreground: "a1a1aa" },
-      { token: "identifier", foreground: "d4d4d8" },
+      { token: "operator", foreground: "8A8580" },
+      { token: "identifier", foreground: "E8E2DA" },
       { token: "type", foreground: "818cf8" },
       { token: "predefined", foreground: "22d3ee" },
     ],
     colors: {
-      "editor.background": "#141518",
-      "editor.foreground": "#d4d4d8",
-      "editor.lineHighlightBackground": "#1C1D22",
+      "editor.background": "#141210",
+      "editor.foreground": "#E8E2DA",
+      "editor.lineHighlightBackground": "#1C1A18",
       "editor.selectionBackground": "#f472b622",
       "editor.inactiveSelectionBackground": "#f472b611",
       "editorCursor.foreground": "#f472b6",
-      "editorWhitespace.foreground": "#2A2B32",
-      "editorIndentGuide.background": "#2A2B32",
+      "editorWhitespace.foreground": "#2E2A28",
+      "editorIndentGuide.background": "#2E2A28",
       "editorIndentGuide.activeBackground": "#f472b633",
-      "editorLineNumber.foreground": "#4A4B58",
-      "editorLineNumber.activeForeground": "#7A7B88",
+      "editorLineNumber.foreground": "#5A5650",
+      "editorLineNumber.activeForeground": "#8A8580",
       "editor.selectionHighlightBackground": "#f472b618",
       "editorBracketMatch.background": "#f472b622",
       "editorBracketMatch.border": "#f472b6",
-      "scrollbarSlider.background": "#2A2B3280",
+      "scrollbarSlider.background": "#2E2A2880",
       "scrollbarSlider.hoverBackground": "#f472b633",
       "scrollbarSlider.activeBackground": "#f472b655",
-      "editorSuggestWidget.background": "#1C1D22",
-      "editorSuggestWidget.border": "#2A2B32",
-      "editorSuggestWidget.foreground": "#d4d4d8",
+      "editorSuggestWidget.background": "#1C1A18",
+      "editorSuggestWidget.border": "#2E2A28",
+      "editorSuggestWidget.foreground": "#E8E2DA",
       "editorSuggestWidget.selectedBackground": "#f472b614",
       "editorSuggestWidget.highlightForeground": "#f472b6",
-      "editorHoverWidget.background": "#1C1D22",
-      "editorHoverWidget.border": "#2A2B32",
+      "editorHoverWidget.background": "#1C1A18",
+      "editorHoverWidget.border": "#2E2A28",
     },
   });
 }
@@ -458,7 +466,10 @@ export function useSqlEditor({
         if (cancelledRef.current) return;
         const msg = fmtErr(e);
         setQueryError(msg);
-        toast.error(msg);
+        // Centered panel alert carries the message; avoid a loud error toast.
+        if (!isReadonlyBlockedError(e, msg)) {
+          toast.error(msg);
+        }
       } finally {
         if (!cancelledRef.current) {
           setLoading(false);
@@ -631,7 +642,7 @@ export function useSqlEditor({
       useWorkspaceStore.getState().dispatchTabAction("new");
     });
 
-    // Ctrl+Shift+E — run Visual EXPLAIN for the current query
+    // Visual EXPLAIN — combo owned by SHORTCUT_CATALOG (`sql.visualExplain`)
     editor.addCommand(
       monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyMod.Shift | monacoInstance.KeyCode.KeyE,
       () => {

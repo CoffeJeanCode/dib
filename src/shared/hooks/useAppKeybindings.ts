@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useKeybindings } from "./useKeybindings";
 import { useUiStore } from "@/store/uiStore";
 import { useConnectionStore } from "@/store/connectionStore";
+import { combo, combos } from "@/shared/shortcuts";
 
 interface Options {
   isConnected: boolean;
@@ -20,35 +21,29 @@ export function useAppKeybindings({ isConnected, onTogglePalette, onToggleCheatS
   }, [backendError, onBackendError]);
 
   useKeybindings([
-    // ── Palette shortcuts (allowInMonaco: must fire while the SQL editor has focus too) ──
-    { combo: "ctrl+p",       handler: () => { if (isConnected) onTogglePalette(); }, allowInMonaco: true },
-    { combo: "ctrl+k",       handler: () => { if (isConnected) onTogglePalette(); }, allowInMonaco: true },
-    // Ctrl+Shift+P → actions list (> prefix)
-    { combo: "ctrl+shift+p", handler: () => { if (isConnected) useUiStore.getState().openPaletteWithQuery(">"); }, allowInMonaco: true },
-    // Ctrl+Shift+D → switch database (@ prefix)
-    { combo: "ctrl+shift+d", handler: () => { if (isConnected) useUiStore.getState().openPaletteWithQuery("@"); }, allowInMonaco: true },
-    // Ctrl+Shift+S → open script (# prefix)
-    { combo: "ctrl+shift+s", handler: () => { useUiStore.getState().openPaletteWithQuery("#"); }, allowInMonaco: true },
-    // Ctrl+Shift+O → DB objects (% prefix)
-    { combo: "ctrl+shift+o", handler: () => { if (isConnected) useUiStore.getState().openPaletteWithQuery("%"); }, allowInMonaco: true },
-    // Ctrl+Shift+A → Alter Table (DDL mode)
-    { combo: "ctrl+shift+a", handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "alter" }); }, allowInMonaco: true },
-    // Ctrl+Shift+X → Drop Table (DDL mode)
-    { combo: "ctrl+shift+x", handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "drop" }); }, allowInMonaco: true },
-    // Ctrl+Shift+I → Insert Row (DDL mode)
-    { combo: "ctrl+shift+i", handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "insert" }); }, allowInMonaco: true },
+    // ── Palette (allowInMonaco: must fire while the SQL editor has focus too) ──
+    ...combos("palette.open").map((c) => ({
+      combo: c,
+      handler: () => { if (isConnected) onTogglePalette(); },
+      allowInMonaco: true,
+    })),
+    { combo: combo("palette.actions"), handler: () => { if (isConnected) useUiStore.getState().openPaletteWithQuery(">"); }, allowInMonaco: true },
+    { combo: combo("palette.database"), handler: () => { if (isConnected) useUiStore.getState().openPaletteWithQuery("@"); }, allowInMonaco: true },
+    { combo: combo("palette.script"), handler: () => { useUiStore.getState().openPaletteWithQuery("#"); }, allowInMonaco: true },
+    { combo: combo("palette.objects"), handler: () => { if (isConnected) useUiStore.getState().openPaletteWithQuery("%"); }, allowInMonaco: true },
+    { combo: combo("palette.alter"), handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "alter" }); }, allowInMonaco: true },
+    { combo: combo("palette.drop"), handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "drop" }); }, allowInMonaco: true },
+    { combo: combo("palette.insert"), handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "insert" }); }, allowInMonaco: true },
 
     // ── Navigation ─────────────────────────────────────────
-    // Ctrl+1..3 select a sidebar panel (and focus it) — owned by Layout.
-    // Ctrl+L only exists while QueryPanel is mounted, so main-panel focus
-    // keeps its own global binding here.
-    { combo: "ctrl+0",       handler: () => (document.getElementById("dib-main-panel") as HTMLElement | null)?.focus(), allowInMonaco: true },
+    // Sidebar activity Ctrl+Shift+1..3 — owned by Layout (see SHORTCUT_CATALOG).
+    { combo: combo("panel.focusMain"), handler: () => (document.getElementById("dib-main-panel") as HTMLElement | null)?.focus(), allowInMonaco: true },
 
     // ── Dev / reload ───────────────────────────────────────
-    { combo: "ctrl+r",       handler: () => useConnectionStore.getState().triggerReload(), allowInMonaco: true },
-    { combo: "ctrl+shift+r", handler: () => window.location.reload(), allowInMonaco: true },
+    { combo: combo("app.reloadData"), handler: () => useConnectionStore.getState().triggerReload(), allowInMonaco: true },
+    { combo: combo("app.reloadApp"), handler: () => window.location.reload(), allowInMonaco: true },
 
     // ── Help ───────────────────────────────────────────────
-    { combo: "ctrl+/",       handler: onToggleCheatSheet, allowInMonaco: true },
+    { combo: combo("help.cheatSheet"), handler: onToggleCheatSheet, allowInMonaco: true },
   ]);
 }

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Database } from "lucide-react";
+import { Server, Plus } from "lucide-react";
 import { safeInvoke as invoke } from "@/shared/utils/ipc";
 import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
 import { useConnectionStore } from "@/store/connectionStore";
@@ -7,7 +7,10 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useUiStore } from "@/store/uiStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useToastStore } from "@/store/toastStore";
+import { Tooltip } from "@/shared/ui/Tooltip";
 import { ConnectionItem, DatabaseTree } from "./Parts";
+import { confirmToggleConnectionReadonly } from "@/shared/utils/toggleConnectionReadonly";
+import { openDatabaseObject, openTableObject, tableObjectRef } from "@/shared/exploration";
 import type { SavedConnection, TableInfo, DbTreeNode } from "@/types/db";
 
 type DbActionType = "create" | "rename" | "drop";
@@ -29,7 +32,7 @@ interface EntityBrowserProps {
 export function EntityBrowser({ onScriptOpen, onDeleteTarget }: EntityBrowserProps) {
   const workspaceLayout = useSettingsStore((s) => s.workspaceLayout);
   const isAdvance = workspaceLayout === "advance";
-  const { connections } = useSavedConnections();
+  const { connections, save } = useSavedConnections();
   const active = useConnectionStore((s) => s.active);
   const selectConnection = useConnectionStore((s) => s.selectConnection);
   const switchDatabase = useConnectionStore((s) => s.switchDatabase);
@@ -37,14 +40,23 @@ export function EntityBrowser({ onScriptOpen, onDeleteTarget }: EntityBrowserPro
   const activeSessionId = active?.activeId ?? null;
   const activeDb = active?.name;
   const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath);
-  const setNavigateTo = useWorkspaceStore((s) => s.setNavigateTo);
-  const openTableStructure = useWorkspaceStore((s) => s.openTableStructure);
   const setDbAction = useUiStore((s) => s.setDbAction);
   const setEditingConn = useUiStore((s) => s.setEditingConn);
+  const setShowNewConnection = useUiStore((s) => s.setShowNewConnection);
+  const connectionId = activeConnectionId ?? "";
+  const database = activeDb ?? undefined;
 
-  const onTableSelect = useCallback((table: TableInfo) => setNavigateTo({ table, v: Date.now() } as any), [setNavigateTo]);
+  const onTableSelect = useCallback(
+    (table: TableInfo) => openTableObject(connectionId, table, { database }),
+    [connectionId, database],
+  );
   const onEditConnection = useCallback((conn: SavedConnection) => setEditingConn(conn), [setEditingConn]);
+  const onToggleReadonly = useCallback(
+    (conn: SavedConnection) => confirmToggleConnectionReadonly(conn, save),
+    [save],
+  );
   const onDbAction = useCallback((action: DbActionType, dbName?: string) => setDbAction({ action, dbName }), [setDbAction]);
+  const addInstance = useCallback(() => setShowNewConnection(true), [setShowNewConnection]);
 
   const handleNodeClick = useCallback(async (node: DbTreeNode) => {
     if (!activeSessionId) return;
@@ -53,11 +65,13 @@ export function EntityBrowser({ onScriptOpen, onDeleteTarget }: EntityBrowserPro
     switch (node.type) {
       case "table":
       case "foreign_table":
-      case "matview":
-        setNavigateTo({ table: ti, v: Date.now() } as any);
-        break;
       case "sequence":
-        setNavigateTo({ table: ti, v: Date.now() } as any);
+        openTableObject(connectionId, ti, { database });
+        break;
+      case "matview":
+        openDatabaseObject(
+          { ...tableObjectRef(connectionId, ti, database), objectType: "materialized_view" },
+        );
         break;
       case "view": {
         try {
@@ -113,17 +127,54 @@ export function EntityBrowser({ onScriptOpen, onDeleteTarget }: EntityBrowserPro
       }
       case "index": {
         if (ti.schema || ti.name) {
-          openTableStructure(ti);
+          openTableObject(connectionId, ti, { database, mode: "structure" });
         }
         break;
       }
     }
-  }, [activeSessionId, setNavigateTo, onScriptOpen, openTableStructure]);
+  }, [activeSessionId, connectionId, database, onScriptOpen]);
+
+  const instancesHeader = (
+    <div className="sidebar-section-header">
+      <Server size={13} />
+      <span>Instances</span>
+      <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>
+        <Tooltip content="Add instance to this scope" side="right">
+          <button
+            type="button"
+            className="sidebar-section-header-action"
+            onClick={addInstance}
+          >
+            <Plus />
+          </button>
+        </Tooltip>
+      </div>
+    </div>
+  );
+
+  const addInstanceRow = (
+    <Tooltip content="Add instance to this scope" side="right">
+      <button
+        type="button"
+        className="sidebar-item sidebar-item--add"
+        onClick={addInstance}
+      >
+        <Plus size={14} />
+        <Server size={12} />
+        <span className="sidebar-item-text">Add instance</span>
+      </button>
+    </Tooltip>
+  );
 
   if (isAdvance) {
     return (
       <nav className="sidebar-nav dg-scroll" aria-label="Entities">
-        <DatabaseTree onNodeClick={handleNodeClick} />
+        <div className="sidebar-section-block">
+          {instancesHeader}
+          {connections.length === 0 ? addInstanceRow : (
+            <DatabaseTree onNodeClick={handleNodeClick} />
+          )}
+        </div>
       </nav>
     );
   }
@@ -131,15 +182,8 @@ export function EntityBrowser({ onScriptOpen, onDeleteTarget }: EntityBrowserPro
   return (
     <nav className="sidebar-nav dg-scroll" aria-label="Explorer">
       <div className="sidebar-section-block">
-        <div className="sidebar-section-header">
-          <Database size={13} />
-          <span>Instances</span>
-        </div>
-        {connections.length === 0 ? (
-          <div className="sidebar-item sidebar-item--empty">
-            <span className="sidebar-item-text sidebar-item-text--muted">No connections</span>
-          </div>
-        ) : (
+        {instancesHeader}
+        {connections.length === 0 ? addInstanceRow : (
           connections.map((conn) => (
             <ConnectionItem
               key={conn.id}
@@ -155,10 +199,23 @@ export function EntityBrowser({ onScriptOpen, onDeleteTarget }: EntityBrowserPro
               onDbSwitch={switchDatabase}
               onEdit={onEditConnection}
               onDelete={onDeleteTarget ?? (() => {})}
+              onToggleReadonly={onToggleReadonly}
               onNewQuery={!activeWorkspacePath && conn.id === activeConnectionId ? () => onScriptOpen?.("", "New Query", `new-${Date.now()}`) : undefined}
-              onCreateDatabase={conn.id === activeConnectionId && activeSessionId ? () => onDbAction("create") : undefined}
-              onRenameDb={conn.id === activeConnectionId ? (db) => onDbAction("rename", db) : undefined}
-              onDropDb={conn.id === activeConnectionId ? (db) => onDbAction("drop", db) : undefined}
+              onCreateDatabase={
+                !conn.readonly && conn.id === activeConnectionId && activeSessionId
+                  ? () => onDbAction("create")
+                  : undefined
+              }
+              onRenameDb={
+                !conn.readonly && conn.id === activeConnectionId
+                  ? (db) => onDbAction("rename", db)
+                  : undefined
+              }
+              onDropDb={
+                !conn.readonly && conn.id === activeConnectionId
+                  ? (db) => onDbAction("drop", db)
+                  : undefined
+              }
               onTableSelect={onTableSelect}
               onScriptOpen={onScriptOpen}
             />

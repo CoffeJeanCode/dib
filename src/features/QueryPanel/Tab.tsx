@@ -1,9 +1,9 @@
-import { Table2, Network, FileCode2, Circle, Wrench, Layers, Wand2 } from "lucide-react";
-import type { TableInfo } from "@/types/db";
+import { Table2, Network, FileCode2, Circle, Wrench, Layers, Wand2, Play } from "lucide-react";
+import type { TableInfo, QueryResult } from "@/types/db";
 import { mod } from "@/shared/utils/platform";
 import "./Tab.css";
 
-export type TabType = "table" | "script" | "schema" | "table_builder" | "table_structure" | "mock_generator";
+export type TabType = "table" | "script" | "schema" | "table_builder" | "table_structure" | "mock_generator" | "query_result";
 
 export interface TabPayload {
   table?: TableInfo;
@@ -17,6 +17,10 @@ export interface TabPayload {
   // Hoisted Monaco view state (cursor, scroll, folds) for script tabs
   viewState?: unknown;
   autoRun?: boolean;
+  /** Results-only tab (sidebar run without editor) */
+  result?: QueryResult;
+  error?: string;
+  loading?: boolean;
 }
 
 export interface TabData {
@@ -48,6 +52,7 @@ const ICON_MAP: Record<TabType, React.ReactNode> = {
   table_builder: <Wrench size={13} />,
   table_structure: <Layers size={13} />,
   mock_generator: <Wand2 size={13} />,
+  query_result: <Play size={13} />,
 };
 
 export function Tab({ tab, active, onSelect, onClose, dragListeners, dragAttributes, style, dragging }: TabProps) {

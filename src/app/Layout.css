@@ -18,7 +18,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: var(--color-bg-sidebar, #1A1A1E);
+  background: var(--color-bg-sidebar, #1C1A18);
   border-right: 1px solid var(--color-border, #2A2A30);
   z-index: 10;
 }
@@ -72,5 +72,20 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: var(--color-bg, #121215);
+  background: var(--color-bg, #141210);
+}
+
+/* Sidebar drag: live-resize the sidebar chrome only. Freeze main at its
+   pre-drag pixel width so DataGrid/Monaco skip per-frame reflow. */
+.is-sidebar-resizing .layout-body {
+  overflow: hidden;
+}
+
+.is-sidebar-resizing .main-content {
+  flex: 0 0 var(--main-freeze-width);
+  width: var(--main-freeze-width);
+  min-width: var(--main-freeze-width);
+  max-width: var(--main-freeze-width);
+  overflow: hidden;
+  pointer-events: none;
 }

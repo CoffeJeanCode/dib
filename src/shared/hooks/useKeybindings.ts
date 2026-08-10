@@ -101,6 +101,11 @@ function _initListener() {
   );
 }
 
+/** Invoke a registered shortcut by combo (e.g. from clickable hint UI). */
+export function triggerShortcut(combo: string) {
+  _reg.get(combo)?.call();
+}
+
 /**
  * Register keyboard shortcuts. Combos are fixed at mount; handlers are
  * always the latest via ref. Automatically unregisters on unmount.

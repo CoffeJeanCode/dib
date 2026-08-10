@@ -4,6 +4,7 @@ import { SchemaChangeWizard } from "@/features/SchemaChangeWizard/SchemaChangeWi
 import { DatabaseCategorySection } from "@/features/Sidebar/Parts/DatabaseCategorySection";
 import { useDatabaseCategoriesLogic, CATEGORIES } from "@/features/Sidebar/hooks/useDatabaseCategoriesLogic";
 import { useTreeKeyboardNav } from "@/shared/hooks/useTreeKeyboardNav";
+import { useConnectionStore } from "@/store/connectionStore";
 import type { TableInfo } from "@/types/db";
 
 interface DatabaseCategoriesProps {
@@ -16,6 +17,7 @@ interface DatabaseCategoriesProps {
 export function DatabaseCategories(props: DatabaseCategoriesProps) {
   const { sessionId } = props;
   const logic = useDatabaseCategoriesLogic(props);
+  const connectionReadonly = useConnectionStore((s) => s.active?.readonly ?? false);
   const { containerRef, handleKeyDown } = useTreeKeyboardNav({
     itemSelector: "[data-tree-item]",
   });
@@ -52,7 +54,7 @@ export function DatabaseCategories(props: DatabaseCategoriesProps) {
           columnMap={logic.columnMap}
           colLoadingSet={logic.colLoadingSet}
           storeActiveTable={logic.storeActiveTable}
-          onCreateObject={logic.handleCreateObject}
+          onCreateObject={connectionReadonly ? undefined : logic.handleCreateObject}
           onItemClick={logic.handleItemClick}
           onExpandClick={logic.handleExpandClick}
           onGenerateSql={logic.handleGenerateSql}

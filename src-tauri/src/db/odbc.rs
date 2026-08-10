@@ -206,15 +206,6 @@ fn query(conn: &Connection<'static>, sql: &str) -> Result<(Vec<String>, Vec<Vec<
     Ok((columns, rows))
 }
 
-fn scalar_u64(conn: &Connection<'static>, sql: &str) -> Result<u64, QueryError> {
-    let (_, rows) = query(conn, sql)?;
-    Ok(rows
-        .first()
-        .and_then(|r| r.first())
-        .and_then(|v| v.as_u64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
-        .unwrap_or(0))
-}
-
 #[async_trait]
 impl DatabaseDriver for OdbcDriver {
     async fn get_tables(&self) -> Result<Vec<TableInfo>, QueryError> {
@@ -307,16 +298,17 @@ impl DatabaseDriver for OdbcDriver {
         };
 
         self.blocking(move |conn| {
-            let total = scalar_u64(conn, &format!("SELECT COUNT(*) FROM {table}{where_sql}"))?;
+            // Fetch limit+1 to learn has_more — avoids COUNT(*) on large tables.
+            let fetch_limit = limit.saturating_add(1);
             // SQL:2008 pagination — SQL Server 2012+, Oracle 12c+, DB2,
             // Postgres, Snowflake. MySQL/MariaDB need LIMIT/OFFSET instead.
             // ponytail: add a dialect switch on `SQL_DBMS_NAME` when a MySQL
             // ODBC user shows up.
             let sql = format!(
-                "SELECT * FROM {table}{where_sql}{order} OFFSET {offset} ROWS FETCH NEXT {limit} ROWS ONLY"
+                "SELECT * FROM {table}{where_sql}{order} OFFSET {offset} ROWS FETCH NEXT {fetch_limit} ROWS ONLY"
             );
             let (columns, rows) = query(conn, &sql)?;
-            Ok(PagedResult { columns, rows, total, offset, limit })
+            Ok(PagedResult::from_limit_plus_one(columns, rows, offset, limit))
         })
         .await
     }

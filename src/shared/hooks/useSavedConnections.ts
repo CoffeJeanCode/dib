@@ -42,7 +42,7 @@ export function useSavedConnections() {
     if (activeWorkspaceId && connToSave.workspace_id === undefined) {
       connToSave.workspace_id = activeWorkspaceId;
     }
-    connectionService.saveConnection(connToSave).then(refresh).catch(() => {});
+    return connectionService.saveConnection(connToSave).then(refresh);
   }, [activeWorkspaceId, refresh]);
 
   const remove = useCallback((connectionId: string) => {

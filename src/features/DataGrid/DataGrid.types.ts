@@ -31,6 +31,8 @@ export interface DataGridProps {
   onSaveError?: (msg: string) => void;
   disableAutoFocus?: boolean;
   footerRight?: React.ReactNode;
+  /** When false, omit loaded-row count (parent already shows total / page size). Default true. */
+  showRowCount?: boolean;
 }
 
 export interface UseDataGridStateOptions {

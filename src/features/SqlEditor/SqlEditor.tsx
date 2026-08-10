@@ -1,14 +1,11 @@
 import { useRef, useCallback, lazy, Suspense } from "react";
-import { Play, Upload, Download, Zap, Lock, Square, Braces } from "lucide-react";
-import type { QueryResult, PendingChange, ColumnInfo } from "@/types/db";
-import { dbService } from "@/services/dbService";
+import { Play, Upload, Download, Zap, Square } from "lucide-react";
 import { useSqlEditor } from "@/shared/hooks/useSqlEditor";
 import { MonacoEditor } from "@/features/MonacoEditor/MonacoEditor";
 import { MOD } from "@/shared/utils/platform";
-import { DataGrid } from "@/features/DataGrid";
 import { Skeleton } from "@/shared/ui/Skeleton";
-import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useUiStore } from "@/store/uiStore";
+import { QueryResultPanel } from "@/features/SqlEditor/QueryResultPanel";
 import "./SqlEditor.css";
 
 const VisualExplain = lazy(() =>
@@ -214,8 +211,6 @@ export function SqlEditor({
 
       <div className="sqleditor-resizer" onMouseDown={handleResizeStart} />
 
-      {isBottomPanelOpen && queryError && <div className="sqleditor-error">{queryError}</div>}
-
       {/* Visual EXPLAIN results — rendered in a dedicated panel */}
       {isBottomPanelOpen && explainResult && (
         <div className="sqleditor-explain-panel">
@@ -225,65 +220,13 @@ export function SqlEditor({
         </div>
       )}
 
-      {isBottomPanelOpen && queryResult && !explainResult && (
-        <div className="sqleditor-results">
-          <div className="sqleditor-results-meta">
-            {(queryResult as QueryResult).rows_affected > 0
-              ? `${(queryResult as QueryResult).rows_affected} rows affected`
-              : `${(queryResult as QueryResult).rows.length} rows returned`}
-            {(queryResult as QueryResult).columns.length > 0 && (
-              <button
-                className="sqleditor-json-btn"
-                onClick={() => useWorkspaceStore.getState().openJsonPanel({
-                  title: "Query Result",
-                  result: queryResult as QueryResult,
-                })}
-                title="Ver resultado como JSON"
-              >
-                <Braces size={11} />
-                <span>JSON</span>
-              </button>
-            )}
-            {!(queryResult as QueryResult).is_updatable &&
-              (queryResult as QueryResult).columns.length > 0 && (
-                <span
-                  className="sqleditor-readonly-badge"
-                  title="JOIN, computed expression, or no PK — read-only mode"
-                >
-                  <Lock size={11} />
-                  <span>Read-only</span>
-                </span>
-              )}
-          </div>
-          {(queryResult as QueryResult).columns.length > 0 &&
-            (() => {
-              const qr = queryResult as QueryResult;
-              const pkMeta = qr.column_metadata.find((m) => m.is_primary_key);
-              const tableName =
-                qr.column_metadata.find((m) => m.table_name)?.table_name ?? undefined;
-              const columnInfos: ColumnInfo[] = qr.column_metadata.map((m) => ({
-                name: m.column_name,
-                data_type: "",
-                is_primary_key: m.is_primary_key,
-                is_nullable: true,
-              }));
-              const handleResultSave = async (changes: PendingChange[]): Promise<void> => {
-                if (!qr.is_updatable || !tableName || !pkMeta) return;
-                await dbService.applyChanges(connectionId, tableName, pkMeta.column_name, changes);
-              };
-              return (
-                <DataGrid
-                  columns={qr.columns}
-                  rows={qr.rows as unknown[][]}
-                  loading={false}
-                  disableAutoFocus={true}
-                  tableName={qr.is_updatable ? tableName : undefined}
-                  primaryKeyColumn={qr.is_updatable && pkMeta ? pkMeta.column_name : undefined}
-                  columnInfos={qr.is_updatable ? columnInfos : undefined}
-                  onSave={qr.is_updatable ? handleResultSave : undefined}
-                />
-              );
-            })()}
+      {isBottomPanelOpen && !explainResult && (
+        <div className="sqleditor-results-host">
+          <QueryResultPanel
+            connectionId={connectionId}
+            result={queryResult}
+            error={queryError}
+          />
         </div>
       )}
     </div>

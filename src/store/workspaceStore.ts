@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { NavTable, OpenScript, FsNode, DbConnectionStatus, WorkspaceLayout } from "@/types/workspace";
+import type { NavTable, OpenScript, PendingScriptRun, FsNode, DbConnectionStatus, WorkspaceLayout } from "@/types/workspace";
 import type { TableInfo, QueryResult, InternalScript } from "@/types/db";
 import { workspaceService } from "@/services/workspaceService";
 import { connectionService } from "@/services/connectionService";
@@ -22,6 +22,10 @@ export interface JsonPanelData {
 interface WorkspaceState {
   navigateTo: NavTable | null;
   openScript: OpenScript | null;
+  /** Sidebar run-without-editor — QueryPanel opens a results-only tab */
+  pendingScriptRun: PendingScriptRun | null;
+  /** Script path currently executing from sidebar (drives Play spinner) */
+  runningScriptId: string | null;
   /** Active table highlighted in sidebar — replaces dib:active-table */
   activeTable: { name: string; schema: string | null } | null;
   /** Incremented after each query run — replaces dib:query-executed */
@@ -41,6 +45,8 @@ interface WorkspaceState {
 
   setNavigateTo: (t: NavTable | null) => void;
   setOpenScript: (s: OpenScript | null) => void;
+  setPendingScriptRun: (s: PendingScriptRun | null) => void;
+  clearRunningScript: () => void;
   setActiveTable: (t: { name: string; schema: string | null } | null) => void;
   incrementQueryVersion: () => void;
   incrementScriptVersion: () => void;
@@ -78,6 +84,8 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   navigateTo: null,
   openScript: null,
+  pendingScriptRun: null,
+  runningScriptId: null,
   activeTable: null,
   queryVersion: 0,
   scriptVersion: 0,
@@ -90,6 +98,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setNavigateTo: (t) => set({ navigateTo: t }),
   setOpenScript: (s) => set({ openScript: s }),
+  setPendingScriptRun: (s) =>
+    set(s ? { pendingScriptRun: s, runningScriptId: s.id } : { pendingScriptRun: null }),
+  clearRunningScript: () => set({ runningScriptId: null }),
   setActiveTable: (t) => set({ activeTable: t }),
   incrementQueryVersion: () => set((s) => ({ queryVersion: s.queryVersion + 1 })),
   incrementScriptVersion: () => set((s) => ({ scriptVersion: s.scriptVersion + 1 })),

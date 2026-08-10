@@ -83,6 +83,98 @@ pub fn assert_connection_in_active_workspace(
     }
 }
 
+fn readonly_error(name: &str) -> QueryError {
+    QueryError {
+        message: format!(
+            "Connection '{}' is read-only — write operations are blocked",
+            name
+        ),
+        code: Some("ReadOnlyConnection".to_string()),
+        severity: Some("ERROR".to_string()),
+    }
+}
+
+/// True when the live session is marked read-only (saved flag or ad-hoc config).
+pub fn is_connection_readonly(
+    state: &DbState,
+    app_db: &AppDb,
+    connection_id: &str,
+) -> Result<bool, QueryError> {
+    if let Some(saved_id) = state.session_to_saved.get(connection_id) {
+        let saved = app_db
+            .get_connection_by_id(saved_id.value())
+            .map_err(QueryError::from)?;
+        return Ok(saved.readonly);
+    }
+    if let Some(cfg) = state.configs.get(connection_id) {
+        return Ok(cfg.readonly);
+    }
+    Ok(false)
+}
+
+/// Blocks mutate IPC when the connection is read-only.
+pub fn assert_connection_writable(
+    state: &DbState,
+    app_db: &AppDb,
+    connection_id: &str,
+) -> Result<(), QueryError> {
+    if !is_connection_readonly(state, app_db, connection_id)? {
+        return Ok(());
+    }
+    let name = state
+        .session_to_saved
+        .get(connection_id)
+        .and_then(|sid| app_db.get_connection_by_id(sid.value()).ok())
+        .map(|s| s.name)
+        .unwrap_or_else(|| connection_id.to_string());
+    Err(readonly_error(&name))
+}
+
+/// First-word allowlist for read-only sessions (defense when session mode
+/// was not applied yet, e.g. flag flipped while already connected).
+pub fn assert_sql_readonly_safe(sql: &str) -> Result<(), QueryError> {
+    let trimmed = sql.trim_start();
+    // Skip leading line comments / block comments roughly.
+    let mut s = trimmed;
+    loop {
+        if s.starts_with("--") {
+            s = s.split_once('\n').map(|(_, rest)| rest).unwrap_or("").trim_start();
+            continue;
+        }
+        if s.starts_with("/*") {
+            s = s.split_once("*/").map(|(_, rest)| rest).unwrap_or("").trim_start();
+            continue;
+        }
+        break;
+    }
+    let mut first = s
+        .split_whitespace()
+        .next()
+        .unwrap_or("")
+        .trim_start_matches('(')
+        .to_uppercase();
+    // Strip trailing punctuation so "BEGIN;" / "SELECT*" still match the keyword.
+    while first
+        .chars()
+        .last()
+        .is_some_and(|c| !c.is_ascii_alphanumeric() && c != '_')
+    {
+        first.pop();
+    }
+    match first.as_str() {
+        "SELECT" | "WITH" | "EXPLAIN" | "SHOW" | "TABLE" | "PRAGMA" | "VALUES"
+        | "BEGIN" | "COMMIT" | "ROLLBACK" | "SET" | "" => Ok(()),
+        _ => Err(QueryError {
+            message: format!(
+                "Read-only — {} blocked",
+                if first.is_empty() { "write" } else { first.as_str() }
+            ),
+            code: Some("ReadOnlyConnection".to_string()),
+            severity: Some("ERROR".to_string()),
+        }),
+    }
+}
+
 #[tauri::command]
 pub async fn connect_to_db(config: DbConfig, state: State<'_, DbState>) -> Result<ConnectionInfo, QueryError> {
     let id = uuid::Uuid::new_v4().to_string();
@@ -177,6 +269,7 @@ pub async fn connect_saved(
         } else {
             None
         },
+        readonly: saved.readonly,
     };
 
     let new_id = uuid::Uuid::new_v4().to_string();
@@ -243,6 +336,7 @@ pub async fn connect_db_lazily(
         } else {
             None
         },
+        readonly: saved.readonly,
     };
 
     let new_id = uuid::Uuid::new_v4().to_string();
@@ -325,7 +419,8 @@ pub async fn switch_database(connection_id: String, db_name: String, state: Stat
 }
 
 #[tauri::command]
-pub async fn create_database(connection_id: String, name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
+pub async fn create_database(connection_id: String, name: String, state: State<'_, DbState>, app_db: State<'_, AppDb>) -> Result<(), QueryError> {
+    assert_connection_writable(&state, &app_db, &connection_id)?;
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
@@ -335,7 +430,8 @@ pub async fn create_database(connection_id: String, name: String, state: State<'
 }
 
 #[tauri::command]
-pub async fn drop_database(connection_id: String, name: String, force: Option<bool>, state: State<'_, DbState>) -> Result<(), QueryError> {
+pub async fn drop_database(connection_id: String, name: String, force: Option<bool>, state: State<'_, DbState>, app_db: State<'_, AppDb>) -> Result<(), QueryError> {
+    assert_connection_writable(&state, &app_db, &connection_id)?;
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,
@@ -345,7 +441,8 @@ pub async fn drop_database(connection_id: String, name: String, force: Option<bo
 }
 
 #[tauri::command]
-pub async fn rename_database(connection_id: String, old_name: String, new_name: String, state: State<'_, DbState>) -> Result<(), QueryError> {
+pub async fn rename_database(connection_id: String, old_name: String, new_name: String, state: State<'_, DbState>, app_db: State<'_, AppDb>) -> Result<(), QueryError> {
+    assert_connection_writable(&state, &app_db, &connection_id)?;
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
         code: None,

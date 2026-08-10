@@ -32,9 +32,18 @@ import { TableActionsMenu, type TableAction } from "@/shared/ui/TableActionsMenu
 import { Tooltip } from "@/shared/ui/Tooltip";
 import { useToastStore } from "@/store/toastStore";
 import { useUiStore } from "@/store/uiStore";
+import { openTableObject } from "@/shared/exploration";
 import "@/shared/ui/dialog-shared.css";
 import "@/shared/ui/menu-shared.css";
 import "./CommandPalette.css";
+
+function paletteConnectionScope(): { connectionId: string; database?: string } {
+  const active = useConnectionStore.getState().active;
+  return {
+    connectionId: active?.savedId ?? "",
+    database: active?.name ?? undefined,
+  };
+}
 
 export function generateOrmAlias(tableName: string): string {
   return tableName
@@ -253,6 +262,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
   }, [menuOpenId]);
 
   const connectionId = useConnectionStore((s) => s.active?.activeId ?? null);
+  const connectionReadonly = useConnectionStore((s) => s.active?.readonly ?? false);
   const info = useToastStore((s) => s.info);
   const error = useToastStore((s) => s.error);
   const { handleDropTable, handleTruncateTable } = useDangerDialog(connectionId, info, error);
@@ -267,10 +277,11 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
   const handleTableMenuAction = useCallback(
     (action: TableAction, table: TableInfo) => {
       const itemId = menuOpenId ?? "";
+      const scope = paletteConnectionScope();
       if (action === "structure") {
-        useWorkspaceStore.getState().openTableStructure(table);
+        openTableObject(scope.connectionId, table, { database: scope.database, mode: "structure" });
       } else if (action === "erd") {
-        useWorkspaceStore.getState().openTableRelations(table);
+        openTableObject(scope.connectionId, table, { database: scope.database, mode: "relations" });
         pushToRecents({
           type: "diagram",
           id: `diagram:${itemId}`,
@@ -287,7 +298,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
           table,
         });
       } else if (action === "insert") {
-        useWorkspaceStore.getState().setNavigateTo({ table, v: Date.now() } as any);
+        openTableObject(scope.connectionId, table, { database: scope.database });
         useWorkspaceStore.getState().triggerInsertRow();
         pushToRecents({
           type: "dml",
@@ -492,7 +503,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
   // DDL static actions — built-in, appear under > prefix and in suggestions
   const ddlActionItems = useMemo<PaletteItem[]>(
     () =>
-      connectionId
+      connectionId && !connectionReadonly
         ? [
             {
               kind: "action",
@@ -535,7 +546,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
             },
           ]
         : [],
-    [connectionId, enterDdlMode],
+    [connectionId, connectionReadonly, enterDdlMode, onClose],
   );
 
   const matchTables = useCallback((items: PaletteItem[], q: string): PaletteItem[] => {
@@ -663,7 +674,8 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
           });
         }
         if (ddlMode === "insert") {
-          useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
+          const scope = paletteConnectionScope();
+          openTableObject(scope.connectionId, item.table, { database: scope.database });
           useWorkspaceStore.getState().triggerInsertRow();
           pushToRecents({
             type: "dml",
@@ -678,7 +690,11 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
       }
 
       if (item.kind === "diagram") {
-        useWorkspaceStore.getState().openTableRelations(item.table);
+        const scope = paletteConnectionScope();
+        openTableObject(scope.connectionId, item.table, {
+          database: scope.database,
+          mode: "relations",
+        });
         pushToRecents({ type: "diagram", id: item.id, label: item.label, table: item.table });
         onClose();
         return;
@@ -712,7 +728,8 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
       }
 
       if (item.kind === "dml" && item.action === "insert") {
-        useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
+        const scope = paletteConnectionScope();
+        openTableObject(scope.connectionId, item.table, { database: scope.database });
         useWorkspaceStore.getState().triggerInsertRow();
         pushToRecents({
           type: "dml",
@@ -726,7 +743,8 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
       }
 
       if (item.kind === "table") {
-        useWorkspaceStore.getState().setNavigateTo({ table: item.table, v: Date.now() } as any);
+        const scope = paletteConnectionScope();
+        openTableObject(scope.connectionId, item.table, { database: scope.database });
         pushToRecents({ type: "table", id: item.id, label: item.label, table: item.table });
       } else if (item.kind === "wsfile") {
         // Disk file — read lazily, same flow as Sidebar's onNodeClick.
@@ -809,7 +827,11 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
           label: string;
           table: TableInfo;
         };
-        useWorkspaceStore.getState().openTableRelations(item.table);
+        const scope = paletteConnectionScope();
+        openTableObject(scope.connectionId, item.table, {
+          database: scope.database,
+          mode: "relations",
+        });
         pushToRecents({
           type: "diagram",
           id: `diagram:${item.id}`,
@@ -832,7 +854,11 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
         (e.ctrlKey || e.metaKey) &&
         filtered[selectedIndex]?.kind === "table"
       ) {
-        useWorkspaceStore.getState().openTableStructure(filtered[selectedIndex].table!);
+        const scope = paletteConnectionScope();
+        openTableObject(scope.connectionId, filtered[selectedIndex].table!, {
+          database: scope.database,
+          mode: "structure",
+        });
         onClose();
       } else if (e.key === "Enter" && filtered[selectedIndex]) {
         execute(filtered[selectedIndex]);
@@ -983,8 +1009,12 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
                         .join(" ")}
                       onClick={(e) => {
                         if (item.kind === "table" && item.table) {
+                          const scope = paletteConnectionScope();
                           if (e.altKey) {
-                            useWorkspaceStore.getState().openTableRelations(item.table);
+                            openTableObject(scope.connectionId, item.table, {
+                              database: scope.database,
+                              mode: "relations",
+                            });
                             pushToRecents({
                               type: "diagram",
                               id: `diagram:${item.id}`,
@@ -995,7 +1025,10 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
                             return;
                           }
                           if (e.ctrlKey || e.metaKey) {
-                            useWorkspaceStore.getState().openTableStructure(item.table);
+                            openTableObject(scope.connectionId, item.table, {
+                              database: scope.database,
+                              mode: "structure",
+                            });
                             onClose();
                             return;
                           }
@@ -1073,6 +1106,7 @@ export function CommandPalette({ open, onClose, actions = [] }: CommandPalettePr
               className="palette-table-menu"
               style={{ top: menuPos.top, left: menuPos.left }}
               table={item.table}
+              writeDisabled={connectionReadonly}
               onAction={handleTableMenuAction}
               onKeyDown={handleMenuKeyDown}
             />,

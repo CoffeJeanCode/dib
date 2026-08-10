@@ -188,10 +188,29 @@ impl PostgresDriver {
             opts
         };
 
-        PgPool::connect_with(opts)
-            .await
-            .map(|pool| Self { pool, current_pid: Arc::new(AtomicI32::new(0)) })
-            .map_err(|e| QueryError::from(e.to_string()))
+        let pool = if config.readonly {
+            sqlx::postgres::PgPoolOptions::new()
+                .after_connect(|conn, _meta| {
+                    Box::pin(async move {
+                        sqlx::query("SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY")
+                            .execute(&mut *conn)
+                            .await?;
+                        Ok(())
+                    })
+                })
+                .connect_with(opts)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?
+        } else {
+            PgPool::connect_with(opts)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?
+        };
+
+        Ok(Self {
+            pool,
+            current_pid: Arc::new(AtomicI32::new(0)),
+        })
     }
 }
 
@@ -1645,18 +1664,12 @@ impl DatabaseDriver for PostgresDriver {
             .unwrap_or_default();
         let n = filter_values.len();
 
-        let count_sql = format!("SELECT COUNT(*) FROM {q}{where_sql}");
-        let mut count_args = PgArguments::default();
-        for v in &filter_values { pg_bind_json(&mut count_args, v); }
-        let total: i64 = sqlx::query_scalar_with::<_, i64, _>(&count_sql, count_args)
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| QueryError::from(e.to_string()))?;
-
+        // Fetch limit+1 to learn has_more — avoids COUNT(*) on large tables.
+        let fetch_limit = limit.saturating_add(1);
         let data_sql = format!("SELECT * FROM {q}{where_sql}{order_sql} LIMIT ${} OFFSET ${}", n + 1, n + 2);
         let mut data_args = PgArguments::default();
         for v in &filter_values { pg_bind_json(&mut data_args, v); }
-        pg_bind_json(&mut data_args, &json!(limit as i64));
+        pg_bind_json(&mut data_args, &json!(fetch_limit as i64));
         pg_bind_json(&mut data_args, &json!(offset as i64));
         let rows = sqlx::query_with(&data_sql, data_args)
             .fetch_all(&self.pool)
@@ -1668,16 +1681,15 @@ impl DatabaseDriver for PostgresDriver {
             .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
             .unwrap_or_default();
 
-        Ok(PagedResult {
-            rows: rows
+        Ok(PagedResult::from_limit_plus_one(
+            columns,
+            rows
                 .iter()
                 .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
                 .collect(),
-            columns,
-            total: total.max(0) as u64,
             offset,
             limit,
-        })
+        ))
     }
 
     async fn apply_changes(

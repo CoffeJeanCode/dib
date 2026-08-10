@@ -27,7 +27,11 @@ export interface UiState {
   alterTarget: import("@/types/db").TableInfo | null;
   createTarget: import("@/types/db").TableInfo | null;
   dbAction: { action: "create" | "rename" | "drop"; dbName?: string } | null;
-  dangerDialog: { message: string; onConfirm: () => Promise<void> } | null;
+  dangerDialog: {
+    message: string;
+    onConfirm: () => Promise<void>;
+    confirmLabel?: string;
+  } | null;
   recentCommands: RecentCommand[];
   /** Set by a popup when dismissed via Escape (not completed), so the caller
    *  can re-open the Command Palette with the previous action context. */
@@ -54,6 +58,10 @@ export interface UiState {
   setAlterTarget: (t: import("@/types/db").TableInfo | null) => void;
   setCreateTarget: (t: import("@/types/db").TableInfo | null) => void;
   setDbAction: (action: { action: "create" | "rename" | "drop"; dbName?: string } | null) => void;
-  setDangerDialog: (d: { message: string; onConfirm: () => Promise<void> } | null) => void;
+  setDangerDialog: (d: {
+    message: string;
+    onConfirm: () => Promise<void>;
+    confirmLabel?: string;
+  } | null) => void;
   pushToRecents: (cmd: RecentCommand) => void;
 }

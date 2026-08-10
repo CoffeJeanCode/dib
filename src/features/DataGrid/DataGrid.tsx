@@ -34,6 +34,8 @@ export interface DataGridProps {
   onSaveError?: (msg: string) => void;
   disableAutoFocus?: boolean;
   footerRight?: React.ReactNode;
+  /** When false, omit loaded-row count (parent already shows total / page size). Default true. */
+  showRowCount?: boolean;
 }
 
 export const DataGrid = memo(function DataGrid({
@@ -59,6 +61,7 @@ export const DataGrid = memo(function DataGrid({
   onSaveError,
   disableAutoFocus,
   footerRight,
+  showRowCount = true,
 }: DataGridProps) {
   // For empty tables the query result has no column names; fall back to schema info.
   const effectiveCols = useMemo(() => {
@@ -106,9 +109,10 @@ export const DataGrid = memo(function DataGrid({
       orderBy,
       filters,
       footerRight,
+      showRowCount,
       handleHeaderContextMenu: columnProfile.handleHeaderContextMenu,
     };
-  }, [state, effectiveCols, orderBy, filters, footerRight, columnProfile.handleHeaderContextMenu]);
+  }, [state, effectiveCols, orderBy, filters, footerRight, showRowCount, columnProfile.handleHeaderContextMenu]);
 
   // Clamp the cell context menu inside the viewport — clientX/clientY alone
   // overflow off-screen when the click lands near the bottom/right edge.

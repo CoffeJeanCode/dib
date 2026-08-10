@@ -9,23 +9,23 @@
   /* Typography */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
-  --font-size-xs:       0.75rem;
-  --font-size-sm:       0.875rem;
-  --font-size-base:     1rem;
-  --font-size-lg:       1.125rem;
-  --font-size-2xl:      1.5rem;
-  --font-weight-normal:   400;
-  --font-weight-medium:   500;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-2xl: 1.5rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
   --font-weight-semibold: 600;
 
   /* Spacing */
-  --space-1:  0.25rem;
-  --space-2:  0.5rem;
-  --space-3:  0.75rem;
-  --space-4:  1rem;
-  --space-5:  1.25rem;
-  --space-6:  1.5rem;
-  --space-8:  2rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
   --space-12: 3rem;
 
   /* Icon sizes */
@@ -41,35 +41,36 @@
   --radius-lg: 12px;
 
   /* Transitions */
-  --transition-fast:    120ms ease;
+  --transition-fast: 120ms ease;
   --transition-fastest: 80ms ease;
-  --transition-normal:  200ms ease;
+  --transition-normal: 200ms ease;
 
   /* Layout */
-  --sidebar-width:           250px;
+  --sidebar-width: 250px;
   --sidebar-width-collapsed: 45px;
 
   /* ── Accent palette (invariant) ──────────────────────────────── */
-  --neon-green:rgb(29, 161, 133);
-  --neon-purple:      #ae96f4;
-  --neon-cyan:rgb(13, 147, 165);
-  --neon-yellow:rgb(216, 184, 55);
+  --neon-green: rgb(29, 161, 133);
+  --neon-purple: #ae96f4;
+  --neon-cyan: rgb(13, 147, 165);
+  --neon-yellow: rgb(216, 184, 55);
   --neon-magenta-dim: rgba(192, 132, 252, 0.12);
-  --neon-green-dim:   rgba(110, 231, 183, 0.10);
-  --neon-purple-dim:  rgba(167, 139, 250, 0.12);
+  --neon-green-dim: rgba(110, 231, 183, 0.1);
+  --neon-purple-dim: rgba(167, 139, 250, 0.12);
 
   /* ── Semantic aliases (lazily resolve from themed tokens below) ── */
-  --bg-base:        var(--color-bg);
-  --bg-surface:     var(--color-bg-sidebar);
-  --bg-elevated:    var(--color-bg-elevated);
-  --text-primary:   var(--color-text-primary);
+  --bg-base: var(--color-bg);
+  --bg-surface: var(--color-bg-sidebar);
+  --bg-elevated: var(--color-bg-elevated);
+  --text-primary: var(--color-text-primary);
   --text-secondary: var(--color-text-secondary);
-  --text-muted:     var(--color-text-tertiary);
-  --border-subtle:  var(--color-border);
+  --text-muted: var(--color-text-tertiary);
+  --border-subtle: var(--color-border);
 }
 
 /* ═══════════════════════════════════════════════════════════════
    DARK MODE TOKENS  (default — Neon Dark-Dash)
+   Warm-leaning charcoal (subtle brown undertone, not pure cool grey).
    ═══════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
@@ -79,131 +80,138 @@
      app is dark but every dropdown opens white with unreadable text. */
   color-scheme: dark;
 
-  /* Backgrounds */
-  --color-bg:           #121215;
-  --color-bg-sidebar:   #1A1A1E;
-  --color-bg-secondary: #1A1A1E;
-  --color-bg-hover:     rgba(255, 255, 255, 0.05);
-  --color-bg-active:    rgba(255, 255, 255, 0.08);
-  --color-bg-elevated:  #1E1E22;
+  /* Backgrounds — slight warm undertone */
+  --color-bg: #141210;
+  --color-bg-sidebar: #1c1a18;
+  --color-bg-secondary: #1c1a18;
+  --color-bg-tertiary: #242220;
+  --color-bg-hover: rgba(255, 248, 240, 0.05);
+  --color-bg-active: rgba(255, 248, 240, 0.08);
+  --color-bg-elevated: #201e1b;
 
   /* Monaco seamless background */
-  --color-monaco-bg:    #121215;
+  --color-monaco-bg: #141210;
 
   /* Borders */
-  --color-border:       #2A2A30;
-  --color-border-dark:  #333340;
+  --color-border: #2e2a28;
+  --color-border-dark: #3a3532;
 
   /* Text — strict hierarchy, no text-shadow */
-  --color-text-primary:   #FFFFFF;
-  --color-text-secondary: #888888;
-  --color-text-tertiary:  #555560;
+  --color-text-primary: #faf7f2;
+  --color-text-secondary: #8a8580;
+  --color-text-tertiary: #5a5650;
 
   /* Highlight / Focus */
   --color-highlight: var(--neon-cyan);
-  --color-focus:     var(--neon-cyan);
+  --color-focus: var(--neon-cyan);
 
   /* Suggest widget surface (Monaco autocomplete) */
-  --color-suggest-bg:     #1A1A1E;
-  --color-suggest-border: #2A2A30;
-  --color-suggest-focus-bg: rgba(103, 232, 249, 0.08);
-  --color-suggest-focus-text: #FFFFFF;
+  --color-suggest-bg: #1c1a18;
+  --color-suggest-border: #2e2a28;
+  --color-suggest-focus-bg: rgba(13, 147, 165, 0.1);
+  --color-suggest-focus-text: #faf7f2;
 
   /* Functional */
-  --color-danger-bg:     #1a0c0c;
+  --color-danger-bg: #1c100e;
   --color-danger-border: #5c2e2e;
-  --color-danger-text:   #f5a5a5;
+  --color-danger-text: #f5a5a5;
+
+  /* Text on filled accent / danger buttons (always high-contrast) */
+  --color-on-accent: #ffffff;
+  --color-on-danger: #ffffff;
 
   /* Semantic */
-  --color-red:          #ef4444;
-  --color-red-light:    #1a0c0c;
-  --color-red-dark:     #fca5a5;
+  --color-red: #ef4444;
+  --color-red-light: #1c100e;
+  --color-red-dark: #fca5a5;
 
-  --color-orange:       #f59e0b;
+  --color-orange: #f59e0b;
   --color-orange-light: #1a1508;
 
-  --color-green:        var(--neon-green);
-  --color-green-light:  #57c796;
+  --color-green: var(--neon-green);
+  --color-green-light: #57c796;
   --color-green-dark: rgb(24, 141, 94);
 
-  --color-blue:         #2a6fdb;
-  --color-blue-light:   #0f1d35;
+  --color-blue: #2a6fdb;
+  --color-blue-light: #0f1d35;
 
-  --color-purple:       var(--neon-purple);
-  --color-purple-light: #15102a;
+  --color-purple: var(--neon-purple);
+  --color-purple-light: #18122a;
 
-  --color-teal:         var(--neon-cyan);
-  --color-teal-light:   #0c1a20;
+  --color-teal: var(--neon-cyan);
+  --color-teal-light: #0e1a1c;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
-
+  --shadow-sm: 0 1px 2px rgba(12, 8, 4, 0.65);
+  --shadow-lg: 0 10px 15px -3px rgba(12, 8, 4, 0.82), 0 4px 6px -4px rgba(12, 8, 4, 0.6);
 }
 
 /* ═══════════════════════════════════════════════════════════════
    LIGHT MODE TOKENS  (applied via data-theme="light" on <html>)
-   Backgrounds: clean warm whites / very light greys.
-   Accents: shifted to deeper variants for WCAG AA on white
-   (neon-green → forest green, neon-yellow → amber, etc.)
+   Warm parchment surfaces + the same teal/cyan/green brand as
+   dark mode (deeper where needed for WCAG AA on light).
    ═══════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
   /* Must be reset explicitly: :root already set dark, and both selectors match
      <html data-theme="light">. */
   color-scheme: light;
 
-  /* Backgrounds */
-  --color-bg:           #FAFAFA;
-  --color-bg-sidebar:   #F4F4F6;
-  --color-bg-secondary: #F0F0F3;
-  --color-bg-hover:     rgba(0, 0, 0, 0.04);
-  --color-bg-active:    rgba(0, 0, 0, 0.07);
-  --color-bg-elevated:  #FFFFFF;
+  /* Backgrounds — warm parchment (subtle amber paper) */
+  --color-bg: #f7f1e9;
+  --color-bg-sidebar: #f0e9df;
+  --color-bg-secondary: #eae2d6;
+  --color-bg-tertiary: #e3d9cb;
+  --color-bg-hover: rgba(60, 42, 24, 0.055);
+  --color-bg-active: rgba(60, 42, 24, 0.1);
+  --color-bg-elevated: #fffbf5;
 
-  --color-monaco-bg:    #FAFAFA;
+  --color-monaco-bg: #f7f1e9;
 
-  --color-border:       #DCDCE0;
-  --color-border-dark:  #C8C8CE;
+  --color-border: #e0d5c6;
+  --color-border-dark: #cdbfae;
 
-  --color-text-primary:   #111118;
-  --color-text-secondary: #5A5A6A;
-  --color-text-tertiary:  #9090A0;
+  --color-text-primary: #1f1a14;
+  --color-text-secondary: #5c5349;
+  --color-text-tertiary: #8f8476;
 
-  --color-highlight: #0068C9;
-  --color-focus:     #0068C9;
+  /* Same brand family as dark (neon-cyan / neon-green), deepened for light */
+  --color-highlight: #0a7a8a;
+  --color-focus: #0a7a8a;
 
-  --color-suggest-bg:       #FFFFFF;
-  --color-suggest-border:   #DCDCE0;
-  --color-suggest-focus-bg: rgba(0, 104, 201, 0.08);
-  --color-suggest-focus-text: #111118;
+  --color-suggest-bg: #fffbf5;
+  --color-suggest-border: #e0d5c6;
+  --color-suggest-focus-bg: rgba(10, 122, 138, 0.1);
+  --color-suggest-focus-text: #1f1a14;
 
-  --color-danger-bg:     #fff0f0;
-  --color-danger-border: #fca5a5;
-  --color-danger-text:   #b91c1c;
+  --color-danger-bg: #fdf0ee;
+  --color-danger-border: #e8a9a0;
+  --color-danger-text: #b42318;
 
-  --color-red:          #dc2626;
-  --color-red-light:    #fff0f0;
-  --color-red-dark:     #991b1b;
+  --color-on-accent: #ffffff;
+  --color-on-danger: #ffffff;
 
-  --color-orange:       #b45309;
-  --color-orange-light: #fffbeb;
+  --color-red: #c62828;
+  --color-red-light: #fdf0ee;
+  --color-red-dark: #8f1d1d;
 
-  --color-green:rgb(51, 156, 89);
-  --color-green-light:  #f0fdf4;
-  --color-green-dark:   #14532d;
+  --color-orange: #b45309;
+  --color-orange-light: #fff6e8;
 
-  --color-blue:         #1d4ed8;
-  --color-blue-light:   #eff6ff;
+  --color-green: #1a8a5c;
+  --color-green-light: #e8f6ef;
+  --color-green-dark: #14532d;
 
-  --color-purple:       #7c3aed;
-  --color-purple-light: #f5f3ff;
+  --color-blue: #1d4ed8;
+  --color-blue-light: #eef4ff;
 
-  --color-teal:         #0e7490;
-  --color-teal-light:   #f0f9ff;
+  --color-purple: #6d28d9;
+  --color-purple-light: #f3effa;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.10);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -4px rgba(0, 0, 0, 0.10);
+  --color-teal: #0a7a8a;
+  --color-teal-light: #e6f4f6;
 
+  --shadow-sm: 0 1px 3px rgba(60, 42, 24, 0.09);
+  --shadow-lg: 0 10px 15px -3px rgba(60, 42, 24, 0.13), 0 4px 6px -4px rgba(60, 42, 24, 0.09);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -215,7 +223,9 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -229,10 +239,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition:
+    background-color var(--transition-normal),
+    color var(--transition-normal);
 }
 
-code, pre, .mono {
+code,
+pre,
+.mono {
   font-family: var(--font-mono);
 }
 
@@ -285,7 +299,6 @@ a:focus-visible {
   line-height: 1;
   white-space: nowrap;
 }
-
 
 /* ── Shortcut Hint Badge ─────────────────────────────────────── */
 

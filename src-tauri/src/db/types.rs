@@ -12,6 +12,9 @@ pub struct DbConfig {
     pub username: Option<String>,
     pub password: Option<String>,
     pub path: Option<String>,
+    /// When true, open a read-only session and reject mutate IPC.
+    #[serde(default)]
+    pub readonly: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,9 +152,42 @@ pub struct QueryResult {
 pub struct PagedResult {
     pub columns: Vec<String>,
     pub rows: Vec<Vec<serde_json::Value>>,
+    /// Exact total only on the last page (`!has_more`); otherwise `0` (unknown).
+    /// We do not run `COUNT(*)` — it is O(n) on large tables.
     pub total: u64,
+    /// True when at least one more row exists after this page.
+    #[serde(default)]
+    pub has_more: bool,
     pub offset: u64,
     pub limit: u64,
+}
+
+impl PagedResult {
+    /// Build a page from a `limit + 1` fetch (extra row probes for `has_more`).
+    pub fn from_limit_plus_one(
+        columns: Vec<String>,
+        mut rows: Vec<Vec<serde_json::Value>>,
+        offset: u64,
+        limit: u64,
+    ) -> Self {
+        let has_more = (rows.len() as u64) > limit;
+        if has_more {
+            rows.truncate(limit as usize);
+        }
+        let total = if has_more {
+            0
+        } else {
+            offset.saturating_add(rows.len() as u64)
+        };
+        Self {
+            columns,
+            rows,
+            total,
+            has_more,
+            offset,
+            limit,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

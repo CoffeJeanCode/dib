@@ -13,6 +13,8 @@ export interface TableStructureViewProps {
   connectionId: string;
   table: TableInfo;
   onViewData?: () => void;
+  /** Open a related table from a foreign key (explore-first navigation). */
+  onOpenRelatedTable?: (table: TableInfo) => void;
 }
 
 type SubTab = "columns" | "indexes" | "foreign_keys" | "triggers";
@@ -58,7 +60,12 @@ function SkeletonRows({ n = 5, cols = 4 }: { n?: number; cols?: number }) {
   );
 }
 
-export function TableStructureView({ connectionId, table, onViewData }: TableStructureViewProps) {
+export function TableStructureView({
+  connectionId,
+  table,
+  onViewData,
+  onOpenRelatedTable,
+}: TableStructureViewProps) {
   const [structure, setStructure] = useState<TableStructure | null>(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -384,6 +391,13 @@ export function TableStructureView({ connectionId, table, onViewData }: TableStr
                       const targetLabel = fk.foreign_schema && fk.foreign_schema !== "public"
                         ? `${fk.foreign_schema}.${fk.foreign_table}`
                         : fk.foreign_table;
+                      const targetTable: TableInfo = {
+                        name: fk.foreign_table,
+                        schema: fk.foreign_schema,
+                      };
+                      const openTarget = onOpenRelatedTable
+                        ? () => onOpenRelatedTable(targetTable)
+                        : undefined;
                       return (
                         <div key={fk.name} className="sv2-fk-card">
                           <div className="sv2-fk-card-header">
@@ -407,7 +421,18 @@ export function TableStructureView({ connectionId, table, onViewData }: TableStr
                             </div>
                             <ArrowRight size={14} className="sv2-fk-arrow" />
                             <div className="sv2-fk-side">
-                              <span className="sv2-fk-label">{targetLabel}</span>
+                              {openTarget ? (
+                                <button
+                                  type="button"
+                                  className="sv2-fk-label sv2-fk-label--link"
+                                  onClick={openTarget}
+                                  title={`Open ${targetLabel}`}
+                                >
+                                  {targetLabel} →
+                                </button>
+                              ) : (
+                                <span className="sv2-fk-label">{targetLabel}</span>
+                              )}
                               <div className="sv2-tag-list">
                                 {fk.foreign_columns.map(c => (
                                   <span key={c} className="sv2-badge sv2-badge--fk-target">{c}</span>

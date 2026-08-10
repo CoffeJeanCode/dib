@@ -50,6 +50,7 @@ export function GlobalModals({ activeConnectionId }: GlobalModalsProps) {
       {dangerDialog && (
         <DangerConfirmDialog
           message={dangerDialog.message}
+          confirmLabel={dangerDialog.confirmLabel}
           onConfirm={dangerDialog.onConfirm}
           onCancel={reopenPaletteOnDismiss(() => setDangerDialog(null))}
         />

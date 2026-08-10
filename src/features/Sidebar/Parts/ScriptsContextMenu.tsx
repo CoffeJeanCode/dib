@@ -1,6 +1,17 @@
 import * as React from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { FolderPlus, FilePlus, Pin, PinOff, Palette, ChevronRight, Trash2, Edit2, Copy } from "lucide-react";
+import {
+  FolderPlus,
+  FilePlus,
+  Pin,
+  PinOff,
+  Palette,
+  ChevronRight,
+  Trash2,
+  Edit2,
+  Copy,
+  Play,
+} from "lucide-react";
 import "./ScriptsContextMenu.css";
 
 interface ScriptsContextMenuProps {
@@ -11,6 +22,7 @@ interface ScriptsContextMenuProps {
   onNewScript?: () => void;
   onRename?: () => void;
   onDuplicate?: () => void;
+  onRun?: () => void;
   onTogglePin?: () => void;
   onColorChange?: (color: string | null) => void;
   onDelete?: () => void;
@@ -26,6 +38,7 @@ export function ScriptsContextMenu({
   onNewScript,
   onRename,
   onDuplicate,
+  onRun,
   onTogglePin,
   onColorChange,
   onDelete,
@@ -45,10 +58,8 @@ export function ScriptsContextMenu({
 
   return (
     <ContextMenu.Root>
-      <ContextMenu.Trigger asChild>
-        {children}
-      </ContextMenu.Trigger>
-      
+      <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
+
       <ContextMenu.Portal>
         <ContextMenu.Content
           className="scripts-ctx-menu z-50 min-w-[160px] overflow-hidden rounded-md border border-gray-700 bg-gray-800/90 backdrop-blur-md p-1 shadow-lg"
@@ -90,6 +101,15 @@ export function ScriptsContextMenu({
               Duplicate
             </ContextMenu.Item>
           )}
+          {selectedCount <= 1 && !isFolder && onRun && (
+            <ContextMenu.Item
+              onSelect={onRun}
+              className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200"
+            >
+              <Play className="mr-2 h-3.5 w-3.5" size={14} />
+              Run
+            </ContextMenu.Item>
+          )}
 
           {selectedCount <= 1 && onNewScript && (onTogglePin || onColorChange) && (
             <ContextMenu.Separator className="scripts-ctx-separator -mx-1 my-1 h-px bg-gray-700" />
@@ -101,9 +121,13 @@ export function ScriptsContextMenu({
               className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200"
             >
               {isPinned ? (
-                <><PinOff className="mr-2 h-3.5 w-3.5" size={14} /> Unpin</>
+                <>
+                  <PinOff className="mr-2 h-3.5 w-3.5" size={14} /> Unpin
+                </>
               ) : (
-                <><Pin className="mr-2 h-3.5 w-3.5" size={14} /> Pin to top</>
+                <>
+                  <Pin className="mr-2 h-3.5 w-3.5" size={14} /> Pin to top
+                </>
               )}
             </ContextMenu.Item>
           )}
@@ -113,11 +137,22 @@ export function ScriptsContextMenu({
               <ContextMenu.SubTrigger className="scripts-ctx-subtrigger relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-gray-700 focus:bg-gray-700 text-gray-200 data-[state=open]:bg-gray-700">
                 <Palette className="mr-2 h-3.5 w-3.5" size={14} />
                 Change Color
-                <ChevronRight className="ml-auto h-3 w-3" size={12} style={{ marginLeft: "auto" }} />
+                <ChevronRight
+                  className="ml-auto h-3 w-3"
+                  size={12}
+                  style={{ marginLeft: "auto" }}
+                />
               </ContextMenu.SubTrigger>
               <ContextMenu.Portal>
                 <ContextMenu.SubContent className="scripts-ctx-subcontent z-50 overflow-hidden rounded-md border border-gray-700 bg-gray-800/90 backdrop-blur-md p-1 shadow-lg">
-                  <div className="scripts-ctx-colors grid grid-cols-4 gap-1 p-1" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 4 }}>
+                  <div
+                    className="scripts-ctx-colors grid grid-cols-4 gap-1 p-1"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                      gap: 4,
+                    }}
+                  >
                     {PASTEL_COLORS.map((color) => (
                       <div key={color.value ?? "none"} title={color.label}>
                         <ContextMenu.Item
@@ -126,11 +161,17 @@ export function ScriptsContextMenu({
                         >
                           <div
                             style={{
-                              width: 24, height: 24, borderRadius: "50%",
+                              width: 24,
+                              height: 24,
+                              borderRadius: "50%",
                               backgroundColor: color.value ?? "transparent",
-                              border: color.value ? (currentColor === color.value ? "2px solid #fff" : "none") : "1px dashed var(--color-border)",
+                              border: color.value
+                                ? currentColor === color.value
+                                  ? "2px solid #fff"
+                                  : "none"
+                                : "1px dashed var(--color-border)",
                               transform: "scale(1)",
-                              cursor: "pointer"
+                              cursor: "pointer",
                             }}
                           />
                         </ContextMenu.Item>
@@ -150,7 +191,11 @@ export function ScriptsContextMenu({
                 className="scripts-ctx-item relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-red-900/50 focus:bg-red-900/50 text-red-400"
               >
                 <Trash2 className="mr-2 h-3.5 w-3.5" size={14} />
-                {selectedCount > 1 ? `Delete ${selectedCount} items` : (isFolder ? "Delete Folder" : "Delete Script")}
+                {selectedCount > 1
+                  ? `Delete ${selectedCount} items`
+                  : isFolder
+                    ? "Delete Folder"
+                    : "Delete Script"}
               </ContextMenu.Item>
             </>
           )}

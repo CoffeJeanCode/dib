@@ -12,6 +12,9 @@ pub async fn run_query(
 ) -> Result<QueryResult, QueryError> {
     let app_db = app_handle.state::<crate::storage::AppDb>();
     crate::commands::connection::assert_connection_in_active_workspace(&state, &app_db, &connection_id)?;
+    if crate::commands::connection::is_connection_readonly(&state, &app_db, &connection_id)? {
+        crate::commands::connection::assert_sql_readonly_safe(&sql)?;
+    }
 
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),
@@ -21,6 +24,8 @@ pub async fn run_query(
     // History is recorded solely by the frontend via save_query_history:
     // it covers failures too and honors the configurable history_limit.
     // Saving here as well produced duplicate entries.
+    // Read-only sessions rely on engine session mode (Postgres/SQLite).
+    // Mutate IPC is separately blocked via assert_connection_writable.
     driver.execute_query(&sql).await
 }
 
@@ -35,6 +40,7 @@ pub async fn apply_changes(
 ) -> Result<u64, QueryError> {
     let app_db = app_handle.state::<crate::storage::AppDb>();
     crate::commands::connection::assert_connection_in_active_workspace(&state, &app_db, &connection_id)?;
+    crate::commands::connection::assert_connection_writable(&state, &app_db, &connection_id)?;
 
     let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
         message: format!("Connection not found: {}", connection_id),

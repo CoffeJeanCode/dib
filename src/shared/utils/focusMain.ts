@@ -7,6 +7,7 @@ export const FOCUS_SELECTORS: Record<string, string> = {
   table_structure: "[data-focus-host='table-structure']",
   schema: "[data-focus-host='schema-visualizer']",
   mock_generator: "[data-focus-host='mock-generator']",
+  query_result: "[data-focus-host='query-result']",
 } as const;
 
 // Only the most recent focusWithRetry call may act: a newer request cancels

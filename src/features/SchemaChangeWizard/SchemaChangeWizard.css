@@ -44,7 +44,9 @@
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
-  transition: border-color var(--transition-fastest), color var(--transition-fastest);
+  transition:
+    border-color var(--transition-fastest),
+    color var(--transition-fastest);
 }
 
 .scw-column-chip:hover {
@@ -166,7 +168,9 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
   white-space: nowrap;
 }
 
@@ -188,7 +192,9 @@
   border-radius: var(--radius-sm);
   font-size: 16px;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -218,7 +224,9 @@
   font-size: var(--font-size-sm);
   font-family: var(--font-mono);
   color: var(--color-text-primary);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   animation: scw-slide-in 200ms ease-out;
 }
 
@@ -335,18 +343,19 @@
 
 .scw-btn--apply {
   background: var(--color-highlight) !important;
-  color: var(--text-primary) !important;
+  color: var(--color-on-accent) !important;
   border-color: var(--color-highlight) !important;
   padding: var(--space-2) var(--space-5) !important;
   font-weight: var(--font-weight-semibold) !important;
 }
 
 .scw-btn--apply:hover:not(:disabled) {
-  opacity: 0.9;
+  filter: brightness(0.92);
 }
 
 .scw-btn--apply-warn {
   background: var(--color-orange) !important;
+  color: var(--color-on-accent) !important;
   border-color: var(--color-orange) !important;
 }
 

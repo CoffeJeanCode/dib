@@ -6,6 +6,7 @@ import { useSavedConnections } from "@/shared/hooks/useSavedConnections";
 import { useSidebarScripts } from "@/shared/hooks/useSidebarScripts";
 import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useToastStore } from "@/store/toastStore";
 import { workspaceService } from "@/services/workspaceService";
 import { EntityBrowser } from "./EntityBrowser";
 import {
@@ -16,9 +17,10 @@ import {
 } from "./Parts";
 import type { WorkspaceTreeRef } from "./Parts/WorkspaceTree";
 import type { SavedConnection } from "@/types/db";
+import type { FsNode } from "@/types/workspace";
 import "./Sidebar.css";
 
-type Panel = "explorer" | "files" | "history";
+type Panel = "explorer" | "files" | "history" | "workspaces";
 
 interface SidebarProps {
   activeView: Panel;
@@ -42,8 +44,10 @@ export function Sidebar({
   const connectionName = active?.name;
 
   const setOpenScript = useWorkspaceStore((s) => s.setOpenScript);
+  const setPendingScriptRun = useWorkspaceStore((s) => s.setPendingScriptRun);
   const onScriptOpen = useCallback((sql: string, name: string, id: string) => setOpenScript({ sql, name, id: id ?? `ext-${Date.now()}`, v: Date.now() } as any), [setOpenScript]);
   const { virtualTree, scriptsLoading, refreshScripts } = useSidebarScripts(activeConnectionId);
+  const toastError = useToastStore((s) => s.error);
 
   const workspaceTreeRef = useRef<WorkspaceTreeRef>(null);
 
@@ -53,13 +57,38 @@ export function Sidebar({
   const workspaceTree = useWorkspaceStore((s) => s.workspaceTree);
   const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath);
 
+  const onScriptRun = useCallback(async (node: FsNode) => {
+    if (node.isDir || node.is_dir) return;
+    if (!activeSessionId) {
+      toastError("Connect to a database to run scripts");
+      return;
+    }
+    try {
+      let sql = node.content ?? "";
+      if (activeWorkspacePath) {
+        sql = await workspaceService.readTextFile(node.path);
+      }
+      if (!sql.trim()) {
+        toastError("Script is empty");
+        return;
+      }
+      setPendingScriptRun({ sql, name: node.name, id: node.path, v: Date.now() });
+    } catch (e) {
+      console.error("Failed to read script for run", e);
+      toastError("Failed to read script");
+    }
+  }, [activeSessionId, activeWorkspacePath, setPendingScriptRun, toastError]);
+
   // The Files panel header doubles as the workspace switcher: no workspace
   // open means the picker is what you need, so it opens on that.
   const [showWorkspaces, setShowWorkspaces] = useState(!activeWorkspacePath);
   useEffect(() => { if (activeWorkspacePath) setShowWorkspaces(false); }, [activeWorkspacePath]);
   const workspaceLabel = activeWorkspacePath
     ? (activeWorkspacePath.split(/[/\\]/).filter(Boolean).pop() ?? "Workspace")
-    : "Scripts";
+    : "App scripts";
+  const filesHeaderTitle = activeWorkspacePath
+    ? "Workspace folder on disk"
+    : "Scripts stored inside DIB (standalone)";
 
   useEffect(() => {
     if (undoStack.length === 0) return;
@@ -103,6 +132,10 @@ export function Sidebar({
           onScriptOpen={onScriptOpen}
           onDeleteTarget={setDeleteTarget}
         />
+      ) : activeView === "workspaces" ? (
+        <nav className="sidebar-nav dg-scroll" aria-label="Workspaces">
+          <WorkspaceList onConnectionSelect={selectConnection} />
+        </nav>
       ) : activeView === "history" ? (
         <nav className="sidebar-nav dg-scroll" aria-label="Query history">
           <QueryHistoryPanel activeConnectionId={activeConnectionId} onScriptOpen={onScriptOpen} />
@@ -113,6 +146,7 @@ export function Sidebar({
             <SectionHeader
               Icon={activeWorkspacePath ? Folder : Database}
               label={workspaceLabel}
+              title={filesHeaderTitle}
               expanded={showWorkspaces}
               onToggle={() => setShowWorkspaces((v) => !v)}
               onRefresh={!showWorkspaces && activeWorkspacePath ? () => useWorkspaceStore.getState().loadWorkspaceTree(activeWorkspacePath, useWorkspaceStore.getState().activeWorkspaceId) : undefined}
@@ -121,8 +155,8 @@ export function Sidebar({
                 // would be silent no-ops, so don't offer them.
                 showWorkspaces ? null : (
                   <>
-                    <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFile(); }} title="New File"><FilePlus /></button>
-                    <button className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFolder(); }} title="New Folder"><FolderPlus /></button>
+                    <button type="button" className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFile(); }} title="New File"><FilePlus /></button>
+                    <button type="button" className="sidebar-section-header-action" onClick={(e) => { e.stopPropagation(); workspaceTreeRef.current?.createFolder(); }} title="New Folder"><FolderPlus /></button>
                   </>
                 )
               }
@@ -135,6 +169,7 @@ export function Sidebar({
                 tree={(activeWorkspacePath ? workspaceTree : virtualTree)!} 
                 connectionId={activeWorkspacePath ? undefined : activeConnectionId}
                 onRefresh={activeWorkspacePath ? undefined : refreshScripts}
+                onNodeRun={onScriptRun}
                 onNodeClick={async (node) => {
                   if (node.isDir) return;
                   if (activeWorkspacePath) {
@@ -176,9 +211,10 @@ export function Sidebar({
   );
 }
 
-function SectionHeader({ Icon, label, onRefresh, actions, expanded, onToggle }: {
+function SectionHeader({ Icon, label, title, onRefresh, actions, expanded, onToggle }: {
   Icon: React.ComponentType<{ size?: number | string }>;
   label: string;
+  title?: string;
   onRefresh?: () => void;
   actions?: React.ReactNode;
   /** When provided, the label becomes a button that swaps in the workspace picker. */
@@ -192,7 +228,7 @@ function SectionHeader({ Icon, label, onRefresh, actions, expanded, onToggle }: 
           className="sidebar-section-header-toggle"
           onClick={onToggle}
           aria-expanded={expanded}
-          title="Switch workspace"
+          title={title ?? "Switch workspace"}
         >
           <Icon size={13} />
           <span>{label}</span>
@@ -208,7 +244,7 @@ function SectionHeader({ Icon, label, onRefresh, actions, expanded, onToggle }: 
       ) : (
         <>
           <Icon size={13} />
-          <span>{label}</span>
+          <span title={title}>{label}</span>
         </>
       )}
       <div style={{ marginLeft: "auto", display: "flex", gap: "4px" }}>

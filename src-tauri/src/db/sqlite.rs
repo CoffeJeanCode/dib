@@ -58,17 +58,35 @@ fn sqlite_bind_json(args: &mut sqlx::sqlite::SqliteArguments<'_>, val: &serde_js
 }
 
 impl SqliteDriver {
-    pub async fn connect(path: &str) -> Result<Self, QueryError> {
+    pub async fn connect(path: &str, readonly: bool) -> Result<Self, QueryError> {
         // ponytail: prepend scheme if bare path given
         let url = if path.starts_with("sqlite:") {
             path.to_string()
         } else {
             format!("sqlite:{path}")
         };
-        SqlitePool::connect(&url)
-            .await
-            .map(|pool| Self { pool })
-            .map_err(|e| QueryError::from(e.to_string()))
+
+        let pool = if readonly {
+            sqlx::sqlite::SqlitePoolOptions::new()
+                .after_connect(|conn, _meta| {
+                    Box::pin(async move {
+                        // SQLite 3.38+: blocks writes on every pooled connection.
+                        sqlx::query("PRAGMA query_only = ON")
+                            .execute(&mut *conn)
+                            .await?;
+                        Ok(())
+                    })
+                })
+                .connect(&url)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?
+        } else {
+            SqlitePool::connect(&url)
+                .await
+                .map_err(|e| QueryError::from(e.to_string()))?
+        };
+
+        Ok(Self { pool })
     }
 }
 
@@ -315,19 +333,13 @@ impl DatabaseDriver for SqliteDriver {
             .map(|o| format!(" ORDER BY \"{}\" {}", o.column.replace('"', ""), o.direction))
             .unwrap_or_default();
 
-        let count_sql = format!("SELECT COUNT(*) FROM \"{safe}\"{where_sql}");
-        let mut count_q = sqlx::query_scalar::<_, i64>(&count_sql);
-        for v in &filter_values { count_q = count_q.bind(v.clone()); }
-        let total: i64 = count_q
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| QueryError::from(e.to_string()))?;
-
+        // Fetch limit+1 to learn has_more — avoids COUNT(*) on large tables.
+        let fetch_limit = limit.saturating_add(1);
         let data_sql = format!("SELECT * FROM \"{safe}\"{where_sql}{order_sql} LIMIT ? OFFSET ?");
         let mut data_q = sqlx::query(&data_sql);
         for v in &filter_values { data_q = data_q.bind(v.clone()); }
         let rows = data_q
-            .bind(limit as i64)
+            .bind(fetch_limit as i64)
             .bind(offset as i64)
             .fetch_all(&self.pool)
             .await
@@ -338,16 +350,15 @@ impl DatabaseDriver for SqliteDriver {
             .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
             .unwrap_or_default();
 
-        Ok(PagedResult {
-            rows: rows
+        Ok(PagedResult::from_limit_plus_one(
+            columns,
+            rows
                 .iter()
                 .map(|r| (0..r.columns().len()).map(|i| sqlite_value_to_json(r, i)).collect())
                 .collect(),
-            columns,
-            total: total.max(0) as u64,
             offset,
             limit,
-        })
+        ))
     }
 
     async fn get_table_relations(

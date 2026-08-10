@@ -8,7 +8,9 @@ import {
   FileCode2,
   FileJson,
   FileText,
-  File
+  File,
+  Play,
+  Loader2,
 } from "lucide-react";
 import {
   DndContext,
@@ -59,6 +61,7 @@ interface TreeItemProps {
   depth: number;
   activeId: UniqueIdentifier | null;
   onNodeClick?: (node: FsNode) => void;
+  onNodeRun?: (node: FsNode) => void;
   connectionId?: string | null;
   onRefresh?: () => void;
   onCreateRequest?: (type: "file" | "folder", targetPath: string) => void;
@@ -74,9 +77,10 @@ interface TreeItemProps {
   onSelectRequest?: (e: React.MouseEvent, node: FsNode) => void;
 }
 
-function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh, onCreateRequest, onDeleteRequest, onRenameRequest, onDuplicateRequest, renameTargetId, renameValue, onRenameChange, onRenameSubmit, onRenameCancel, selectedPaths, onSelectRequest }: TreeItemProps) {
+function TreeItem({ node, depth, activeId, onNodeClick, onNodeRun, connectionId, onRefresh, onCreateRequest, onDeleteRequest, onRenameRequest, onDuplicateRequest, renameTargetId, renameValue, onRenameChange, onRenameSubmit, onRenameCancel, selectedPaths, onSelectRequest }: TreeItemProps) {
   const isExpanded = useTreeStateStore((s) => s.expandedNodes[node.path]);
   const toggleNode = useTreeStateStore((s) => s.toggleNode);
+  const isRunning = useWorkspaceStore((s) => s.runningScriptId === node.path);
 
   const rootPath = useWorkspaceStore((s) => s.activeWorkspacePath);
   const workspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -147,6 +151,12 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
     onCreateRequest?.("folder", node.path);
   }, [node.path, onCreateRequest]);
 
+  const handleRun = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isRunning) return;
+    onNodeRun?.(node);
+  }, [node, onNodeRun, isRunning]);
+
   const isSelected = selectedPaths?.has(node.path);
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -168,19 +178,21 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
       onDelete={() => onDeleteRequest?.(node)}
       onRename={() => onRenameRequest?.(node)}
       onDuplicate={() => onDuplicateRequest?.(node)}
+      onRun={!(node.isDir || node.is_dir) && onNodeRun && !isRunning ? () => onNodeRun(node) : undefined}
       isFolder={node.isDir || node.is_dir}
       selectedCount={selectedPaths?.has(node.path) ? Math.max(1, selectedPaths.size) : 1}
     >
       <div
         ref={setRefs}
         style={style}
-        className="tree-item"
+        className={`tree-item${isRunning ? " tree-item--running" : ""}`}
         data-tree-item
         onClick={handleClick}
         onDoubleClick={(e) => { e.stopPropagation(); onRenameRequest?.(node); }}
         {...attributes}
         {...listeners}
         tabIndex={-1}
+        aria-busy={isRunning || undefined}
       >
         <span className="tree-item__spacer" />
         {node.isDir || node.is_dir ? (
@@ -210,7 +222,28 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
             {node.name}
           </span>
         )}
-        {node.is_pinned && <Pin size={16} className="tree-item-pin" />}
+        <div className="tree-item-trailing">
+          {node.is_pinned && <Pin size={14} className="tree-item-pin" />}
+          {!(node.isDir || node.is_dir) && onNodeRun && (
+            <div className={`tree-item-actions${isRunning ? " tree-item-actions--visible" : ""}`}>
+              <button
+                type="button"
+                className={`tree-item-action-btn${isRunning ? " tree-item-action-btn--running" : ""}`}
+                title={isRunning ? "Running…" : "Run script"}
+                onClick={handleRun}
+                onPointerDown={(e) => e.stopPropagation()}
+                disabled={isRunning}
+                aria-label={isRunning ? "Running script" : "Run script"}
+              >
+                {isRunning ? (
+                  <Loader2 size={12} className="tree-item-run-spinner" />
+                ) : (
+                  <Play size={12} />
+                )}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </ScriptsContextMenu>
   );
@@ -230,6 +263,7 @@ function TreeItem({ node, depth, activeId, onNodeClick, connectionId, onRefresh,
               depth={depth + 1}
               activeId={activeId}
               onNodeClick={onNodeClick}
+              onNodeRun={onNodeRun}
               connectionId={connectionId}
               onRefresh={onRefresh}
               onCreateRequest={onCreateRequest}
@@ -310,6 +344,7 @@ function getVisibleNodes(tree: FsNode, expanded: Record<string, boolean>): FsNod
 interface WorkspaceTreeProps {
   tree: FsNode;
   onNodeClick?: (node: FsNode) => void;
+  onNodeRun?: (node: FsNode) => void;
   connectionId?: string | null;
   onRefresh?: () => void;
 }
@@ -319,7 +354,7 @@ export interface WorkspaceTreeRef {
   createFolder: () => void;
 }
 
-export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(function WorkspaceTree({ tree, onNodeClick, connectionId, onRefresh: propsOnRefresh }: WorkspaceTreeProps, ref) {
+export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(function WorkspaceTree({ tree, onNodeClick, onNodeRun, connectionId, onRefresh: propsOnRefresh }: WorkspaceTreeProps, ref) {
   const rootPath = useWorkspaceStore((s) => s.activeWorkspacePath);
   const workspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const loadWorkspaceTree = useWorkspaceStore((s) => s.loadWorkspaceTree);
@@ -611,6 +646,7 @@ export const WorkspaceTree = forwardRef<WorkspaceTreeRef, WorkspaceTreeProps>(fu
                     depth={0}
                     activeId={activeId}
                     onNodeClick={onNodeClick}
+                    onNodeRun={onNodeRun}
                     connectionId={connectionId}
                     onRefresh={refresh}
                     onCreateRequest={handleCreateRequest}

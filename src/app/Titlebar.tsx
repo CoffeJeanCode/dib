@@ -1,11 +1,15 @@
 import { useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Search, Moon, Sun, Settings, Minus, Square, X } from "lucide-react";
+import { ArrowLeft, Home, Search, Moon, Sun, Settings, Minus, Square, X } from "lucide-react";
 import { mod } from "@/shared/utils/platform";
 import { useUiStore } from "@/store/uiStore";
 import { useTheme, setTheme } from "@/shared/hooks/useTheme";
+import { useSessionEgress } from "@/shared/hooks/useSessionEgress";
 import { Dropzone, type ImportResult } from "@/shared/ui/Dropzone";
+import { Tooltip } from "@/shared/ui/Tooltip";
+import { useConnectionStore } from "@/store/connectionStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { ReadonlyBadge } from "@/shared/ui/ReadonlyBadge";
 import type { OpenScript } from "@/types/workspace";
 // Same source of truth as the app icon, so the titlebar can never drift from it.
 // The 32px variant, not the 512px master: this renders at 14px (28px on hidpi) and
@@ -20,7 +24,14 @@ export function Titlebar() {
   const togglePalette = useUiStore((s) => s.togglePalette);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath);
-  const setActiveWorkspacePath = useWorkspaceStore((s) => s.setActiveWorkspacePath);
+  const active = useConnectionStore((s) => s.active);
+  const egress = useSessionEgress();
+
+  const contextLabel = activeWorkspacePath
+    ? (activeWorkspacePath.split(/[/\\]/).pop() ?? "Workspace")
+    : (active?.name ?? null);
+  const contextKind = activeWorkspacePath ? "Workspace" : active ? "Instance" : null;
+  const pillModifier = contextKind === "Workspace" ? "workspace" : "instance";
 
   const handleMinimize = useCallback(() => { appWindow.minimize(); }, []);
   const handleMaximize = useCallback(() => { appWindow.toggleMaximize(); }, []);
@@ -40,13 +51,24 @@ export function Titlebar() {
           <img className="titlebar-logo" src={logoUrl} alt="" width={14} height={14} data-tauri-drag-region />
           DIB
         </span>
-        {activeWorkspacePath && (
-          <div className="titlebar-workspace-pill">
-            <span className="titlebar-workspace-name">{activeWorkspacePath.split(/[/\\]/).pop()}</span>
-            <button className="titlebar-workspace-close" onClick={() => setActiveWorkspacePath(null)} title="Close Workspace">
-              <X size={12} />
+        {egress.visible && (
+          <Tooltip content={egress.title}>
+            <button type="button" className="titlebar-egress" onClick={egress.run}>
+              {egress.label === "Go home" ? <Home size={12} /> : <ArrowLeft size={12} />}
+              <span>{egress.label}</span>
             </button>
-          </div>
+          </Tooltip>
+        )}
+        {contextLabel && contextKind && (
+          <Tooltip content={activeWorkspacePath ?? contextLabel}>
+            <div className={`titlebar-context-pill titlebar-context-pill--${pillModifier}`}>
+              <span className="titlebar-context-kind">{contextKind}</span>
+              <span className="titlebar-context-name">{contextLabel}</span>
+              {active?.readonly && !activeWorkspacePath ? (
+                <ReadonlyBadge size={11} className="titlebar-context-ro" />
+              ) : null}
+            </div>
+          </Tooltip>
         )}
       </div>
 
@@ -54,27 +76,39 @@ export function Titlebar() {
 
       <div className="titlebar-end">
         <Dropzone onImport={handleImport} />
-        <button className="titlebar-btn" onClick={togglePalette} title={`Quick Command (${mod("Ctrl+K")})`}>
-          <Search size={15} />
-        </button>
-        <button className="titlebar-btn" onClick={handleToggleTheme} title={theme === "dark" ? "Light mode" : "Dark mode"}>
-          {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
-        <button className="titlebar-btn" onClick={() => setSettingsOpen(true)} title="Settings">
-          <Settings size={15} />
-        </button>
+        <Tooltip content={`Quick Command (${mod("Ctrl+K")})`}>
+          <button type="button" className="titlebar-btn" onClick={togglePalette}>
+            <Search size={15} />
+          </button>
+        </Tooltip>
+        <Tooltip content={theme === "dark" ? "Light mode" : "Dark mode"}>
+          <button type="button" className="titlebar-btn" onClick={handleToggleTheme}>
+            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+        </Tooltip>
+        <Tooltip content="Settings">
+          <button type="button" className="titlebar-btn" onClick={() => setSettingsOpen(true)}>
+            <Settings size={15} />
+          </button>
+        </Tooltip>
 
         <div className="titlebar-separator" />
 
-        <button className="titlebar-btn titlebar-winctrl" onClick={handleMinimize} title="Minimize">
-          <Minus size={15} />
-        </button>
-        <button className="titlebar-btn titlebar-winctrl" onClick={handleMaximize} title="Maximize">
-          <Square size={13} />
-        </button>
-        <button className="titlebar-btn titlebar-winctrl titlebar-close" onClick={handleClose} title="Close">
-          <X size={15} />
-        </button>
+        <Tooltip content="Minimize">
+          <button type="button" className="titlebar-btn titlebar-winctrl" onClick={handleMinimize}>
+            <Minus size={15} />
+          </button>
+        </Tooltip>
+        <Tooltip content="Maximize">
+          <button type="button" className="titlebar-btn titlebar-winctrl" onClick={handleMaximize}>
+            <Square size={13} />
+          </button>
+        </Tooltip>
+        <Tooltip content="Close">
+          <button type="button" className="titlebar-btn titlebar-winctrl titlebar-close" onClick={handleClose}>
+            <X size={15} />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

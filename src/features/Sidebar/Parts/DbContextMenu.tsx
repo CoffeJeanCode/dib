@@ -1,5 +1,5 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Lock } from "lucide-react";
 import "@/shared/ui/ContextMenu.css";
 
 interface DbContextMenuProps {
@@ -9,6 +9,8 @@ interface DbContextMenuProps {
 }
 
 export function DbContextMenu({ children, onRename, onDrop }: DbContextMenuProps) {
+  const hasActions = !!(onRename || onDrop);
+
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>{children}</ContextMenu.Trigger>
@@ -28,6 +30,12 @@ export function DbContextMenu({ children, onRename, onDrop }: DbContextMenuProps
                 <span className="ctx-item-label">Drop Database…</span>
               </ContextMenu.Item>
             </>
+          )}
+          {!hasActions && (
+            <ContextMenu.Label className="ContextMenuLabel">
+              <Lock size={12} aria-hidden />
+              <span>Read-only — database changes blocked</span>
+            </ContextMenu.Label>
           )}
         </ContextMenu.Content>
       </ContextMenu.Portal>

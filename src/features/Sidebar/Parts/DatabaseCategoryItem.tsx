@@ -69,6 +69,7 @@ export const DatabaseCategoryItem = React.memo(function DatabaseCategoryItem({
 
   const isLoading = ddlLoading === `${kind}-${name}`;
   const isActive = isTableOrView && storeActiveTable?.name === name && storeActiveTable?.schema === schema;
+  const connectionReadonly = useConnectionStore((s) => s.active?.readonly ?? false);
 
   const nameMatchesEdit = editingItem?.name === name && editingItem?.schema === schema && editingItem?.kind === kind;
 
@@ -116,14 +117,15 @@ export const DatabaseCategoryItem = React.memo(function DatabaseCategoryItem({
     <div key={`${schema ?? ""}.${name}.${index}`}>
       <TableContextMenu
         item={{ name, schema, kind }}
+        writeDisabled={connectionReadonly}
         onViewStructure={isTableOrView ? () => useWorkspaceStore.getState().openTableStructure(item as TableInfo) : undefined}
         onViewRelations={isTableOrView ? () => useWorkspaceStore.getState().openTableRelations(item as TableInfo) : undefined}
-        onRename={() => onStartEditing(name, schema, kind)}
-        onAlter={isTableOrView ? () => onSetAlterTable(item as TableInfo) : undefined}
+        onRename={connectionReadonly ? undefined : () => onStartEditing(name, schema, kind)}
+        onAlter={connectionReadonly || !isTableOrView ? undefined : () => onSetAlterTable(item as TableInfo)}
         onGenerateSql={isTableOrView ? (type) => onGenerateSql(item as TableInfo, type) : undefined}
         onViewDdl={!isTableOrView && kind !== "trigger" ? () => onItemClick(kind, item) : undefined}
-        onTruncate={isTableOrView ? handleTruncate : undefined}
-        onDrop={handleDrop}
+        onTruncate={connectionReadonly || !isTableOrView ? undefined : handleTruncate}
+        onDrop={connectionReadonly ? undefined : handleDrop}
       >
         <div
           className={`sidebar-db-item${isActive ? " sidebar-db-item--active" : ""}`}

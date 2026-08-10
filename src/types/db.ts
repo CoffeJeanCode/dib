@@ -7,6 +7,8 @@ export interface DbConfig {
   username: string | null;
   password: string | null;
   path: string | null;
+  /** When true, backend blocks mutations and opens a read-only session. */
+  readonly?: boolean;
 }
 
 export type ConnectionStatus = "connected" | "disconnected";
@@ -82,7 +84,10 @@ export interface QueryResult {
 export interface PagedResult {
   columns: string[];
   rows: unknown[][];
+  /** Exact total only on the last page; otherwise 0 (unknown). No COUNT(*). */
   total: number;
+  /** True when another page exists after this one. */
+  has_more?: boolean;
   offset: number;
   limit: number;
 }
@@ -100,6 +105,8 @@ export interface SavedConnection {
   password: string | null;
   save_password?: boolean;
   workspace_id?: string | null;
+  /** Blocks all write operations when true. Defaults false for existing instances. */
+  readonly?: boolean;
 }
 
 export type FilterOperator =
