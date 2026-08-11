@@ -1,6 +1,6 @@
 [package]
 name = "dib"
-version = "0.3.1"
+version = "0.3.2"
 description = "Data Illustrative Base"
 authors = ["DIB Team"]
 edition = "2021"
