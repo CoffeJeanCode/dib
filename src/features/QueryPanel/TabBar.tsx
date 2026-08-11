@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -53,6 +54,7 @@ function SortableTab({
   return (
     <div
       ref={setNodeRef}
+      data-tab-id={tab.id}
       style={{ transform: CSS.Transform.toString(transform), transition }}
     >
       <Tab
@@ -68,10 +70,59 @@ function SortableTab({
   );
 }
 
+/** Scroll strip so tab is fully visible; new tabs at the end push older ones left. */
+function ensureTabVisible(container: HTMLElement, tabEl: HTMLElement) {
+  const cRect = container.getBoundingClientRect();
+  const tRect = tabEl.getBoundingClientRect();
+  const tabLeft = container.scrollLeft + (tRect.left - cRect.left);
+  const tabRight = tabLeft + tRect.width;
+  const viewLeft = container.scrollLeft;
+  const viewRight = viewLeft + container.clientWidth;
+  if (tabLeft < viewLeft) container.scrollLeft = tabLeft;
+  else if (tabRight > viewRight) container.scrollLeft = tabRight - container.clientWidth;
+}
+
 export function TabBar({ tabs, activeId, onSelect, onClose, onReorder, onSchemaOpen }: TabBarProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const hasTabs = tabs.length > 0;
+
+  // Vertical wheel → horizontal scroll (VS Code–style). Native listener: React onWheel is passive.
+  useEffect(() => {
+    if (!hasTabs) return;
+    const el = tabsRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY + e.deltaX;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [hasTabs]);
+
+  // Reveal active tab after open/select (double rAF waits for layout of new tab)
+  useEffect(() => {
+    if (!hasTabs || !activeId) return;
+    let cancelled = false;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (cancelled) return;
+        const container = tabsRef.current;
+        if (!container) return;
+        const tabEl = container.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(activeId)}"]`);
+        if (tabEl) ensureTabVisible(container, tabEl);
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [activeId, hasTabs, tabs.length]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -82,16 +133,13 @@ export function TabBar({ tabs, activeId, onSelect, onClose, onReorder, onSchemaO
     }
   };
 
-  if (tabs.length === 0) return null;
+  if (!hasTabs) return null;
 
   return (
     <div className="tabbar">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]}>
         <SortableContext items={tabs.map((t) => t.id)} strategy={horizontalListSortingStrategy}>
-          <div
-            className="tabbar-tabs"
-            onWheel={(e) => { e.preventDefault(); e.currentTarget.scrollLeft += e.deltaY || e.deltaX; }}
-          >
+          <div ref={tabsRef} className="tabbar-tabs">
             {tabs.map((tab) => (
               <SortableTab
                 key={tab.id}

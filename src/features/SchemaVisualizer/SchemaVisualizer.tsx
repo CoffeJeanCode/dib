@@ -136,7 +136,7 @@ function FullSchemaView({
         animated: false,
         style: { stroke: "var(--color-teal)", strokeWidth: 1.5, opacity: 0.85 },
         labelStyle: { fill: "#888", fontSize: 9, fontFamily: "JetBrains Mono, monospace" },
-        labelBgStyle: { fill: "#1C1A18", fillOpacity: 0.9 },
+        labelBgStyle: { fill: "#151A23", fillOpacity: 0.9 },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: "var(--color-teal)",
@@ -284,7 +284,7 @@ function RelationView({
             animated: false,
             style: { stroke: "var(--color-teal)", strokeWidth: 1.5, opacity: 0.85 },
             labelStyle: { fill: "#888", fontSize: 9, fontFamily: "JetBrains Mono, monospace" },
-            labelBgStyle: { fill: "#1C1A18", fillOpacity: 0.9 },
+            labelBgStyle: { fill: "#151A23", fillOpacity: 0.9 },
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: "var(--color-teal)",

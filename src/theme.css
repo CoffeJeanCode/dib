@@ -69,8 +69,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DARK MODE TOKENS  (default — Neon Dark-Dash)
-   Warm-leaning charcoal (subtle brown undertone, not pure cool grey).
+   DARK MODE TOKENS  (default — Neon Dark-Dash, locked to v0.2.0)
    ═══════════════════════════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
@@ -80,70 +79,70 @@
      app is dark but every dropdown opens white with unreadable text. */
   color-scheme: dark;
 
-  /* Backgrounds — slight warm undertone */
-  --color-bg: #141210;
-  --color-bg-sidebar: #1c1a18;
-  --color-bg-secondary: #1c1a18;
-  --color-bg-tertiary: #242220;
-  --color-bg-hover: rgba(255, 248, 240, 0.05);
-  --color-bg-active: rgba(255, 248, 240, 0.08);
-  --color-bg-elevated: #201e1b;
+  /* Backgrounds */
+  --color-bg:           #121215;
+  --color-bg-sidebar:   #1A1A1E;
+  --color-bg-secondary: #1A1A1E;
+  --color-bg-tertiary:  #222226;
+  --color-bg-hover:     rgba(255, 255, 255, 0.05);
+  --color-bg-active:    rgba(255, 255, 255, 0.08);
+  --color-bg-elevated:  #1E1E22;
 
   /* Monaco seamless background */
-  --color-monaco-bg: #141210;
+  --color-monaco-bg:    #121215;
 
   /* Borders */
-  --color-border: #2e2a28;
-  --color-border-dark: #3a3532;
+  --color-border:       #2A2A30;
+  --color-border-dark:  #333340;
 
   /* Text — strict hierarchy, no text-shadow */
-  --color-text-primary: #faf7f2;
-  --color-text-secondary: #8a8580;
-  --color-text-tertiary: #5a5650;
+  --color-text-primary:   #FFFFFF;
+  --color-text-secondary: #888888;
+  --color-text-tertiary:  #555560;
 
   /* Highlight / Focus */
   --color-highlight: var(--neon-cyan);
-  --color-focus: var(--neon-cyan);
+  --color-focus:     var(--neon-cyan);
 
   /* Suggest widget surface (Monaco autocomplete) */
-  --color-suggest-bg: #1c1a18;
-  --color-suggest-border: #2e2a28;
-  --color-suggest-focus-bg: rgba(13, 147, 165, 0.1);
-  --color-suggest-focus-text: #faf7f2;
+  --color-suggest-bg:     #1A1A1E;
+  --color-suggest-border: #2A2A30;
+  --color-suggest-focus-bg: rgba(103, 232, 249, 0.08);
+  --color-suggest-focus-text: #FFFFFF;
 
   /* Functional */
-  --color-danger-bg: #1c100e;
+  --color-danger-bg:     #1a0c0c;
   --color-danger-border: #5c2e2e;
-  --color-danger-text: #f5a5a5;
+  --color-danger-text:   #f5a5a5;
 
   /* Text on filled accent / danger buttons (always high-contrast) */
-  --color-on-accent: #ffffff;
-  --color-on-danger: #ffffff;
+  --color-on-accent: #FFFFFF;
+  --color-on-danger: #FFFFFF;
 
   /* Semantic */
-  --color-red: #ef4444;
-  --color-red-light: #1c100e;
-  --color-red-dark: #fca5a5;
+  --color-red:          #ef4444;
+  --color-red-light:    #1a0c0c;
+  --color-red-dark:     #fca5a5;
 
-  --color-orange: #f59e0b;
+  --color-orange:       #f59e0b;
   --color-orange-light: #1a1508;
 
-  --color-green: var(--neon-green);
-  --color-green-light: #57c796;
+  --color-green:        var(--neon-green);
+  --color-green-light:  #57c796;
   --color-green-dark: rgb(24, 141, 94);
 
-  --color-blue: #2a6fdb;
-  --color-blue-light: #0f1d35;
+  --color-blue:         #2a6fdb;
+  --color-blue-light:   #0f1d35;
 
-  --color-purple: var(--neon-purple);
-  --color-purple-light: #18122a;
+  --color-purple:       var(--neon-purple);
+  --color-purple-light: #15102a;
 
-  --color-teal: var(--neon-cyan);
-  --color-teal-light: #0e1a1c;
+  --color-teal:         var(--neon-cyan);
+  --color-teal-light:   #0c1a20;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(12, 8, 4, 0.65);
-  --shadow-lg: 0 10px 15px -3px rgba(12, 8, 4, 0.82), 0 4px 6px -4px rgba(12, 8, 4, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -4px rgba(0, 0, 0, 0.6);
 }
 
 /* ═══════════════════════════════════════════════════════════════

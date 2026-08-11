@@ -19,21 +19,21 @@
 
 /* ── Base variables (re-stated here for specificity when body has no theme) */
 .monaco-editor {
-  --suggest-bg: var(--color-suggest-bg, #1c1a18);
-  --suggest-border: var(--color-suggest-border, #2a2a30);
-  --suggest-focus-bg: var(--color-suggest-focus-bg, rgba(0, 238, 255, 0.08));
-  --suggest-focus-text: var(--color-suggest-focus-text, #ffffff);
-  --suggest-radius: var(--radius-md, 6px);
-  --suggest-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.8));
-  --suggest-font-sans: var(--font-sans, "Inter", sans-serif);
-  --suggest-font-mono: var(--font-mono, "JetBrains Mono", monospace);
-  --suggest-font-size: 13px;
+  --suggest-bg:          var(--color-suggest-bg,       #1A1A1E);
+  --suggest-border:      var(--color-suggest-border,   #2A2A30);
+  --suggest-focus-bg:    var(--color-suggest-focus-bg, rgba(103, 232, 249, 0.08));
+  --suggest-focus-text:  var(--color-suggest-focus-text, #FFFFFF);
+  --suggest-radius:      var(--radius-md, 6px);
+  --suggest-shadow:      var(--shadow-lg, 0 10px 15px -3px rgba(0,0,0,0.8));
+  --suggest-font-sans:   var(--font-sans, "Inter", sans-serif);
+  --suggest-font-mono:   var(--font-mono, "JetBrains Mono", monospace);
+  --suggest-font-size:   13px;
 }
 
 /* The host container loaded by @monaco-editor/react */
 .sqleditor-body .monaco-editor,
 .sqleditor-body .monaco-editor .margin {
-  background-color: var(--color-monaco-bg, #141210) !important;
+  background-color: var(--color-monaco-bg, #121215) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
