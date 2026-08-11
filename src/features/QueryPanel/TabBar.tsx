@@ -14,7 +14,7 @@ import {
   horizontalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { CSS as DndCSS } from "@dnd-kit/utilities";
 import { Network } from "lucide-react";
 import { Tab } from "./Tab";
 import type { TabData } from "./Tab";
@@ -55,7 +55,7 @@ function SortableTab({
     <div
       ref={setNodeRef}
       data-tab-id={tab.id}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{ transform: DndCSS.Transform.toString(transform), transition }}
     >
       <Tab
         tab={tab}
