@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { LayoutList, Columns3 } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { useUiState } from "@/shared/hooks/useUiState";
 import { useTheme, setTheme } from "@/shared/hooks/useTheme";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useToastStore } from "@/store/toastStore";
 import { FlatCheckbox } from "@/shared/ui/FlatCheckbox";
 import { FlatInput } from "@/shared/ui/FlatInput";
 import type { WorkspaceLayout } from "@/types/workspace";
@@ -28,10 +32,39 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const autoConnect = useSettingsStore((s) => s.autoConnectOnStartup);
   const setAutoConnect = useSettingsStore((s) => s.setAutoConnectOnStartup);
   const [version, setVersion] = useState("");
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     if (open) getVersion().then(setVersion);
   }, [open]);
+
+  const handleCheckUpdate = async () => {
+    if (checking) return;
+    const toast = useToastStore.getState();
+    setChecking(true);
+    try {
+      const update = await check();
+      if (!update) {
+        toast.info("You're on the latest version");
+        return;
+      }
+      const install = await ask(
+        `Version ${update.version} is available. Install and restart now?`,
+        { title: "Update available", kind: "info" },
+      );
+      if (!install) return;
+      toast.info(`Downloading update ${update.version}...`);
+      await update.downloadAndInstall();
+      toast.success("Update installed. Restarting...");
+      await relaunch();
+    } catch (err) {
+      useToastStore.getState().error(
+        err instanceof Error ? err.message : "Update check failed",
+      );
+    } finally {
+      setChecking(false);
+    }
+  };
 
   if (!open) return null;
 
@@ -125,6 +158,14 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
           <span className="sp-build-info">
             v{version || "…"} · built {new Date(__BUILD_DATE__).toLocaleDateString()}
           </span>
+          <button
+            className="dialog-btn dialog-btn--cancel"
+            onClick={handleCheckUpdate}
+            disabled={checking}
+            title="Check for a newer version and install it"
+          >
+            {checking ? "Checking…" : "Check updates"}
+          </button>
           <button className="dialog-btn dialog-btn--primary" onClick={onClose}>
             Done
           </button>

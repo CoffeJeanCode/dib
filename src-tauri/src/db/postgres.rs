@@ -586,6 +586,198 @@ async fn execute_query_no_tx(
     }
 }
 
+/// Multi-result execution for PostgreSQL. Runs statements in order. Each SELECT
+/// (or WITH...RETURNING / TABLE / SHOW / EXPLAIN) becomes its own result set;
+/// non-SELECT writes accumulate `rows_affected` into a trailing summary result
+/// only when no statement produced columns. Handles both transactional batches
+/// and scripts mixing non-transactional statements (CREATE DATABASE, VACUUM…).
+async fn execute_multi_inner(
+    pool: &PgPool,
+    stmts: &[String],
+) -> Result<Vec<QueryResult>, QueryError> {
+    let mut results: Vec<QueryResult> = Vec::new();
+    let mut total_affected = 0u64;
+
+    let has_non_tx = stmts.iter().any(|s| is_non_transactional(s));
+
+    if !has_non_tx {
+        let mut tx = pool.begin().await.map_err(|e| QueryError::from(e.to_string()))?;
+        for stmt in stmts {
+            if is_select(stmt) {
+                let rows = sqlx::query(stmt)
+                    .fetch_all(&mut *tx)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                results.push(build_select_result(&rows, &mut tx, total_affected).await);
+                total_affected = 0;
+            } else {
+                let r = sqlx::query(stmt)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                total_affected += r.rows_affected();
+            }
+        }
+        tx.commit().await.map_err(|e| QueryError::from(e.to_string()))?;
+    } else {
+        for stmt in stmts {
+            if is_select(stmt) {
+                let rows = sqlx::query(stmt)
+                    .fetch_all(pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                results.push(
+                    build_select_result_no_tx(&rows, total_affected).await,
+                );
+                total_affected = 0;
+            } else {
+                let r = sqlx::raw_sql(stmt)
+                    .execute(pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                total_affected += r.rows_affected();
+            }
+        }
+    }
+
+    // If the script only ran writes (no SELECT), surface the affected count.
+    if results.is_empty() {
+        results.push(QueryResult {
+            columns: vec![],
+            rows: vec![],
+            rows_affected: total_affected,
+            column_metadata: vec![],
+            is_updatable: false,
+        });
+    }
+
+    Ok(results)
+}
+
+async fn build_select_result(
+    rows: &[sqlx::postgres::PgRow],
+    tx: &mut sqlx::PgConnection,
+    rows_affected: u64,
+) -> QueryResult {
+    use std::collections::HashSet;
+
+    let columns: Vec<String> = rows
+        .first()
+        .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
+        .unwrap_or_default();
+
+    let (column_metadata, is_updatable) = if let Some(first_row) = rows.first() {
+        let pg_cols = first_row.columns();
+        let unique_oids: HashSet<u32> = pg_cols
+            .iter()
+            .filter_map(|c| c.relation_id().map(|o| o.0))
+            .collect();
+
+        if unique_oids.len() != 1 {
+            let meta = pg_cols
+                .iter()
+                .map(|c| ColumnMetadata {
+                    table_name: None,
+                    column_name: c.name().to_string(),
+                    is_primary_key: false,
+                })
+                .collect();
+            (meta, false)
+        } else if let Some(&raw_oid) = unique_oids.iter().next() {
+            let table_oid = raw_oid as i64;
+            let table_name_opt: Option<String> = sqlx::query(
+                "SELECT n.nspname AS schema, c.relname AS table_name \
+                 FROM pg_catalog.pg_class c \
+                 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace \
+                 WHERE c.oid = $1::oid",
+            )
+            .bind(table_oid)
+            .fetch_optional(&mut *tx)
+            .await
+            .ok()
+            .flatten()
+            .map(|r| {
+                let schema: String = r.try_get("schema").unwrap_or_default();
+                let name: String = r.try_get("table_name").unwrap_or_default();
+                if schema == "public" {
+                    name
+                } else {
+                    format!("{}.{}", schema, name)
+                }
+            });
+
+            let pk_attnums: HashSet<i16> = sqlx::query(
+                "SELECT a.attnum \
+                 FROM pg_catalog.pg_constraint con \
+                 JOIN pg_catalog.pg_attribute a \
+                   ON a.attrelid = con.conrelid AND a.attnum = ANY(con.conkey) \
+                 WHERE con.conrelid = $1::oid AND con.contype = 'p'",
+            )
+            .bind(table_oid)
+            .fetch_all(&mut *tx)
+            .await
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|r| r.try_get::<i16, _>("attnum").ok())
+            .collect();
+
+            let meta: Vec<ColumnMetadata> = pg_cols
+                .iter()
+                .map(|c| {
+                    let is_pk = c
+                        .relation_attribute_no()
+                        .map(|n| pk_attnums.contains(&n))
+                        .unwrap_or(false);
+                    ColumnMetadata {
+                        table_name: table_name_opt.clone(),
+                        column_name: c.name().to_string(),
+                        is_primary_key: is_pk,
+                    }
+                })
+                .collect();
+
+            let has_pk = meta.iter().any(|m| m.is_primary_key);
+            (meta, has_pk)
+        } else {
+            (vec![], false)
+        }
+    } else {
+        (vec![], false)
+    };
+
+    QueryResult {
+        rows: rows
+            .iter()
+            .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
+            .collect(),
+        columns,
+        rows_affected,
+        column_metadata,
+        is_updatable,
+    }
+}
+
+async fn build_select_result_no_tx(
+    rows: &[sqlx::postgres::PgRow],
+    rows_affected: u64,
+) -> QueryResult {
+    let columns: Vec<String> = rows
+        .first()
+        .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
+        .unwrap_or_default();
+
+    QueryResult {
+        rows: rows
+            .iter()
+            .map(|r| (0..r.columns().len()).map(|i| pg_value_to_json(r, i)).collect())
+            .collect(),
+        columns,
+        rows_affected,
+        column_metadata: vec![],
+        is_updatable: false,
+    }
+}
+
 #[async_trait]
 impl DatabaseDriver for PostgresDriver {
     async fn get_tables(&self) -> Result<Vec<TableInfo>, QueryError> {
@@ -836,6 +1028,28 @@ impl DatabaseDriver for PostgresDriver {
         let result = execute_query_inner(&self.pool, &stmts).await;
         self.current_pid.store(0, Ordering::SeqCst);
         result
+    }
+
+    /// Run every statement and return one `QueryResult` per result set
+    /// (one per SELECT / WITH...RETURNING). Writes accumulate into a single
+    /// trailing "rows affected" result when no SELECT produced columns.
+    async fn execute_query_multi(&self, sql: &str) -> Result<Vec<QueryResult>, QueryError> {
+        let stmts = split_statements(sql);
+        if stmts.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Track backend PID for cancellation
+        let pid_row = sqlx::query("SELECT pg_backend_pid() AS pid")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| QueryError::from(e.to_string()))?;
+        let pid: i32 = pid_row.get("pid");
+        self.current_pid.store(pid, Ordering::SeqCst);
+
+        let results = execute_multi_inner(&self.pool, &stmts).await;
+        self.current_pid.store(0, Ordering::SeqCst);
+        results
     }
 
     async fn get_function_ddl(&self, function_name: &str, schema: Option<&str>) -> Result<DdlResult, QueryError> {

@@ -341,7 +341,7 @@ export function useSqlEditor({
     };
   }, []);
 
-  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
+  const [queryResults, setQueryResults] = useState<QueryResult[]>([]);
   const [queryError, setQueryError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -452,15 +452,19 @@ export function useSqlEditor({
       runningRef.current = true;
       cancelledRef.current = false;
       setQueryError(null);
-      setQueryResult(null);
+      setQueryResults([]);
       setExplainResult(null);
       setLoading(true);
       const t0 = Date.now();
       let success = true;
       try {
-        const result = await dbService.runQuery(connectionId, sqlText);
+        const results = await dbService.runQueryMulti(connectionId, sqlText);
         if (cancelledRef.current) return;
-        setQueryResult(result);
+        // Drop noise: empty results with 0 rows and no columns.
+        const meaningful = results.filter(
+          (r) => r.columns.length > 0 || r.rows_affected > 0,
+        );
+        setQueryResults(meaningful);
       } catch (e) {
         success = false;
         if (cancelledRef.current) return;
@@ -491,7 +495,7 @@ export function useSqlEditor({
   const runExplain = useCallback(
     async (sqlText: string) => {
       setQueryError(null);
-      setQueryResult(null);
+      setQueryResults([]);
       setExplainResult(null);
       setExplainLoading(true);
       try {
@@ -525,7 +529,7 @@ export function useSqlEditor({
     setCancelling(true);
     try {
       await dbService.cancelQuery(connectionId);
-      setQueryResult(null);
+      setQueryResults([]);
       setQueryError("Consulta cancelada por el usuario");
     } catch (e) {
       toast.error(`Error al cancelar: ${fmtErr(e)}`);
@@ -785,7 +789,7 @@ export function useSqlEditor({
   return {
     sql,
     setSql,
-    queryResult,
+    queryResults,
     queryError,
     loading,
     cancelling,

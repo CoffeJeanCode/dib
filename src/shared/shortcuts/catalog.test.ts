@@ -13,12 +13,13 @@ test("shortcut catalog has no overlapping-scope conflicts", () => {
   expect(() => assertNoShortcutConflicts()).not.toThrow();
 });
 
-test("sidebar activity uses Ctrl+Shift+digit (not Visual EXPLAIN E)", () => {
-  expect(combo("sidebar.activity.1")).toBe("ctrl+shift+1");
-  expect(combo("sidebar.activity.2")).toBe("ctrl+shift+2");
-  expect(combo("sidebar.activity.3")).toBe("ctrl+shift+3");
+test("sidebar activity uses Shift+Alt+Q/W/E (not Visual EXPLAIN E)", () => {
+  expect(combo("sidebar.activity.1")).toBe("alt+shift+q");
+  expect(combo("sidebar.activity.2")).toBe("alt+shift+w");
+  expect(combo("sidebar.activity.3")).toBe("alt+shift+e");
   expect(combo("sql.visualExplain")).toBe("ctrl+shift+e");
   expect(display("sql.visualExplain")).toBe("Ctrl+Shift+E");
+  expect(display("sidebar.activity.1")).toBe("Shift+Alt+Q");
 });
 
 test("detects global (allowInMonaco) vs monaco clash on same combo", () => {
@@ -76,4 +77,20 @@ test("cheat sheet sections are non-empty and cover Visual EXPLAIN", () => {
 test("every catalog id is unique", () => {
   const ids = SHORTCUT_CATALOG.map((e) => e.id);
   expect(new Set(ids).size).toBe(ids.length);
+});
+
+test("combos follow _key() modifier order (ctrl → alt → shift)", () => {
+  // useKeybindings _key() emits "ctrl", "alt", "shift" in that order, so a combo
+  // like "shift+alt+q" never matches the produced "alt+shift+q" event string.
+  const RANK = new Map<string, number>([["ctrl", 0], ["alt", 1], ["shift", 2]]);
+  for (const e of SHORTCUT_CATALOG) {
+    for (const c of e.combos) {
+      const mods = c.split("+").filter((p) => RANK.has(p));
+      const ranks = mods.map((m) => RANK.get(m)!);
+      expect(
+        [...ranks].sort((a, b) => a - b),
+        `combo "${c}" (${e.id}) modifiers out of normalizer order`,
+      ).toEqual(ranks);
+    }
+  }
 });

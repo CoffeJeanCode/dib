@@ -6,7 +6,7 @@ use commands::connection::{connect_saved, connect_to_db, create_database, discon
 use commands::ddl::{apply_schema_changes, create_table, drop_table, generate_crud_sql, get_function_ddl, get_trigger_ddl, get_view_ddl};
 use commands::persistence::{delete_connection, get_saved_connections, load_ui_state, save_connection, save_ui_state};
 use commands::mock::generate_mock_data;
-use commands::query::{apply_changes, cancel_query, explain_query, fetch_table_data, run_query};
+use commands::query::{apply_changes, cancel_query, explain_query, fetch_table_data, run_query, run_query_multi};
 use commands::schema::{fetch_schema_objects, fetch_table_relations, fetch_table_schema, fetch_table_schemas, get_table_structure, fetch_db_node_children, get_node_children, invalidate_node_cache};
 use commands::system_status::check_system_status;
 use commands::workspace::{
@@ -61,6 +61,7 @@ pub fn run() {
             generate_mock_data,
             // query execution
             run_query,
+            run_query_multi,
             fetch_table_data,
             apply_changes,
             explain_query,

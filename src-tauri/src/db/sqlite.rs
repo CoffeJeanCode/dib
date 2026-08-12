@@ -97,6 +97,76 @@ fn is_select(sql: &str) -> bool {
     )
 }
 
+/// Split a SQL script into individual statements, honoring string literals,
+/// quoted identifiers, and comments (so `;` inside a string/comment is safe).
+fn split_statements(sql: &str) -> Vec<String> {
+    let mut stmts = Vec::new();
+    let mut current = String::new();
+    let mut in_single = false;
+    let mut in_double = false;
+    let mut in_block = false;
+    let mut in_line = false;
+    let chars: Vec<char> = sql.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        current.push(c);
+        if in_single {
+            if c == '\'' {
+                if i + 1 < chars.len() && chars[i + 1] == '\'' {
+                    current.push(chars[i + 1]);
+                    i += 1;
+                } else {
+                    in_single = false;
+                }
+            }
+        } else if in_double {
+            if c == '"' {
+                if i + 1 < chars.len() && chars[i + 1] == '"' {
+                    current.push(chars[i + 1]);
+                    i += 1;
+                } else {
+                    in_double = false;
+                }
+            }
+        } else if in_block {
+            if c == '*' && i + 1 < chars.len() && chars[i + 1] == '/' {
+                current.push(chars[i + 1]);
+                i += 1;
+                in_block = false;
+            }
+        } else if in_line {
+            if c == '\n' {
+                in_line = false;
+            }
+        } else if c == '\'' {
+            in_single = true;
+        } else if c == '"' {
+            in_double = true;
+        } else if c == '-' && i + 1 < chars.len() && chars[i + 1] == '-' {
+            current.push(chars[i + 1]);
+            i += 1;
+            in_line = true;
+        } else if c == '/' && i + 1 < chars.len() && chars[i + 1] == '*' {
+            current.push(chars[i + 1]);
+            i += 1;
+            in_block = true;
+        } else if c == ';' {
+            let stmt = current.trim().trim_end_matches(';').trim().to_string();
+            if !stmt.is_empty() {
+                stmts.push(stmt);
+            }
+            current.clear();
+        }
+        i += 1;
+    }
+    let stmt = current.trim().trim_end_matches(';').trim().to_string();
+    if !stmt.is_empty() {
+        stmts.push(stmt);
+    }
+    stmts
+}
+
 fn sqlite_value_to_json(row: &sqlx::sqlite::SqliteRow, i: usize) -> Value {
     match row.columns()[i].type_info().name() {
         "INTEGER" | "INT" => {
@@ -231,6 +301,59 @@ impl DatabaseDriver for SqliteDriver {
                 is_updatable: false,
             })
         }
+    }
+
+    /// Run every statement; each SELECT / WITH becomes its own result set.
+    async fn execute_query_multi(&self, sql: &str) -> Result<Vec<QueryResult>, QueryError> {
+        let stmts = split_statements(sql);
+        if stmts.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut results: Vec<QueryResult> = Vec::new();
+        let mut total_affected = 0u64;
+        for stmt in &stmts {
+            if is_select(stmt) {
+                let rows = sqlx::query(stmt)
+                    .fetch_all(&self.pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                let columns = rows
+                    .first()
+                    .map(|r| r.columns().iter().map(|c| c.name().to_string()).collect())
+                    .unwrap_or_default();
+                results.push(QueryResult {
+                    rows: rows
+                        .iter()
+                        .map(|r| {
+                            (0..r.columns().len())
+                                .map(|i| sqlite_value_to_json(r, i))
+                                .collect()
+                        })
+                        .collect(),
+                    columns,
+                    rows_affected: total_affected,
+                    column_metadata: vec![],
+                    is_updatable: false,
+                });
+                total_affected = 0;
+            } else {
+                let r = sqlx::query(stmt)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(|e| QueryError::from(e.to_string()))?;
+                total_affected += r.rows_affected();
+            }
+        }
+        if results.is_empty() {
+            results.push(QueryResult {
+                columns: vec![],
+                rows: vec![],
+                rows_affected: total_affected,
+                column_metadata: vec![],
+                is_updatable: false,
+            });
+        }
+        Ok(results)
     }
 
     async fn apply_changes(

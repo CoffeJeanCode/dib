@@ -161,7 +161,6 @@
   "159": "useKeybindings.ts",
   "160": "j1",
   "161": "QueryResultPanel.tsx",
-  "162": "mockMapping.ts",
   "163": "SchemaVisualizer.tsx",
   "164": "db.rs",
   "165": ".constructor",
@@ -175,11 +174,9 @@
   "173": "useArrowMenuNav",
   "174": "local",
   "175": "Phase 7 — Continue and Recents",
-  "176": "Phase 3 — Progressive Data Manipulation",
   "177": "w0",
   "178": "db.rs",
   "179": "ShellScopeEntryAllowedArg",
-  "180": ".new",
   "186": "vite-env.d.ts",
   "188": "ShellScopeEntryAllowedArgs"
 }

@@ -104,6 +104,9 @@
   --color-highlight: var(--neon-cyan);
   --color-focus:     var(--neon-cyan);
 
+  /* Focus ring — cold translucent tint over dark surfaces; never white */
+  --focus-ring: color-mix(in srgb, var(--color-focus) 55%, transparent);
+
   /* Suggest widget surface (Monaco autocomplete) */
   --color-suggest-bg:     #1A1A1E;
   --color-suggest-border: #2A2A30;
@@ -176,6 +179,9 @@
   /* Same brand family as dark (neon-cyan / neon-green), deepened for light */
   --color-highlight: #0a7a8a;
   --color-focus: #0a7a8a;
+
+  /* Focus ring — higher translucency stays legible on light paper */
+  --focus-ring: color-mix(in srgb, var(--color-focus) 70%, transparent);
 
   --color-suggest-bg: #fffbf5;
   --color-suggest-border: #e0d5c6;
@@ -251,6 +257,14 @@ pre,
 
 /* ── Focus visible ───────────────────────────────────────────── */
 
+/* Default for any custom focusable widget (grid cells, tree rows, …):
+   the UA focus rect renders near-white on dark surfaces, so swap it for a
+   subtle themed ring. Components that opt out with their own highlight win. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* Inputs: border highlight + subtle glow instead of outline ring */
 input:focus-visible,
 select:focus-visible,
@@ -263,7 +277,7 @@ textarea:focus-visible {
 /* Buttons: outline ring outside, no layout shift */
 button:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 

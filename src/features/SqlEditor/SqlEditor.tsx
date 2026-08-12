@@ -41,7 +41,7 @@ export function SqlEditor({
 }: SqlEditorProps) {
   const {
     sql,
-    queryResult,
+    queryResults,
     queryError,
     loading,
     cancelling,
@@ -224,7 +224,7 @@ export function SqlEditor({
         <div className="sqleditor-results-host">
           <QueryResultPanel
             connectionId={connectionId}
-            result={queryResult}
+            results={queryResults}
             error={queryError}
           />
         </div>

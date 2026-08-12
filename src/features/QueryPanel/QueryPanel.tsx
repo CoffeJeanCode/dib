@@ -1620,7 +1620,7 @@ export function QueryPanel({
           <QueryResultPanel
             fill
             connectionId={connectionId}
-            result={activeTab.payload.result}
+            results={activeTab.payload.result ? [activeTab.payload.result] : []}
             error={activeTab.payload.error}
             loading={activeTab.payload.loading}
             expiredHint={

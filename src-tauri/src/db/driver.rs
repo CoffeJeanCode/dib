@@ -41,6 +41,12 @@ pub trait DatabaseDriver: Send + Sync {
         Ok(out)
     }
     async fn execute_query(&self, sql: &str) -> Result<QueryResult, QueryError>;
+    /// Execute all statements and return one result set per statement that
+    /// produces columns (e.g. each SELECT), in order. Used by the SQL editor's
+    /// multi-result-tabs feature. Default = single `execute_query` result.
+    async fn execute_query_multi(&self, sql: &str) -> Result<Vec<QueryResult>, QueryError> {
+        Ok(vec![self.execute_query(sql).await?])
+    }
     async fn apply_changes(
         &self,
         table_name: &str,

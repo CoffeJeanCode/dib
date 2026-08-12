@@ -80,8 +80,8 @@
     "semantic_hash": ""
   },
   "src-tauri/src/db/driver.rs": {
-    "mtime": 1786564940.4317014,
-    "ast_hash": "c9140c5b4cba4a95e3e6db1040139aff",
+    "mtime": 1786387072.5559773,
+    "ast_hash": "5ad279de8e6c1ee6f6935ec99630b589",
     "semantic_hash": ""
   },
   "src-tauri/src/db/mod.rs": {
@@ -90,18 +90,18 @@
     "semantic_hash": ""
   },
   "src-tauri/src/db/postgres.rs": {
-    "mtime": 1786564985.7783008,
-    "ast_hash": "6dde62333e1d1bc21ab647073893facb",
+    "mtime": 1786394787.8281674,
+    "ast_hash": "eeb8835530b0d589e86526f84ef6f16e",
     "semantic_hash": ""
   },
   "src-tauri/src/db/sqlite.rs": {
-    "mtime": 1786565022.2841673,
-    "ast_hash": "5a59e13cbf34e3e2640ed87319b1e571",
+    "mtime": 1786394791.331035,
+    "ast_hash": "bff658b39f4ea50e415f8c259bfa440a",
     "semantic_hash": ""
   },
   "src-tauri/src/lib.rs": {
-    "mtime": 1786564997.1234918,
-    "ast_hash": "dac32f3108ebbcb79198d93f5fe2e27a",
+    "mtime": 1786034047.266842,
+    "ast_hash": "32b274ebec9104271115380f7eca84b3",
     "semantic_hash": ""
   },
   "src-tauri/src/main.rs": {
@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "src/services/dbService.ts": {
-    "mtime": 1786565094.6043487,
-    "ast_hash": "5fbd78ec4f071bb5f6daae3718b89423",
+    "mtime": 1786368098.6287348,
+    "ast_hash": "1ec0e356895f7f8f92ed8ef521114eeb",
     "semantic_hash": ""
   },
   "src/services/persistenceService.ts": {
@@ -235,8 +235,8 @@
     "semantic_hash": ""
   },
   "src-tauri/src/commands/query.rs": {
-    "mtime": 1786564946.5646248,
-    "ast_hash": "a71a01031dc826670b3335a949b75e8f",
+    "mtime": 1786387397.775533,
+    "ast_hash": "f7b8a53e58645f26ba8c18f8f4b31f5c",
     "semantic_hash": ""
   },
   "src-tauri/src/commands/schema.rs": {
@@ -325,8 +325,8 @@
     "semantic_hash": ""
   },
   "src/features/QueryPanel/QueryPanel.tsx": {
-    "mtime": 1786565133.4125729,
-    "ast_hash": "0d5c47e6906fe6eb5d0715e186d6ea7b",
+    "mtime": 1786394821.129964,
+    "ast_hash": "81cb49823ac299a6c51d067059a95d24",
     "semantic_hash": ""
   },
   "src/features/QueryPanel/index.ts": {
@@ -405,8 +405,8 @@
     "semantic_hash": ""
   },
   "src/features/SqlEditor/SqlEditor.tsx": {
-    "mtime": 1786565123.1282334,
-    "ast_hash": "42cf8757aef66a04c6319bccb8c852d7",
+    "mtime": 1786388084.6176572,
+    "ast_hash": "740d82abfcdf63cab03212fc9fa7c7f5",
     "semantic_hash": ""
   },
   "src/features/SqlEditor/index.ts": {
@@ -655,8 +655,8 @@
     "semantic_hash": ""
   },
   "src/shared/hooks/useSqlEditor.ts": {
-    "mtime": 1786565182.1371677,
-    "ast_hash": "6781541b5f96ee64c35730eb57362e36",
+    "mtime": 1786399171.386647,
+    "ast_hash": "d945ccd2cb2d62df13ecdcb3bf09f425",
     "semantic_hash": ""
   },
   "src/shared/hooks/useTheme.ts": {
@@ -1210,8 +1210,8 @@
     "semantic_hash": ""
   },
   "src/features/SqlEditor/QueryResultPanel.tsx": {
-    "mtime": 1786565151.8816772,
-    "ast_hash": "60a42f7730569d9035a48c5272d8c72a",
+    "mtime": 1786394531.1699722,
+    "ast_hash": "2597b54df28e29a4e539680916f65d31",
     "semantic_hash": ""
   },
   "src/shared/ui/FlatSwitch.tsx": {

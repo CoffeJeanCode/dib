@@ -18,7 +18,7 @@ const SIDEBAR_SNAP = 140;
 type Panel = "explorer" | "files" | "history" | "workspaces";
 
 /**
- * Activity-bar slots map to Ctrl+Shift+1/2/3 (see SHORTCUT_CATALOG).
+ * Activity-bar slots map to Shift+Alt+Q/W/E (see SHORTCUT_CATALOG).
  * Slot 2 is Workspaces on home, Files when connected — one combo, mode-resolved.
  * Always register all three (useKeybindings freezes combos at mount).
  */

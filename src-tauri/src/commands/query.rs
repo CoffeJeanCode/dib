@@ -30,6 +30,27 @@ pub async fn run_query(
 }
 
 #[tauri::command]
+pub async fn run_query_multi(
+    connection_id: String,
+    sql: String,
+    state: State<'_, DbState>,
+    app_handle: tauri::AppHandle,
+) -> Result<Vec<QueryResult>, QueryError> {
+    let app_db = app_handle.state::<crate::storage::AppDb>();
+    crate::commands::connection::assert_connection_in_active_workspace(&state, &app_db, &connection_id)?;
+    if crate::commands::connection::is_connection_readonly(&state, &app_db, &connection_id)? {
+        crate::commands::connection::assert_sql_readonly_safe(&sql)?;
+    }
+
+    let driver = state.connections.get(&connection_id).ok_or_else(|| QueryError {
+        message: format!("Connection not found: {}", connection_id),
+        code: None,
+        severity: Some("ERROR".to_string()),
+    })?.clone();
+    driver.execute_query_multi(&sql).await
+}
+
+#[tauri::command]
 pub async fn apply_changes(
     connection_id: String,
     table: String,

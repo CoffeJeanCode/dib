@@ -55,24 +55,29 @@ const SECTION_ORDER: ShortcutSection[] = [
 ];
 
 export const SHORTCUT_CATALOG: readonly ShortcutEntry[] = [
-  // ── Navigation / sidebar activity (Ctrl+Shift+digit — avoids letter clashes) ──
+  // ── Navigation / sidebar activity (Shift+Alt+Q/W/E — home row, ergonomic) ──
+  // NOTE: combos must follow the _key() modifier order (ctrl → alt → shift), so
+  // "Shift+Alt" is registered as alt+shift+q. `display` keeps the plain label.
   {
     id: "sidebar.activity.1",
-    combos: ["ctrl+shift+1"],
+    combos: ["alt+shift+q"],
+    display: "Shift+Alt+Q",
     description: "Sidebar: Instances / Explorer",
     section: "navigation",
     scopes: ["global"],
   },
   {
     id: "sidebar.activity.2",
-    combos: ["ctrl+shift+2"],
+    combos: ["alt+shift+w"],
+    display: "Shift+Alt+W",
     description: "Sidebar: Workspaces (home) / Files (connected)",
     section: "navigation",
     scopes: ["global"],
   },
   {
     id: "sidebar.activity.3",
-    combos: ["ctrl+shift+3"],
+    combos: ["alt+shift+e"],
+    display: "Shift+Alt+E",
     description: "Sidebar: History (when connected)",
     section: "navigation",
     scopes: ["global"],

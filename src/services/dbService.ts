@@ -23,6 +23,10 @@ export const dbService = {
   runQuery: (connectionId: string, sql: string) =>
     safeInvoke<QueryResult>("run_query", { connectionId, sql }),
 
+  /** Run every statement and return one result per result set (multi-tab). */
+  runQueryMulti: (connectionId: string, sql: string) =>
+    safeInvoke<QueryResult[]>("run_query_multi", { connectionId, sql }),
+
   applyChanges: (
     connectionId: string,
     table: string,

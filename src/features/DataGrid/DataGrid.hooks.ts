@@ -155,6 +155,11 @@ export function useDataGridState({
   }, [activeCellProp]);
 
   const activeCell = internalActiveCell;
+  // Last cell the scroll-follow effect acted on. The effect must only bring a
+  // cell into view when navigation moved the active cell — column resizing
+  // (widths changing with the same active cell) must not yank the viewport
+  // back to a cell the user has scrolled out of sight (Excel behavior).
+  const scrollFollowedCellRef = useRef<string | null>(null);
   const emitTimeoutRef = useRef<number | null>(null);
 
   const setActiveCell = useCallback((next: { row: number; col: number } | null) => {
@@ -406,6 +411,11 @@ export function useDataGridState({
 
   useEffect(() => {
     if (!activeCell || !containerRef.current || !orderedColumns[activeCell.col]) return;
+    // Bail when the active cell didn't move (e.g. column resize/autofit, window
+    // resize, column reorder): an unchanged cell must not recapture the focus.
+    const cellKey = `${activeCell.row}:${activeCell.col}`;
+    if (scrollFollowedCellRef.current === cellKey) return;
+    scrollFollowedCellRef.current = cellKey;
     const el = containerRef.current;
     const cw = columnWidthsRef.current;
     // Rows begin below the sticky header inside the same scroll container, so
@@ -1116,8 +1126,15 @@ export function useDataGridState({
   const dragSelAnchorRef = useRef<{ row: number; col: number } | null>(null);
   const dragSelLastRef = useRef<{ row: number; col: number } | null>(null);
   const dragSelPosRef = useRef<{ x: number; y: number } | null>(null);
+  const dragSelStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const dragSelEngagedRef = useRef(false);
   const dragSelRafRef = useRef<number | null>(null);
   const dragSelStopRef = useRef<(() => void) | null>(null);
+
+  // A drag only starts after the pointer actually moves past this many px.
+  // Clicking (or holding) a cell near the container's border must NOT trigger
+  // the edge auto-scroll or extend a range — the anchor cell is what is focused.
+  const DRAG_START_DIST = 4;
 
   const extendDragTo = useCallback(
     (x: number, y: number) => {
@@ -1150,17 +1167,30 @@ export function useDataGridState({
       dragSelAnchorRef.current = { row: rowIdx, col: colIdx };
       dragSelLastRef.current = { row: rowIdx, col: colIdx };
       dragSelPosRef.current = { x: e.clientX, y: e.clientY };
+      dragSelStartPosRef.current = { x: e.clientX, y: e.clientY };
+      dragSelEngagedRef.current = false;
       setAnchorCell({ row: rowIdx, col: colIdx });
       setActiveCell({ row: rowIdx, col: colIdx });
       setSelectedCells(new Set([cellId(rowIdx, colIdx)]));
 
       const onMove = (ev: MouseEvent) => {
         dragSelPosRef.current = { x: ev.clientX, y: ev.clientY };
-        extendDragTo(ev.clientX, ev.clientY);
+        const start = dragSelStartPosRef.current;
+        if (!dragSelEngagedRef.current && start) {
+          if (
+            Math.abs(ev.clientX - start.x) > DRAG_START_DIST ||
+            Math.abs(ev.clientY - start.y) > DRAG_START_DIST
+          ) {
+            dragSelEngagedRef.current = true;
+          }
+        }
+        if (dragSelEngagedRef.current) extendDragTo(ev.clientX, ev.clientY);
       };
       const stop = () => {
         dragSelAnchorRef.current = null;
         dragSelPosRef.current = null;
+        dragSelStartPosRef.current = null;
+        dragSelEngagedRef.current = false;
         if (dragSelRafRef.current != null) cancelAnimationFrame(dragSelRafRef.current);
         dragSelRafRef.current = null;
         dragSelStopRef.current = null;
@@ -1172,10 +1202,15 @@ export function useDataGridState({
       dragSelStopRef.current = stop;
 
       // Edge auto-scroll: keeps painting while the pointer rests at a border.
+      // Only engages after a real drag began — a stationary click near the edge
+      // must not scroll or extend the selection.
       const EDGE = 40;
       const SPEED = 14;
       const step = () => {
-        if (!dragSelAnchorRef.current) return;
+        if (!dragSelAnchorRef.current || !dragSelEngagedRef.current) {
+          dragSelRafRef.current = requestAnimationFrame(step);
+          return;
+        }
         const pos = dragSelPosRef.current;
         const cont = containerRef.current;
         if (pos && cont) {

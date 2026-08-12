@@ -28,6 +28,12 @@
   border-color: var(--color-focus);
 }
 
+/* Input is visually hidden, so paint the box instead */
+.flat-checkbox-box:has(.flat-checkbox-input:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .flat-checkbox:hover .flat-checkbox-box--checked {
   opacity: 0.85;
 }

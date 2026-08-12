@@ -79,6 +79,6 @@
 }
 
 .flat-switch-input:focus-visible + .flat-switch-thumb {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }

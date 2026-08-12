@@ -36,7 +36,7 @@ export function useAppKeybindings({ isConnected, onTogglePalette, onToggleCheatS
     { combo: combo("palette.insert"), handler: () => { if (isConnected) useUiStore.setState({ paletteOpen: true, paletteInitialDdlMode: "insert" }); }, allowInMonaco: true },
 
     // ── Navigation ─────────────────────────────────────────
-    // Sidebar activity Ctrl+Shift+1..3 — owned by Layout (see SHORTCUT_CATALOG).
+    // Sidebar activity Shift+Alt+Q/W/E — owned by Layout (see SHORTCUT_CATALOG).
     { combo: combo("panel.focusMain"), handler: () => (document.getElementById("dib-main-panel") as HTMLElement | null)?.focus(), allowInMonaco: true },
 
     // ── Dev / reload ───────────────────────────────────────
